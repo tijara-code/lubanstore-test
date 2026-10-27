@@ -18,7 +18,7 @@ export { schema };
 export async function connectPostgres(url: string): Promise<Db> {
   const { default: postgres } = await import("postgres");
   const { drizzle } = await import("drizzle-orm/postgres-js");
-  const client = postgres(url, { prepare: false, max: 3, idle_timeout: 20, connect_timeout: 8 });
+  const client = postgres(url, { prepare: false, max: 3, idle_timeout: 20, connect_timeout: 8, connection: { search_path: "store,public" } });
   return drizzle(client, { schema }) as unknown as Db;
 }
 
@@ -40,14 +40,19 @@ export async function connectPglite(dataDir?: string): Promise<Db> {
     const client = new PGlite(dataDir);
     const db = drizzle(client, { schema });
     await migrate(db, { migrationsFolder });
+    await client.exec(SEARCH_PATH);
     return db as unknown as Db;
   }
   const snapshot = await migratedSnapshot(migrationsFolder);
   const client = snapshot ? new PGlite({ loadDataDir: snapshot }) : new PGlite();
   const db = drizzle(client, { schema });
   if (!snapshot) await migrate(db, { migrationsFolder });
+  await client.exec(SEARCH_PATH);
   return db as unknown as Db;
 }
+
+/** Raw SQL may name tables unqualified: they resolve in "store" first. */
+const SEARCH_PATH = "set search_path to store, public";
 
 let snapshotPromise: Promise<Blob | null> | null = null;
 

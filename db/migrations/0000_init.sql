@@ -1,4 +1,6 @@
-CREATE TABLE "admin_audit" (
+CREATE SCHEMA "store";
+--> statement-breakpoint
+CREATE TABLE "store"."admin_audit" (
 	"id" bigserial PRIMARY KEY NOT NULL,
 	"at" timestamp with time zone DEFAULT now() NOT NULL,
 	"actor" text NOT NULL,
@@ -7,7 +9,7 @@ CREATE TABLE "admin_audit" (
 	"summary" jsonb
 );
 --> statement-breakpoint
-CREATE TABLE "catalogue_changes" (
+CREATE TABLE "store"."catalogue_changes" (
 	"id" bigserial PRIMARY KEY NOT NULL,
 	"at" timestamp with time zone DEFAULT now() NOT NULL,
 	"actor" text NOT NULL,
@@ -15,20 +17,20 @@ CREATE TABLE "catalogue_changes" (
 	"detail" jsonb
 );
 --> statement-breakpoint
-CREATE TABLE "claims" (
+CREATE TABLE "store"."claims" (
 	"key" text PRIMARY KEY NOT NULL,
 	"at" timestamp with time zone DEFAULT now() NOT NULL,
 	"state" text DEFAULT 'taken' NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "crm" (
+CREATE TABLE "store"."crm" (
 	"phone_key" text PRIMARY KEY NOT NULL,
 	"note" text,
 	"tags" text[] DEFAULT '{}'::text[] NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "event_hours" (
+CREATE TABLE "store"."event_hours" (
 	"hour" timestamp with time zone NOT NULL,
 	"sid" text DEFAULT '' NOT NULL,
 	"country" text DEFAULT '' NOT NULL,
@@ -38,7 +40,7 @@ CREATE TABLE "event_hours" (
 	CONSTRAINT "event_hours_hour_sid_country_name_item_pk" PRIMARY KEY("hour","sid","country","name","item")
 );
 --> statement-breakpoint
-CREATE TABLE "events" (
+CREATE TABLE "store"."events" (
 	"id" bigserial PRIMARY KEY NOT NULL,
 	"at" timestamp with time zone DEFAULT now() NOT NULL,
 	"name" text NOT NULL,
@@ -50,7 +52,7 @@ CREATE TABLE "events" (
 	"lng" real
 );
 --> statement-breakpoint
-CREATE TABLE "logs" (
+CREATE TABLE "store"."logs" (
 	"id" bigserial PRIMARY KEY NOT NULL,
 	"at" timestamp with time zone DEFAULT now() NOT NULL,
 	"level" text DEFAULT 'error' NOT NULL,
@@ -62,13 +64,13 @@ CREATE TABLE "logs" (
 	"detail" jsonb
 );
 --> statement-breakpoint
-CREATE TABLE "ops" (
+CREATE TABLE "store"."ops" (
 	"key" text PRIMARY KEY NOT NULL,
 	"data" jsonb DEFAULT '{}'::jsonb NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "order_events" (
+CREATE TABLE "store"."order_events" (
 	"id" bigserial PRIMARY KEY NOT NULL,
 	"order_id" text NOT NULL,
 	"at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -79,7 +81,7 @@ CREATE TABLE "order_events" (
 	"detail" jsonb
 );
 --> statement-breakpoint
-CREATE TABLE "orders" (
+CREATE TABLE "store"."orders" (
 	"id" text PRIMARY KEY NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -133,27 +135,27 @@ CREATE TABLE "orders" (
 	"trashed_at" timestamp with time zone,
 	"pii_cleared_at" timestamp with time zone,
 	CONSTRAINT "orders_dedupe_id_unique" UNIQUE("dedupe_id"),
-	CONSTRAINT "orders_status_check" CHECK ("orders"."status" in ('pending','new','prep','ship','done','void')),
-	CONSTRAINT "orders_payment_status_check" CHECK ("orders"."payment_status" in ('unpaid','paid','cod','refunded','cancelled')),
-	CONSTRAINT "orders_pay_check" CHECK ("orders"."pay" in ('cod','card','transfer'))
+	CONSTRAINT "orders_status_check" CHECK ("store"."orders"."status" in ('pending','new','prep','ship','done','void')),
+	CONSTRAINT "orders_payment_status_check" CHECK ("store"."orders"."payment_status" in ('unpaid','paid','cod','refunded','cancelled')),
+	CONSTRAINT "orders_pay_check" CHECK ("store"."orders"."pay" in ('cod','card','transfer'))
 );
 --> statement-breakpoint
-CREATE TABLE "rate_limits" (
+CREATE TABLE "store"."rate_limits" (
 	"key" text PRIMARY KEY NOT NULL,
 	"count" integer DEFAULT 0 NOT NULL,
 	"reset_at" timestamp with time zone NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "settings" (
+CREATE TABLE "store"."settings" (
 	"id" integer PRIMARY KEY DEFAULT 1 NOT NULL,
 	"data" jsonb NOT NULL,
 	"version" integer DEFAULT 1 NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_by" text,
-	CONSTRAINT "settings_single_row" CHECK ("settings"."id" = 1)
+	CONSTRAINT "settings_single_row" CHECK ("store"."settings"."id" = 1)
 );
 --> statement-breakpoint
-CREATE TABLE "shipments" (
+CREATE TABLE "store"."shipments" (
 	"id" text PRIMARY KEY NOT NULL,
 	"order_id" text,
 	"carrier" text DEFAULT 'empower' NOT NULL,
@@ -171,7 +173,7 @@ CREATE TABLE "shipments" (
 	"last_error" text
 );
 --> statement-breakpoint
-CREATE TABLE "webhook_events" (
+CREATE TABLE "store"."webhook_events" (
 	"id" bigserial PRIMARY KEY NOT NULL,
 	"received_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"provider" text NOT NULL,
@@ -185,18 +187,18 @@ CREATE TABLE "webhook_events" (
 	CONSTRAINT "webhook_events_dedupe_key_unique" UNIQUE("dedupe_key")
 );
 --> statement-breakpoint
-ALTER TABLE "order_events" ADD CONSTRAINT "order_events_order_id_orders_id_fk" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "shipments" ADD CONSTRAINT "shipments_order_id_orders_id_fk" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "admin_audit_at_idx" ON "admin_audit" USING btree ("at");--> statement-breakpoint
-CREATE INDEX "catalogue_changes_at_idx" ON "catalogue_changes" USING btree ("at");--> statement-breakpoint
-CREATE INDEX "events_at_idx" ON "events" USING btree ("at");--> statement-breakpoint
-CREATE INDEX "events_sid_at_idx" ON "events" USING btree ("sid","at");--> statement-breakpoint
-CREATE INDEX "logs_at_idx" ON "logs" USING btree ("at");--> statement-breakpoint
-CREATE INDEX "order_events_order_idx" ON "order_events" USING btree ("order_id","at");--> statement-breakpoint
-CREATE INDEX "orders_created_idx" ON "orders" USING btree ("created_at" DESC NULLS LAST);--> statement-breakpoint
-CREATE INDEX "orders_status_country_idx" ON "orders" USING btree ("status","country_code","created_at" DESC NULLS LAST);--> statement-breakpoint
-CREATE INDEX "orders_invoice_no_idx" ON "orders" USING btree ("invoice_no");--> statement-breakpoint
-CREATE INDEX "orders_phone_key_idx" ON "orders" USING btree ("phone_key");--> statement-breakpoint
-CREATE INDEX "shipments_order_idx" ON "shipments" USING btree ("order_id");--> statement-breakpoint
-CREATE INDEX "shipments_updated_idx" ON "shipments" USING btree ("updated_at" DESC NULLS LAST);--> statement-breakpoint
-CREATE INDEX "webhook_events_received_idx" ON "webhook_events" USING btree ("received_at");
+ALTER TABLE "store"."order_events" ADD CONSTRAINT "order_events_order_id_orders_id_fk" FOREIGN KEY ("order_id") REFERENCES "store"."orders"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "store"."shipments" ADD CONSTRAINT "shipments_order_id_orders_id_fk" FOREIGN KEY ("order_id") REFERENCES "store"."orders"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "admin_audit_at_idx" ON "store"."admin_audit" USING btree ("at");--> statement-breakpoint
+CREATE INDEX "catalogue_changes_at_idx" ON "store"."catalogue_changes" USING btree ("at");--> statement-breakpoint
+CREATE INDEX "events_at_idx" ON "store"."events" USING btree ("at");--> statement-breakpoint
+CREATE INDEX "events_sid_at_idx" ON "store"."events" USING btree ("sid","at");--> statement-breakpoint
+CREATE INDEX "logs_at_idx" ON "store"."logs" USING btree ("at");--> statement-breakpoint
+CREATE INDEX "order_events_order_idx" ON "store"."order_events" USING btree ("order_id","at");--> statement-breakpoint
+CREATE INDEX "orders_created_idx" ON "store"."orders" USING btree ("created_at" DESC NULLS LAST);--> statement-breakpoint
+CREATE INDEX "orders_status_country_idx" ON "store"."orders" USING btree ("status","country_code","created_at" DESC NULLS LAST);--> statement-breakpoint
+CREATE INDEX "orders_invoice_no_idx" ON "store"."orders" USING btree ("invoice_no");--> statement-breakpoint
+CREATE INDEX "orders_phone_key_idx" ON "store"."orders" USING btree ("phone_key");--> statement-breakpoint
+CREATE INDEX "shipments_order_idx" ON "store"."shipments" USING btree ("order_id");--> statement-breakpoint
+CREATE INDEX "shipments_updated_idx" ON "store"."shipments" USING btree ("updated_at" DESC NULLS LAST);--> statement-breakpoint
+CREATE INDEX "webhook_events_received_idx" ON "store"."webhook_events" USING btree ("received_at");

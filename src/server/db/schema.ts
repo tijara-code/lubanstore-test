@@ -15,7 +15,7 @@ import {
   integer,
   jsonb,
   numeric,
-  pgTable,
+  pgSchema,
   primaryKey,
   real,
   text,
@@ -23,6 +23,13 @@ import {
 } from "drizzle-orm/pg-core";
 import type { Catalogue } from "../../shared/catalogue/types";
 import type { OrderLine, Attribution, ClientSignals, GatewayRecord } from "../../shared/orders/types";
+
+/**
+ * Every table lives in the Postgres schema "store": side by side with the original store's
+ * tables in `public` during the move (db/import-from-v1.sql copies them across), and out of
+ * reach of Supabase's auto-generated public API (which only exposes `public`).
+ */
+export const store = pgSchema("store");
 
 const money = (name: string) => numeric(name, { mode: "number" });
 const ts = (name: string) => timestamp(name, { withTimezone: true, mode: "date" });
@@ -32,7 +39,7 @@ export const PAYMENT_STATUSES = ["unpaid", "paid", "cod", "refunded", "cancelled
 export const PAY_METHODS = ["cod", "card", "transfer"] as const;
 
 /** The published catalogue: one row. `version` makes every publish conditional. */
-export const settings = pgTable(
+export const settings = store.table(
   "settings",
   {
     id: integer("id").primaryKey().default(1),
@@ -44,7 +51,7 @@ export const settings = pgTable(
   (t) => [check("settings_single_row", sql`${t.id} = 1`)],
 );
 
-export const orders = pgTable(
+export const orders = store.table(
   "orders",
   {
     id: text("id").primaryKey(), // LM-1234567890
@@ -130,7 +137,7 @@ export const orders = pgTable(
 );
 
 /** Every change to an order: the status flow, payments, edits — who, when, from → to. */
-export const orderEvents = pgTable(
+export const orderEvents = store.table(
   "order_events",
   {
     id: bigserial("id", { mode: "number" }).primaryKey(),
@@ -148,7 +155,7 @@ export const orderEvents = pgTable(
 );
 
 /** Parcels sent to Empower (Omniful). One row per send; a re-send after take-off is a new row. */
-export const shipments = pgTable(
+export const shipments = store.table(
   "shipments",
   {
     id: text("id").primaryKey(), // omf-<sentId>
@@ -175,21 +182,21 @@ export const shipments = pgTable(
 );
 
 /** Small key → JSON records: job runs, caches, switches, the SKU map. */
-export const ops = pgTable("ops", {
+export const ops = store.table("ops", {
   key: text("key").primaryKey(),
   data: jsonb("data").$type<unknown>().notNull().default({}),
   updatedAt: ts("updated_at").notNull().defaultNow(),
 });
 
 /** Once-only claims (e.g. "purchase-LM-…", "ga4-LM-…"): unique by key, purged after 60 days. */
-export const claims = pgTable("claims", {
+export const claims = store.table("claims", {
   key: text("key").primaryKey(),
   at: ts("at").notNull().defaultNow(),
   state: text("state").notNull().default("taken"),
 });
 
 /** First-party analytics (allow-listed event names; sid is a per-tab random token). */
-export const events = pgTable(
+export const events = store.table(
   "events",
   {
     id: bigserial("id", { mode: "number" }).primaryKey(),
@@ -206,7 +213,7 @@ export const events = pgTable(
 );
 
 /** What the 90-day purge removed, added up per hour/session/country/name/item, kept for good. */
-export const eventHours = pgTable(
+export const eventHours = store.table(
   "event_hours",
   {
     hour: ts("hour").notNull(),
@@ -220,7 +227,7 @@ export const eventHours = pgTable(
 );
 
 /** Server errors, job failures and browser errors. */
-export const logs = pgTable(
+export const logs = store.table(
   "logs",
   {
     id: bigserial("id", { mode: "number" }).primaryKey(),
@@ -238,7 +245,7 @@ export const logs = pgTable(
 );
 
 /** Every webhook delivery (Thawani, Omniful): a record, and replay dedupe by body hash. */
-export const webhookEvents = pgTable(
+export const webhookEvents = store.table(
   "webhook_events",
   {
     id: bigserial("id", { mode: "number" }).primaryKey(),
@@ -257,14 +264,14 @@ export const webhookEvents = pgTable(
 );
 
 /** Fixed-window counters: login lockout, order floods, the open collectors. */
-export const rateLimits = pgTable("rate_limits", {
+export const rateLimits = store.table("rate_limits", {
   key: text("key").primaryKey(),
   count: integer("count").notNull().default(0),
   resetAt: ts("reset_at").notNull(),
 });
 
 /** The shop's notes and tags per customer (by phone key). */
-export const crm = pgTable("crm", {
+export const crm = store.table("crm", {
   phoneKey: text("phone_key").primaryKey(),
   note: text("note"),
   tags: text("tags").array().notNull().default(sql`'{}'::text[]`),
@@ -272,7 +279,7 @@ export const crm = pgTable("crm", {
 });
 
 /** Every admin write: who, what, when. */
-export const adminAudit = pgTable(
+export const adminAudit = store.table(
   "admin_audit",
   {
     id: bigserial("id", { mode: "number" }).primaryKey(),
@@ -286,7 +293,7 @@ export const adminAudit = pgTable(
 );
 
 /** What changed on the storefront (catalogue publishes), in words, for the Analytics tab. */
-export const catalogueChanges = pgTable(
+export const catalogueChanges = store.table(
   "catalogue_changes",
   {
     id: bigserial("id", { mode: "number" }).primaryKey(),

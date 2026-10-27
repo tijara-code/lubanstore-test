@@ -6,4 +6,5 @@ import "./payments";
 import "./orders";
 import "./empower";
 import "./analytics";
+import "../domain/admin/jobs";
 export {};

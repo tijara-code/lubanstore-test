@@ -85,7 +85,7 @@ export async function createHarness(opts: HarnessOptions = {}) {
   }
   /** empty every table (keeps the schema) */
   async function reset(cat: Catalogue | null | undefined = opts.catalogue) {
-    const tables = await db.execute(sql`select tablename from pg_tables where schemaname = 'public'`);
+    const tables = await db.execute(sql`select tablename from pg_tables where schemaname = 'store'`);
     const names = (tables as unknown as { rows: Array<{ tablename: string }> }).rows.map((r) => `"${r.tablename}"`);
     if (names.length) await db.execute(sql.raw(`truncate ${names.join(", ")} restart identity cascade`));
     world.calls.length = 0;

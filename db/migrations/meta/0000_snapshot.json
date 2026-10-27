@@ -1,12 +1,12 @@
 {
-  "id": "118bfbb2-a107-4680-b2c3-992a1fba6396",
+  "id": "8a594f5b-3fd1-41e7-a1c5-70619c84a73e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.admin_audit": {
+    "store.admin_audit": {
       "name": "admin_audit",
-      "schema": "",
+      "schema": "store",
       "columns": {
         "id": {
           "name": "id",
@@ -70,9 +70,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.catalogue_changes": {
+    "store.catalogue_changes": {
       "name": "catalogue_changes",
-      "schema": "",
+      "schema": "store",
       "columns": {
         "id": {
           "name": "id",
@@ -130,9 +130,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.claims": {
+    "store.claims": {
       "name": "claims",
-      "schema": "",
+      "schema": "store",
       "columns": {
         "key": {
           "name": "key",
@@ -163,9 +163,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.crm": {
+    "store.crm": {
       "name": "crm",
-      "schema": "",
+      "schema": "store",
       "columns": {
         "phone_key": {
           "name": "phone_key",
@@ -202,9 +202,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.event_hours": {
+    "store.event_hours": {
       "name": "event_hours",
-      "schema": "",
+      "schema": "store",
       "columns": {
         "hour": {
           "name": "hour",
@@ -266,9 +266,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.events": {
+    "store.events": {
       "name": "events",
-      "schema": "",
+      "schema": "store",
       "columns": {
         "id": {
           "name": "id",
@@ -371,9 +371,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.logs": {
+    "store.logs": {
       "name": "logs",
-      "schema": "",
+      "schema": "store",
       "columns": {
         "id": {
           "name": "id",
@@ -457,9 +457,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.ops": {
+    "store.ops": {
       "name": "ops",
-      "schema": "",
+      "schema": "store",
       "columns": {
         "key": {
           "name": "key",
@@ -490,9 +490,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.order_events": {
+    "store.order_events": {
       "name": "order_events",
-      "schema": "",
+      "schema": "store",
       "columns": {
         "id": {
           "name": "id",
@@ -572,6 +572,7 @@
           "name": "order_events_order_id_orders_id_fk",
           "tableFrom": "order_events",
           "tableTo": "orders",
+          "schemaTo": "store",
           "columnsFrom": [
             "order_id"
           ],
@@ -588,9 +589,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.orders": {
+    "store.orders": {
       "name": "orders",
-      "schema": "",
+      "schema": "store",
       "columns": {
         "id": {
           "name": "id",
@@ -1004,22 +1005,22 @@
       "checkConstraints": {
         "orders_status_check": {
           "name": "orders_status_check",
-          "value": "\"orders\".\"status\" in ('pending','new','prep','ship','done','void')"
+          "value": "\"store\".\"orders\".\"status\" in ('pending','new','prep','ship','done','void')"
         },
         "orders_payment_status_check": {
           "name": "orders_payment_status_check",
-          "value": "\"orders\".\"payment_status\" in ('unpaid','paid','cod','refunded','cancelled')"
+          "value": "\"store\".\"orders\".\"payment_status\" in ('unpaid','paid','cod','refunded','cancelled')"
         },
         "orders_pay_check": {
           "name": "orders_pay_check",
-          "value": "\"orders\".\"pay\" in ('cod','card','transfer')"
+          "value": "\"store\".\"orders\".\"pay\" in ('cod','card','transfer')"
         }
       },
       "isRLSEnabled": false
     },
-    "public.rate_limits": {
+    "store.rate_limits": {
       "name": "rate_limits",
-      "schema": "",
+      "schema": "store",
       "columns": {
         "key": {
           "name": "key",
@@ -1049,9 +1050,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.settings": {
+    "store.settings": {
       "name": "settings",
-      "schema": "",
+      "schema": "store",
       "columns": {
         "id": {
           "name": "id",
@@ -1095,14 +1096,14 @@
       "checkConstraints": {
         "settings_single_row": {
           "name": "settings_single_row",
-          "value": "\"settings\".\"id\" = 1"
+          "value": "\"store\".\"settings\".\"id\" = 1"
         }
       },
       "isRLSEnabled": false
     },
-    "public.shipments": {
+    "store.shipments": {
       "name": "shipments",
-      "schema": "",
+      "schema": "store",
       "columns": {
         "id": {
           "name": "id",
@@ -1235,6 +1236,7 @@
           "name": "shipments_order_id_orders_id_fk",
           "tableFrom": "shipments",
           "tableTo": "orders",
+          "schemaTo": "store",
           "columnsFrom": [
             "order_id"
           ],
@@ -1251,9 +1253,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.webhook_events": {
+    "store.webhook_events": {
       "name": "webhook_events",
-      "schema": "",
+      "schema": "store",
       "columns": {
         "id": {
           "name": "id",
@@ -1352,7 +1354,9 @@
     }
   },
   "enums": {},
-  "schemas": {},
+  "schemas": {
+    "store": "store"
+  },
   "sequences": {},
   "roles": {},
   "policies": {},
