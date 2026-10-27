@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="pg2 pg3">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>إتمام الطلب · LUBAN &amp; MUSK</title>
+<meta name="robots" content="noindex">
+<!-- matches the paper the page is drawn on; see index.html -->
+<meta name="theme-color" content="#1b1a19">
+<!-- iOS: stop Safari inventing tel: links out of prices and references -->
+<meta name="format-detection" content="telephone=no">
+<meta name="build" content="__BUILD_ID__">   <!-- see index.html -->
+<link rel="preconnect" href="https://sc-static.net" crossorigin>
+<!-- fonts load without blocking the first paint; display=swap shows text immediately -->
+<link rel="preload" as="style"
+      href="/assets/fonts/fonts.css?v=__ASSET_V__">
+<link rel="stylesheet" media="print" onload="this.media='all'"
+      href="/assets/fonts/fonts.css?v=__ASSET_V__">
+<noscript><link rel="stylesheet"
+      href="/assets/fonts/fonts.css?v=__ASSET_V__"></noscript>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!-- The catalogue is the one thing every price on the page waits for.
+     Asking for it here, while the HTML is still parsing, puts it on the
+     wire before any script has downloaded; store.js consumes this
+     preload instead of starting a fresh request. -->
+<link rel="preload" as="fetch" href="/api/settings" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/assets/fonts/ibmplexsansarabic-v15-Qw3CZRtWPQCuHme67tEYUIx3Kh0PHR9N6Ys43PWrfQ.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/assets/fonts/cormorantgaramond-v21-co3bmX5slCNuHLi8bLeY9MK7whWMhyjYqXtK.woff2" crossorigin>
+<!-- THE REMEMBERED LANGUAGE. The store is Arabic; English is the same
+     store at /en/ (generated from this page by scripts/make-en.js). A
+     shopper who chose English lands there on the next visit — decided
+     here, before anything paints or any pixel fires (and just after the
+     catalogue's preload, which must be the first thing on the wire), so there is no
+     Arabic flash and no page view counted twice. ?lang=ar is the way
+     back: it is what the English page's عربي link carries, and it
+     records the choice and then leaves the address bar clean. -->
+<script id="lang-remember">
+(function () {
+  try {
+    var q = location.search;
+    if (/[?&]lang=ar(&|$)/.test(q)) {
+      localStorage.setItem("lm_lang", "ar");
+      var rest = q.replace(/([?&])lang=ar(&|$)/, function (m, a, b) { return b ? a : ""; }).replace(/[?&]$/, "");
+      history.replaceState(null, "", location.pathname + rest + location.hash);
+      return;
+    }
+    if (localStorage.getItem("lm_lang") === "en") {
+      var p = location.pathname;
+      /* leaving: nothing on this page is counted or relayed (v209) */
+      window.__lmLeaving = 1;
+      location.replace("/en/" + (/checkout/.test(p) ? "checkout.html" : /privacy/.test(p) ? "privacy.html" : "") + q + location.hash);
+    }
+  } catch (e) {}
+})();
+</script>
+<!-- TWO THINGS STARTED BEFORE ANYTHING ELSE (v204).
+     The country: a first-time visitor's prices wait for /api/geo, and it
+     used to be asked only once store.js had run — after the stylesheet
+     and every script had arrived. It leaves now, while the HTML is still
+     parsing; store.js picks the answer up (window.__lmGeo). Only when it
+     will be used: never with ?country= or a country the shopper chose,
+     and not on a page that is about to move to /en/. The answer is kept
+     for the tab (sessionStorage lm_geo), so the next page does not ask
+     again — for the tab only, never as the shopper's choice.
+     The ad pixels: their libraries (Meta's alone is ~260 KB of script)
+     are fetched once the store has drawn itself — after its first
+     render, at the first quiet moment, or at the first tap or scroll,
+     whichever is first, and never later than 3.5s after the page is
+     parsed. Every event is queued by the stubs below as before, and
+     pixel.js relays the page view to the servers at once, so nothing is
+     lost; the page simply stops sharing its first seconds with them. -->
+<script id="early">
+(function () {
+  try {
+    if (/[?&]country=[A-Za-z]{2}/.test(location.search)) throw 0;
+    if (localStorage.getItem("lm_cty_v2")) throw 0;
+    if (document.documentElement.lang !== "en" && localStorage.getItem("lm_lang") === "en") throw 0;
+    var seen = sessionStorage.getItem("lm_geo");
+    window.__lmGeo = seen ? Promise.resolve(seen)
+      : fetch("/api/geo", { cache: "no-store" })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (j) { return (j && j.country) || null; })
+          .catch(function () { return null; });
+  } catch (e) {}
+
+  var q = [], fired = false;
+  function run() {
+    if (fired || window.__lmLeaving) return;
+    fired = true;
+    for (var i = 0; i < q.length; i++) { try { q[i](); } catch (e) {} }
+    q = null;
+  }
+  window.lmLater = function (f) { if (fired) f(); else q.push(f); };
+  function parsed() {
+    var idle = function () { (window.requestIdleCallback || function (f) { setTimeout(f, 1); })(run, { timeout: 1200 }); };
+    var r = window.LM && window.LM.ready;
+    if (r && r.then) r.then(idle, idle); else idle();
+    setTimeout(run, 3500);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", parsed);
+  else parsed();
+  ["pointerdown", "keydown", "scroll"].forEach(function (t) {
+    try { addEventListener(t, run, { once: true, passive: true }); } catch (e) {}
+  });
+})();
+</script>
+<link rel="stylesheet" href="assets/css/style.css" media="all">
+<!-- v337: the desktop store (v400: from 768px, a half-screen window too); never applied below, so the phone layout is untouched -->
+<link rel="stylesheet" href="assets/css/desktop.css" media="(min-width: 768px)">
+<!-- (v336) THE PAGE'S SHAPE BEFORE IT PAINTS. The summary lines, the
+     delivery bar and the sampler arrive with the catalogue, and the form
+     jumped down under them (CLS 0.23 on a phone; 0.35 when the basket
+     was empty and the form vanished). The basket's length is readable
+     now, so its room is held (co-wait), and a page with no form says so
+     at once (co-none: empty basket; co-back: back from the gateway with
+     nothing to fill in). checkout.js lifts the marks once it has drawn
+     the real state (settle). -->
+<script id="co-hold">
+(function () {
+  var n = 0, h = document.documentElement, q = location.search || "";
+  try { n = (JSON.parse(sessionStorage.getItem("lm_cart")) || []).length; }
+  catch (e) { try { n = (JSON.parse(JSON.parse(window.name || "{}").lm_cart || "[]") || []).length; } catch (e2) {} }
+  if (/[?&]paid=/.test(q)) h.className += " co-back co-paid";
+  else if (!n && /[?&]cancelled=/.test(q)) h.className += " co-back";
+  else if (!n) h.className += " co-none";
+  else { h.className += " co-wait"; h.style.setProperty("--co-lines", String(Math.min(n, 8))); }
+})();
+</script>
+<style>
+/* (v336) checkout-only rules; style.css is shared with the product pages */
+html.co-none #co, html.co-back #co { display: none; }
+html.co-none #empty, html.co-paid #verifying { display: block !important; }
+html.co-wait #items:empty { min-height: calc(var(--co-lines, 1) * 95px); }
+html.co-wait #freeBar[hidden] { display: block; visibility: hidden; min-height: 179px; }
+html.co-wait #sampleBox[hidden] { display: block; visibility: hidden; min-height: 54px; }
+.f-err { margin: 6px 0 0; font-size: 12.5px; line-height: 1.5; color: #b4483c; }
+.f-err[hidden] { display: none; }
+.sum-item.sum-short { border-inline-start: 3px solid #b4483c; padding-inline-start: 10px; }
+.pm-fix { display: inline-block; margin-inline-start: 6px; padding: 4px 12px; border: 1px solid currentColor; border-radius: 100px; font-size: 12.5px; font-weight: 600; color: inherit; background: transparent; }
+#returned #retWhat { margin-bottom: 6px; color: var(--ink); }
+#returned .btn { margin-top: 4px; }
+</style>
+<!-- Snap Pixel Code -->
+<script type='text/javascript'>
+(function(e,t,n){if(e.snaptr)return;var a=e.snaptr=function()
+{a.handleRequest?a.handleRequest.apply(a,arguments):a.queue.push(arguments)};
+a.queue=[];lmLater(function(){var r=t.createElement('script');r.async=!0;
+r.src=n;var u=t.getElementsByTagName('script')[0];
+u.parentNode.insertBefore(r,u);});})(window,document,
+'https://sc-static.net/scevent.min.js');
+
+/* Advanced matching: a shopper who has ordered before has their SHA-256
+   phone hash stored locally, and passing it at INIT attaches it to every
+   event including this PAGE_VIEW. Passing it per-event would miss the
+   page view entirely, which is what the Snap audit flagged. Only the
+   hash is ever stored or sent — never the number. It is the hash of the
+   NORMALISED number (digits, country code, no '+'), the one both servers
+   send; lm_ph_v2, because the old key held one of the number as typed.
+   Also stash the ad click id so later events can be tied back to it. */
+(function () {
+  var u = {};
+  try {
+    var p = localStorage.getItem('lm_ph_v2');
+    if (p && /^[a-f0-9]{64}$/.test(p)) u.user_hashed_phone_number = p;
+  } catch (e) {}
+  try {
+    var c = new URLSearchParams(location.search).get('ScCid');
+    if (c) sessionStorage.setItem('lm_sccid', c.slice(0, 128));
+  } catch (e) {}
+  snaptr('init', '__SNAP_PIXEL_ID__', u);
+
+  /* One id shared by the pixel's PAGE_VIEW and the server relay that
+     pixel.js sends for it, so Snap counts the pair once. */
+  var id;
+  try { id = crypto.randomUUID(); }
+  catch (e) { id = 'pv-' + Date.now() + '-' + Math.random().toString(16).slice(2, 10); }
+  window.__lmPageView = id;
+  snaptr('track', 'PAGE_VIEW', { client_dedup_id: id });
+})();
+</script>
+<!-- End Snap Pixel Code -->
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];lmLater(function(){t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)});}(window,
+document,'script','https://connect.facebook.net/en_US/fbevents.js');
+
+/* The dataset (pixel) id, from Events Manager > Data Sources. It is
+   public: it appears in this page's source either way. Netlify must carry
+   the SAME value as META_PIXEL_ID, or the browser pixel and the server
+   relay will report to two different datasets and nothing will dedupe.
+   tests/test-meta.js fails if this is ever left as a placeholder. */
+(function () {
+  var PIXEL_ID = '__META_PIXEL_ID__';
+
+  /* Stash the click id on the landing page. The pixel only writes _fbc on
+     the page carrying ?fbclid=, so a shopper who navigates before it
+     loads would lose the attribution; pixel.js rebuilds the cookie from
+     this when _fbc is missing. */
+  try {
+    var fbclid = new URLSearchParams(location.search).get('fbclid');
+    if (fbclid && !sessionStorage.getItem('lm_fbclid')) {
+      /* whole: a clipped click id is a different id — see _meta.js clickId */
+      sessionStorage.setItem('lm_fbclid', fbclid + '|' + Date.now());
+    }
+  } catch (e) {}
+
+  /* Advanced matching, the same as Snap's above: the normalised-phone
+     hash of a shopper who has ordered before, as ph and as external_id —
+     the id the server sends with every event for this shopper. */
+  var am = {};
+  try {
+    var ph = localStorage.getItem('lm_ph_v2');
+    if (ph && /^[a-f0-9]{64}$/.test(ph)) { am.ph = ph; am.external_id = ph; }
+    /* v321: the rest of what a past order taught us — first name, last
+       name, city, email — kept as SHA-256 hashes only (pixel.js writes
+       them at Purchase, normalised as the server normalises them), so
+       nothing personal leaves the browser in the clear */
+    var kept = JSON.parse(localStorage.getItem('lm_am_v1') || '{}');
+    ['em', 'fn', 'ln', 'ct'].forEach(function (k) { if (/^[a-f0-9]{64}$/.test(kept[k] || '')) am[k] = kept[k]; });
+  } catch (e) {}
+  /* v321: the market — the address's country, else the shopper's kept
+     pick — in the two-letter form Meta matches on (the pixel hashes it) */
+  try {
+    var cm = /[?&]country=([A-Za-z]{2})(&|$)/.exec(location.search);
+    var cc = (cm ? cm[1] : (localStorage.getItem('lm_cty_v2') || '')).toLowerCase();
+    if (/^[a-z]{2}$/.test(cc)) am.country = cc;
+  } catch (e) {}
+  /* v315: a first-party visitor id (random, 64 hex — no personal data)
+     for a shopper not yet known by phone: the external_id the server
+     copies of every event carry too */
+  if (!am.external_id) {
+    try {
+      var vid = localStorage.getItem('lm_vid');
+      if (!/^[a-f0-9]{64}$/.test(vid || '')) {
+        var r = new Uint8Array(32); crypto.getRandomValues(r);
+        vid = Array.prototype.map.call(r, function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+        localStorage.setItem('lm_vid', vid);
+      }
+      am.external_id = vid;
+    } catch (e) {}
+  }
+  fbq('init', PIXEL_ID, am);
+
+  /* One id shared by this PageView and the server twin pixel.js relays
+     for it, so Meta counts the pair once. */
+  var id;
+  try { id = crypto.randomUUID(); }
+  catch (e) { id = 'fbpv-' + Date.now() + '-' + Math.random().toString(16).slice(2, 10); }
+  window.__lmFbPageView = id;
+  fbq('track', 'PageView', {}, { eventID: id });
+})();
+</script>
+<noscript><img height="1" width="1" style="display:none" alt=""
+src="https://www.facebook.com/tr?id=__META_PIXEL_ID__&ev=PageView&noscript=1"></noscript>
+<!-- End Meta Pixel Code -->
+<script type="module" src="/src/web/entries/checkout.ts"></script>
+</head>
+<body>
+
+<!-- Netlify Forms endpoint (hidden). Orders are POSTed here by checkout.js. -->
+<form name="orders" netlify netlify-honeypot="bot-field" hidden>
+  <input type="text" name="id"><input type="text" name="date"><input type="text" name="name">
+  <input type="text" name="phone"><input type="text" name="country"><input type="text" name="city"><input type="text" name="region">
+  <input type="text" name="note"><input type="text" name="pay"><input type="text" name="items">
+  <input type="text" name="total"><input type="text" name="email"><input type="text" name="charged">
+  <input type="text" name="bot-field">
+</form>
+
+<header class="hdr" id="hdr">
+  <div class="hdr-bar">
+    <a class="home" href="index.html" aria-label="الرئيسية">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path fill-rule="evenodd" d="M24 5.8 4.6 21.6a3 3 0 0 0-1.1 2.3v15.5a4.6 4.6 0 0 0 4.6 4.6h31.8a4.6 4.6 0 0 0 4.6-4.6V23.9a3 3 0 0 0-1.1-2.3L24 5.8Zm0 5.9 14.5 11.8v15.9c0 .6-.5 1.1-1.1 1.1H30V33.4a6 6 0 0 0-12 0V40.5h-7.4c-.6 0-1.1-.5-1.1-1.1V23.5L24 11.7Z"/><path d="M21.6 40.5v-7.1a2.4 2.4 0 0 1 4.8 0v7.1h-4.8Z"/></svg>
+    </a>
+    <div class="hdr-stack">
+      <div class="hdr-in">
+        <a class="logo" href="index.html">Luban <b>&amp;</b> Musk</a>
+      </div>
+      <div class="ship-bar" aria-live="polite">
+        <span class="ship-track">
+          <i id="shipFill"></i>
+          <span class="ship-txt" id="shipTxt"></span>
+        </span>
+      </div>
+    </div>
+    <!-- THE LANGUAGE SWITCH: EN / عربي, a round two-way control beside
+         the basket. The current language is lit; the other is a plain
+         link, so it works before — and without — any script. -->
+    <nav class="lang" aria-label="Language · اللغة">
+      <a href="en/checkout.html" lang="en" hreflang="en" data-lang="en">EN</a>
+      <a href="checkout.html" lang="ar" hreflang="ar" data-lang="ar" aria-current="page">عربي</a>
+    </nav>
+    <a class="cart" href="checkout.html" aria-label="السلة">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M15.2 15.6a8.8 8.8 0 0 1 17.6 0h-3.7a5.1 5.1 0 0 0-10.2 0Z"/><path d="M11.6 17.8h24.8c2.3 0 4 2 3.7 4.3l-2 14.9c-.4 3.3-3.2 5.8-6.5 5.8H16.4c-3.3 0-6.1-2.5-6.5-5.8l-2-14.9c-.3-2.3 1.4-4.3 3.7-4.3Z"/></svg>
+      <b id="cartCount" hidden>0</b>
+    </a>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- the page's one h1, for screen readers: the sections below are h2s (v202) -->
+  <h1 class="sr-only">إتمام الطلب</h1>
+  <div class="co" id="co">
+
+    <!-- How far this basket is from free delivery. The header carries the
+         same bar, but it is half a line tall and only appears once the
+         page is scrolled — by which point the shopper is filling in an
+         address and is not looking at it. Here it sits above the first
+         heading, always visible, and says the amount outright.
+
+         Hidden until painted: the threshold comes from the catalogue, so
+         until the country is known there is no honest number to show —
+         and a bar at 0% is a claim in itself. -->
+    <div class="free-bar" id="freeBar" hidden>
+      <div class="free-prog" id="freeProg" aria-live="polite" hidden>
+        <p class="free-msg" id="freeMsg"></p>
+        <span class="ship-track"><i id="freeFill"></i></span>
+      </div>
+      <!-- The next best-seller they have not got, in the small box (the
+           large one where the small cannot be sold), pictured as that
+           box with the scent's chip, like the cart: one
+           tap, and it is the cheapest thing on the shelf, so it is also
+           the likeliest way to close the gap above. Its own row, and its
+           own hidden flag — a market with no free-delivery threshold set
+           still has a shelf worth suggesting from. -->
+      <button type="button" class="free-add" id="freeAdd" hidden>
+        <span class="fa-art" id="faArt" aria-hidden="true"></span>
+        <span class="fa-txt"><b id="faName"></b><em id="faNote"></em></span>
+        <span class="fa-cta">أضف <span id="faPrice"></span></span>
+      </button>
+
+      <!-- The shop's add-ons: the burner the resin goes in, and
+           anything else the shop puts on this shelf. Not the same offer
+           as the row above — that one is closing a gap and stops once
+           free delivery is reached; these are on the shelf whatever the
+           basket is worth, and each is offered once. Built by header.js
+           from the catalogue, so a market that has not priced one
+           simply does not show it. -->
+      <div class="extras" id="freeExtras" hidden></div>
+    </div>
+
+    <!-- The sampler, outside the delivery card on purpose: it is not
+         about postage, it is about the scents. Its picture is the
+         scents themselves, greying as they go into the basket, and the
+         whole block disappears once every one of them is in there —
+         there is nothing left to sample. -->
+    <div class="samples" id="sampleBox" hidden></div>
+
+    <form id="form" novalidate>
+      <h2>التوصيل</h2>
+
+      <div class="f">
+        <label for="name">اسم المستلم</label>
+        <!-- 120 to match what /api/order stores. At 60 a long Gulf name —
+             given name, father, grandfather, family — was silently cut as
+             it was typed, and the invoice then showed a name the customer
+             never entered. -->
+        <input id="name" type="text" inputmode="text" autocomplete="name"
+               autocapitalize="words" spellcheck="false" maxlength="120"
+               placeholder="الاسم الكامل">
+      </div>
+
+      <div class="f-row">
+        <div class="f">
+          <label for="country">الدولة</label>
+          <select id="country">
+            <option value="971" selected>الإمارات</option>
+            <option value="966">السعودية</option>
+            <option value="974">قطر</option>
+            <option value="965">الكويت</option>
+            <option value="973">البحرين</option>
+            <option value="968">عمان</option>
+          </select>
+        </div>
+        <div class="f">
+          <label for="city">المدينة</label>
+          <select id="city" autocomplete="address-level2"></select>
+        </div>
+      </div>
+
+      <div class="f">
+        <label for="region">المنطقة</label>
+        <!-- The only address field with no autocomplete token, so iOS and
+             Android offered to fill the name, the city and the phone and
+             then went quiet on the one line that is hardest to type on a
+             phone. `address-line1` is what both platforms map the street
+             and neighbourhood to. -->
+        <input id="region" type="text" autocomplete="address-line1"
+               placeholder="الحي أو اسم الشارع">
+      </div>
+
+      <div class="f">
+        <label for="phone">رقم الجوال</label>
+        <div class="tel">
+          <span class="tel-code" id="dial" dir="ltr">+971</span>
+          <!-- The placeholder is rewritten per country by syncPhone() in
+               checkout.js; this is the UAE one, matching the +971 the
+               dial span starts on. No maxlength: it is a hint, not a
+               gate. A cap cannot be argued with, and a shopper whose
+               number does not fit the assumed shape would just stop
+               being able to type with no error to read. -->
+          <!-- (v336) tel-national: the +code is the box beside it, so an
+               autofilled number without its country code is what fits -->
+          <input id="phone" type="tel" inputmode="numeric" autocomplete="tel-national"
+                 pattern="[0-9]*" placeholder="5X XXX XXXX" aria-describedby="phoneErr">
+          <!-- v312: how many digits the market's mobile takes, counted as
+               typed — red under or over, green on it; a guide, not a gate -->
+          <span class="tel-count" id="telCount" aria-hidden="true" hidden>0/9</span>
+        </div>
+        <!-- (v404) the note under the counter: "أدخل رقمًا صحيحًا" in red-orange
+             until the number is the market's length, then "رقم صحيح ✓" in green -->
+        <p class="tel-note" id="telNote" aria-live="polite" hidden></p>
+        <!-- (v336) what is wrong with the number, said under it on submit -->
+        <p class="f-err" id="phoneErr" hidden></p>
+      </div>
+
+      <!-- Optional, and labelled as optional rather than marked with a
+           quiet asterisk. There is no marketing opt-in on this form, so
+           the address may only be used for the order it was given with —
+           privacy.html states that, and it has to keep matching what the
+           store actually does. -->
+      <div class="f">
+        <label for="email">البريد الإلكتروني <span class="opt-tag">اختياري</span></label>
+        <input id="email" type="email" inputmode="email" autocomplete="email"
+               spellcheck="false" maxlength="120" dir="ltr">
+      </div>
+
+      <div class="f">
+        <label for="note">ملاحظة <span class="opt-tag">اختياري</span></label>
+        <textarea id="note" rows="2" placeholder="اكتب هنا..."></textarea>
+      </div>
+
+      <div class="pays" id="pays" role="radiogroup" aria-label="طريقة الدفع">
+        <button type="button" class="pay" role="radio" aria-checked="true" data-pay="card">
+          <i></i><span>بطاقة الخصم المباشر</span>
+          <span class="brands"><svg class="brand" viewBox="0 0 38 24" role="img" aria-label="Visa"><rect width="38" height="24" rx="4" fill="#fff"/><path d="M9.22 8.31L10.87 8.31L11.62 13.01L14.24 8.31L15.89 8.31L12.26 14.68L10.3 14.68L9.22 8.31ZM16.73 8.31L18.37 8.31L17.1 14.68L15.46 14.68L16.73 8.31ZM24.37 8.52L24.1 9.86Q23.62 9.63 23.15 9.51Q22.67 9.39 22.23 9.39Q21.64 9.39 21.33 9.55Q21.01 9.71 20.95 10.05Q20.89 10.31 21.05 10.45Q21.22 10.59 21.69 10.7L22.36 10.84Q23.38 11.05 23.74 11.49Q24.11 11.92 23.94 12.72Q23.73 13.77 23.01 14.29Q22.28 14.8 21 14.8Q20.39 14.8 19.81 14.69Q19.22 14.57 18.65 14.34L18.93 12.96Q19.48 13.28 20.01 13.45Q20.55 13.61 21.08 13.61Q21.61 13.61 21.94 13.43Q22.26 13.25 22.32 12.92Q22.38 12.62 22.22 12.46Q22.06 12.3 21.51 12.17L20.9 12.03Q19.99 11.83 19.63 11.38Q19.28 10.93 19.43 10.17Q19.62 9.22 20.34 8.71Q21.06 8.2 22.21 8.2Q22.73 8.2 23.27 8.28Q23.81 8.36 24.37 8.52ZM29.09 13.52L26.52 13.52L25.88 14.68L24.23 14.68L27.86 8.31L29.82 8.31L30.9 14.68L29.26 14.68L29.09 13.52ZM27.17 12.34L28.91 12.34L28.55 9.81L27.17 12.34Z" fill="#1434CB"/></svg><svg class="brand" viewBox="0 0 38 24" role="img" aria-label="Mastercard"><rect width="38" height="24" rx="4" fill="#fff"/><circle cx="15.6" cy="12" r="6.2" fill="#EB001B"/><circle cx="22.4" cy="12" r="6.2" fill="#F79E1B"/><path d="M19 7.2a6.2 6.2 0 0 0 0 9.6 6.2 6.2 0 0 0 0-9.6Z" fill="#FF5F00"/></svg><svg class="brand" viewBox="0 0 38 24" role="img" aria-label="American Express"><rect width="38" height="24" rx="4" fill="#1F72CF"/><path d="M11.67 12.9L9.65 12.9L9.33 13.81L8.03 13.81L9.89 8.8L11.43 8.8L13.28 13.81L11.98 13.81L11.67 12.9ZM9.97 11.97L11.34 11.97L10.66 9.97L9.97 11.97ZM13.95 8.8L15.59 8.8L16.73 11.48L17.88 8.8L19.52 8.8L19.52 13.81L18.3 13.81L18.3 10.14L17.14 12.84L16.32 12.84L15.17 10.14L15.17 13.81L13.95 13.81L13.95 8.8ZM20.78 8.8L24.27 8.8L24.27 9.78L22.07 9.78L22.07 10.71L24.14 10.71L24.14 11.68L22.07 11.68L22.07 12.83L24.34 12.83L24.34 13.81L20.78 13.81L20.78 8.8ZM28.26 11.25L30 13.81L28.66 13.81L27.49 12.1L26.32 13.81L24.97 13.81L26.71 11.25L25.04 8.8L26.39 8.8L27.49 10.41L28.58 8.8L29.93 8.8L28.26 11.25Z" fill="#fff"/></svg><svg class="brand" viewBox="0 0 38 24" role="img" aria-label="Apple Pay"><rect width="38" height="24" rx="4" fill="#fff"/><g fill="#000"><path d="M12.9 8.55c-.33.4-.87.71-1.4.66-.07-.54.19-1.11.5-1.46.33-.4.91-.69 1.39-.71.06.56-.16 1.11-.49 1.51Z"/><path d="M13.39 9.31c-.77-.04-1.43.44-1.79.44-.37 0-.93-.42-1.53-.41-.79.01-1.52.46-1.92 1.17-.82 1.42-.21 3.52.59 4.67.39.57.86 1.2 1.48 1.18.59-.02.81-.38 1.52-.38.71 0 .91.38 1.53.37.63-.01 1.03-.57 1.42-1.14.45-.65.63-1.29.64-1.32-.01-.01-1.23-.48-1.24-1.88-.01-1.17.95-1.73 1-1.76-.55-.8-1.39-.89-1.7-.94Z"/><path d="M19.91 9.02L19.91 11.13L20.86 11.13Q21.39 11.13 21.68 10.85Q21.97 10.58 21.97 10.07Q21.97 9.57 21.68 9.3Q21.39 9.02 20.86 9.02L19.91 9.02ZM19.15 8.4L20.86 8.4Q21.81 8.4 22.29 8.83Q22.77 9.25 22.77 10.07Q22.77 10.9 22.29 11.33Q21.81 11.75 20.86 11.75L19.91 11.75L19.91 14L19.15 14L19.15 8.4ZM25.32 11.89Q24.49 11.89 24.16 12.08Q23.84 12.27 23.84 12.73Q23.84 13.1 24.08 13.32Q24.32 13.53 24.74 13.53Q25.31 13.53 25.66 13.13Q26.01 12.72 26.01 12.04L26.01 11.89L25.32 11.89ZM26.7 11.6L26.7 14L26.01 14L26.01 13.36Q25.77 13.75 25.42 13.93Q25.07 14.11 24.56 14.11Q23.91 14.11 23.53 13.75Q23.15 13.39 23.15 12.78Q23.15 12.07 23.62 11.71Q24.1 11.35 25.04 11.35L26.01 11.35L26.01 11.28Q26.01 10.8 25.7 10.54Q25.38 10.28 24.82 10.28Q24.46 10.28 24.11 10.37Q23.77 10.46 23.46 10.63L23.46 9.99Q23.84 9.84 24.19 9.77Q24.55 9.7 24.89 9.7Q25.8 9.7 26.25 10.17Q26.7 10.64 26.7 11.6ZM29.87 14.39Q29.58 15.14 29.3 15.37Q29.02 15.6 28.56 15.6L28 15.6L28 15.02L28.41 15.02Q28.69 15.02 28.85 14.89Q29.01 14.75 29.2 14.25L29.32 13.93L27.63 9.8L28.36 9.8L29.67 13.09L30.98 9.8L31.71 9.8L29.87 14.39Z"/></g></svg></span><em>مجانا</em>
+        </button>
+        <button type="button" class="pay" role="radio" aria-checked="false" data-pay="cod">
+          <i></i><span>الدفع عند الاستلام</span><em>+ 10 AED</em>
+        </button>
+      </div>
+
+
+      <p class="pay-msg" id="payMsg" hidden role="alert"></p>
+
+      <div class="pay-hl" id="payHl">
+        <span class="k">المبلغ المستحق</span>
+        <span class="v"><span id="hlLocal">—</span><i>≈</i><b id="hlOmr">—</b></span>
+      </div>
+      <button class="btn btn-go" id="confirm" type="submit" style="margin-top:14px">ادفع الآن</button>
+      <!-- (v443) card: a fifteen-second countdown before the gateway (checkout.js payWait) -->
+      <p class="pay-wait" id="payWait" role="status" hidden><span class="pw-n" id="payWaitN" aria-hidden="true">15</span><span class="pw-t">جارٍ تجهيز بوابة الدفع الآمنة، لا تغلق الصفحة</span></p>
+      <a class="btn btn-support" href="https://wa.me/96876655565" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.4a9.6 9.6 0 0 0-8.2 14.6L2.5 21.5l4.6-1.2A9.6 9.6 0 1 0 12 2.4Z"/><path d="M9 8.3c.2-.5.4-.5.7-.5h.6c.2 0 .4 0 .6.5l.8 1.9c.1.2 0 .4-.1.6l-.5.6c-.2.2-.2.4-.1.6a6.8 6.8 0 0 0 3 2.6c.2.1.4.1.6-.1l.6-.6c.2-.2.4-.2.6-.1l1.8.9c.3.1.4.3.4.5v.7c0 .4-.2.8-.6 1-.5.4-1.1.5-1.8.4-1.5-.2-3.3-1.2-4.8-2.7S8.5 11.5 8.3 10c-.1-.6.1-1.3.5-1.7Z"/></svg><span>تحدث مع خدمة العملاء</span></a>
+    </form>
+
+    <aside class="sum">
+      <h3>الطلب</h3>
+      <div id="items"></div>
+      <div class="sum-line"><span>المجموع</span><span id="sub">—</span></div>
+      <div class="sum-line"><span>الشحن</span><span class="sum-pair"><span id="ship">—</span><s id="shipWas" hidden></s></span></div>
+      <div class="sum-line" id="codRow"><span>الدفع عند الاستلام</span><span id="cod">—</span></div>
+      <div class="sum-line saved-line" id="savedRow" style="display:none">
+        <span>وفرت</span><span id="saved">—</span>
+      </div>
+      <div class="sum-total"><span class="t">الإجمالي</span><span class="v" id="total">—</span></div>
+      <p class="sum-note" id="totalNote">جميع المدفوعات تخصم بالريال العماني</p>
+      <p class="sum-fx" id="sumFx" hidden><span dir="ltr" id="sumFxV"></span></p>
+    </aside>
+
+  </div>
+
+  <div class="co-msg" id="empty" style="display:none">
+    <h2>السلة فارغة</h2>
+    <p>اختر رائحتك وابدأ.</p>
+    <a class="btn btn-ghost" href="index.html">العودة للمتجر</a>
+  </div>
+
+  <div class="co-msg" id="verifying" style="display:none">
+    <h2>جار تأكيد الدفع</h2>
+    <p>لحظة واحدة، لا تغلق الصفحة.</p>
+    <div class="spin" aria-hidden="true"></div>
+  </div>
+
+  <!-- (v336) back from the gateway with no basket in this tab: the
+       order, what happened, what to do next. Filled by checkout.js. -->
+  <div class="co-msg" id="returned" style="display:none" role="status">
+    <h2 id="retHead"></h2>
+    <p id="retWhat"></p>
+    <p id="retNext"></p>
+    <a class="btn btn-support" id="retWa" href="https://wa.me/96876655565" target="_blank" rel="noopener"></a>
+  </div>
+
+  <div class="co-msg" id="done" style="display:none">
+    <h2 id="doneHead">تم استلام طلبك</h2>
+    <p>رقم الطلب <span id="orderNo"></span>، سنتواصل معك عبر واتساب.</p>
+    <a class="btn btn-ghost" href="index.html">متابعة التسوق</a>
+  </div>
+</main>
+
+<footer class="ftr">
+  <div class="ftr-social">
+    <a href="https://wa.me/96876655565" target="_blank" rel="noopener" aria-label="واتساب"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.4a9.6 9.6 0 0 0-8.2 14.6L2.5 21.5l4.6-1.2A9.6 9.6 0 1 0 12 2.4Z"/><path d="M9 8.3c.2-.5.4-.5.7-.5h.6c.2 0 .4 0 .6.5l.8 1.9c.1.2 0 .4-.1.6l-.5.6c-.2.2-.2.4-.1.6a6.8 6.8 0 0 0 3 2.6c.2.1.4.1.6-.1l.6-.6c.2-.2.4-.2.6-.1l1.8.9c.3.1.4.3.4.5v.7c0 .4-.2.8-.6 1-.5.4-1.1.5-1.8.4-1.5-.2-3.3-1.2-4.8-2.7S8.5 11.5 8.3 10c-.1-.6.1-1.3.5-1.7Z"/></svg></a>
+    <a href="https://www.instagram.com/lubanandmusk/" target="_blank" rel="noopener" aria-label="إنستغرام"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.2" y="3.2" width="17.6" height="17.6" rx="5.2"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.1" cy="6.9" r="1.15" fill="currentColor" stroke="none"/></svg></a>
+  </div>
+  <a class="ftr-num" href="tel:+96876655565" dir="ltr">+968 7665 5565</a>
+  <a class="ftr-link" href="privacy.html">الخصوصية والاسترجاع</a>
+  <div class="ftr-pay" aria-label="طرق الدفع المقبولة"><svg class="brand" viewBox="0 0 38 24" role="img" aria-label="Visa"><rect width="38" height="24" rx="4" fill="#fff"/><path d="M9.22 8.31L10.87 8.31L11.62 13.01L14.24 8.31L15.89 8.31L12.26 14.68L10.3 14.68L9.22 8.31ZM16.73 8.31L18.37 8.31L17.1 14.68L15.46 14.68L16.73 8.31ZM24.37 8.52L24.1 9.86Q23.62 9.63 23.15 9.51Q22.67 9.39 22.23 9.39Q21.64 9.39 21.33 9.55Q21.01 9.71 20.95 10.05Q20.89 10.31 21.05 10.45Q21.22 10.59 21.69 10.7L22.36 10.84Q23.38 11.05 23.74 11.49Q24.11 11.92 23.94 12.72Q23.73 13.77 23.01 14.29Q22.28 14.8 21 14.8Q20.39 14.8 19.81 14.69Q19.22 14.57 18.65 14.34L18.93 12.96Q19.48 13.28 20.01 13.45Q20.55 13.61 21.08 13.61Q21.61 13.61 21.94 13.43Q22.26 13.25 22.32 12.92Q22.38 12.62 22.22 12.46Q22.06 12.3 21.51 12.17L20.9 12.03Q19.99 11.83 19.63 11.38Q19.28 10.93 19.43 10.17Q19.62 9.22 20.34 8.71Q21.06 8.2 22.21 8.2Q22.73 8.2 23.27 8.28Q23.81 8.36 24.37 8.52ZM29.09 13.52L26.52 13.52L25.88 14.68L24.23 14.68L27.86 8.31L29.82 8.31L30.9 14.68L29.26 14.68L29.09 13.52ZM27.17 12.34L28.91 12.34L28.55 9.81L27.17 12.34Z" fill="#1434CB"/></svg><svg class="brand" viewBox="0 0 38 24" role="img" aria-label="Mastercard"><rect width="38" height="24" rx="4" fill="#fff"/><circle cx="15.6" cy="12" r="6.2" fill="#EB001B"/><circle cx="22.4" cy="12" r="6.2" fill="#F79E1B"/><path d="M19 7.2a6.2 6.2 0 0 0 0 9.6 6.2 6.2 0 0 0 0-9.6Z" fill="#FF5F00"/></svg><svg class="brand" viewBox="0 0 38 24" role="img" aria-label="American Express"><rect width="38" height="24" rx="4" fill="#1F72CF"/><path d="M11.67 12.9L9.65 12.9L9.33 13.81L8.03 13.81L9.89 8.8L11.43 8.8L13.28 13.81L11.98 13.81L11.67 12.9ZM9.97 11.97L11.34 11.97L10.66 9.97L9.97 11.97ZM13.95 8.8L15.59 8.8L16.73 11.48L17.88 8.8L19.52 8.8L19.52 13.81L18.3 13.81L18.3 10.14L17.14 12.84L16.32 12.84L15.17 10.14L15.17 13.81L13.95 13.81L13.95 8.8ZM20.78 8.8L24.27 8.8L24.27 9.78L22.07 9.78L22.07 10.71L24.14 10.71L24.14 11.68L22.07 11.68L22.07 12.83L24.34 12.83L24.34 13.81L20.78 13.81L20.78 8.8ZM28.26 11.25L30 13.81L28.66 13.81L27.49 12.1L26.32 13.81L24.97 13.81L26.71 11.25L25.04 8.8L26.39 8.8L27.49 10.41L28.58 8.8L29.93 8.8L28.26 11.25Z" fill="#fff"/></svg><svg class="brand" viewBox="0 0 38 24" role="img" aria-label="Apple Pay"><rect width="38" height="24" rx="4" fill="#fff"/><g fill="#000"><path d="M12.9 8.55c-.33.4-.87.71-1.4.66-.07-.54.19-1.11.5-1.46.33-.4.91-.69 1.39-.71.06.56-.16 1.11-.49 1.51Z"/><path d="M13.39 9.31c-.77-.04-1.43.44-1.79.44-.37 0-.93-.42-1.53-.41-.79.01-1.52.46-1.92 1.17-.82 1.42-.21 3.52.59 4.67.39.57.86 1.2 1.48 1.18.59-.02.81-.38 1.52-.38.71 0 .91.38 1.53.37.63-.01 1.03-.57 1.42-1.14.45-.65.63-1.29.64-1.32-.01-.01-1.23-.48-1.24-1.88-.01-1.17.95-1.73 1-1.76-.55-.8-1.39-.89-1.7-.94Z"/><path d="M19.91 9.02L19.91 11.13L20.86 11.13Q21.39 11.13 21.68 10.85Q21.97 10.58 21.97 10.07Q21.97 9.57 21.68 9.3Q21.39 9.02 20.86 9.02L19.91 9.02ZM19.15 8.4L20.86 8.4Q21.81 8.4 22.29 8.83Q22.77 9.25 22.77 10.07Q22.77 10.9 22.29 11.33Q21.81 11.75 20.86 11.75L19.91 11.75L19.91 14L19.15 14L19.15 8.4ZM25.32 11.89Q24.49 11.89 24.16 12.08Q23.84 12.27 23.84 12.73Q23.84 13.1 24.08 13.32Q24.32 13.53 24.74 13.53Q25.31 13.53 25.66 13.13Q26.01 12.72 26.01 12.04L26.01 11.89L25.32 11.89ZM26.7 11.6L26.7 14L26.01 14L26.01 13.36Q25.77 13.75 25.42 13.93Q25.07 14.11 24.56 14.11Q23.91 14.11 23.53 13.75Q23.15 13.39 23.15 12.78Q23.15 12.07 23.62 11.71Q24.1 11.35 25.04 11.35L26.01 11.35L26.01 11.28Q26.01 10.8 25.7 10.54Q25.38 10.28 24.82 10.28Q24.46 10.28 24.11 10.37Q23.77 10.46 23.46 10.63L23.46 9.99Q23.84 9.84 24.19 9.77Q24.55 9.7 24.89 9.7Q25.8 9.7 26.25 10.17Q26.7 10.64 26.7 11.6ZM29.87 14.39Q29.58 15.14 29.3 15.37Q29.02 15.6 28.56 15.6L28 15.6L28 15.02L28.41 15.02Q28.69 15.02 28.85 14.89Q29.01 14.75 29.2 14.25L29.32 13.93L27.63 9.8L28.36 9.8L29.67 13.09L30.98 9.8L31.71 9.8L29.87 14.39Z"/></g></svg></div>
+  <span class="ftr-copy">© <span id="year">2026</span> LUBAN &amp; MUSK</span>
+</footer>
+
+</body>
+</html>

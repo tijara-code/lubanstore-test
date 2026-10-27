@@ -59,7 +59,7 @@ export async function createHarness(opts: HarnessOptions = {}) {
     env,
     fetch: world.fetch,
     now,
-    log: createLogger(() => db, { quiet: true }),
+    log: createLogger(() => db, { quiet: true, now }),
     services: createServices({ env, fetch: world.fetch, now }),
   };
   const app = createApp(deps);

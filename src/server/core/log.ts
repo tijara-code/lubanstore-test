@@ -39,9 +39,10 @@ function maskDeep(v: unknown, depth: number): unknown {
   return out;
 }
 
-export function createLogger(getDb: () => Db | null, opts: { quiet?: boolean } = {}): Logger {
+export function createLogger(getDb: () => Db | null, opts: { quiet?: boolean; now?: () => number } = {}): Logger {
   const write = async (entry: LogEntry) => {
     const row = {
+      at: new Date(opts.now ? opts.now() : Date.now()),
       level: entry.level || "error",
       side: entry.side || "server",
       source: entry.source || null,

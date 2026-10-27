@@ -1,0 +1,3727 @@
+/* ==========================================================
+   LUBAN & MUSK — identity v2
+   Sand → gold gradients · thin serif headings · maximum space
+   ========================================================== */
+
+:root {
+  /* neutrals */
+  --ink:      #1e1b18;
+  --ink-soft: #4a443d;
+  --muted:    #948c81;
+  --line:     #dcd6cc;
+  --paper:    #ededed;
+  --panel:    #ffffff;
+  --card:     #e3e0dc;   /* flavour card, same in both states */
+  --icon-off: #aca69e;   /* resting icon grey */
+
+  /* sand → gold */
+  --sand-50:  #fcfaf7;
+  --sand-100: #f6f0e7;
+  --sand-200: #ece0cf;
+  --gold:     #b8974f;
+  --gold-dp:  #8f7238;
+  --brand:    #dc7a47;   /* sampled from the printed box */
+  --berry:    #9c464c;   /* amber-toot accent, also the cart badge */
+  --leaf:     #2f6b4a;   /* confirm green */
+  --support:    #1f72cf; /* support blue, same blue as the card marks */
+  --support-dp: #175aa6;
+
+  /* comparison marks, drawn once and re-coloured wherever they are masked
+     in. The stroke colour inside the data URI is irrelevant — a mask uses
+     only the alpha channel. */
+  --tick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12.8 9.3 18 20 6.6'/%3E%3C/svg%3E");
+  --cross: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M7 7l10 10M17 7L7 17'/%3E%3C/svg%3E");
+
+  --grad-sand: linear-gradient(150deg, #faf5ee 0%, #f1e6d5 52%, #e6d4b6 100%);
+  --grad-gold: linear-gradient(100deg, #c8a75f 0%, #a8843d 100%);
+  /* the two steps below the gold, for a rating's unfilled stars: the
+     key stays visible so five positions hold their place, and the star
+     on it stays readable against that key */
+  --gold-sk:   #f3ece1;
+  --gold-dim:  #d3bd97;
+
+  /* A PRODUCT LINE, wherever it appears: its name, then the line under
+     it that says which one. It shows up four times — the scent rows in
+     the picker, the suggestion in the delivery bar, the checkout
+     summary and the cart drawer — and each had drifted to its own pair:
+     13/10.5, 13/10.5, 13.5/11.5 and 14/12. The same thing at four sizes
+     on three screens reads as three different shops. One pair now, in
+     one place. */
+  --pname: 13px;
+  --pnote: 10.5px;
+
+  --app: 480px;        /* the store always renders at mobile width */
+  --maxw: 100%;
+  /* Almarai — the face Salla's storefronts render in, and free to embed
+     (SIL Open Font Licence, served from Google Fonts). Salla's own
+     marketing site sets headings in Ping AR + LT, which is a Monotype
+     commercial licence and cannot be shipped without buying one; Almarai
+     is what the shop asked for and what its stores actually look like.
+
+     IBM Plex Sans Arabic stays second: it is already cached for anyone
+     who has visited before, and it is the closest metric match, so a
+     slow Almarai does not reflow the page into something unrecognisable.
+     Jannat is gone — it was never web-licensed and only ever applied to
+     the handful of people who happened to have it installed, which meant
+     the shop looked different to them than to everyone else. */
+  --sans:  "Almarai", "IBM Plex Sans Arabic", "Noto Sans Arabic",
+           -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --serif: var(--sans);
+  /* the packaging face (Optima) where a machine has it; the pages override
+     this with --lx-latin (Cormorant Garamond), so no web font is loaded for it */
+  --latin: "Optima", "Palatino Linotype", serif;
+}
+/* THE ENGLISH STORE (/en/) IS SET IN ARIAL — the shop's choice. Only the
+   text face changes: --serif follows --sans, so prices and headings go
+   with it, while the wordmark keeps the packaging face (--latin) on
+   both stores. Arial is on every Windows and Apple device, so nothing
+   is downloaded for it; scripts/make-en.js drops the two Arabic faces
+   from the English pages' font request, leaving only the wordmark's. */
+:root[lang="en"] {
+  --sans: Arial, "Helvetica Neue", Helvetica, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+  background: var(--paper);            /* backdrop spans the whole browser */
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--sans);
+  font-weight: 300;
+  font-size: 15px;
+  line-height: 1.9;
+  color: var(--ink);
+  background: var(--paper);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+
+  /* one mobile-width column, centred on any screen, seamless background */
+  width: 100%;
+  max-width: var(--app);
+  margin-inline: auto;
+  min-height: 100vh;
+  min-height: 100dvh;                  /* iOS: excludes the collapsing toolbar */
+  padding-bottom: calc(74px + env(safe-area-inset-bottom));
+}
+
+img { max-width: 100%; display: block; height: auto; }
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+ul { list-style: none; }
+
+/* ---------- Tap targets ----------
+   A finger is about 9mm across; a mouse pointer is one pixel. Several
+   controls here are drawn at 30–38px because that is the size the
+   design wants them to LOOK — the header's two circles, the trash, the
+   little steppers. Apple asks for 44pt, Android for 48dp, and on a
+   phone the difference between 32 and 44 is the difference between
+   tapping the bin and tapping nothing at all.
+
+   So the drawing stays exactly as it is and an invisible ::after grows
+   the touch area around it. Nothing moves, nothing reflows: the
+   pseudo-element is absolutely positioned and centred, so it bleeds
+   over the gaps either side without taking any space of its own.
+
+   Which controls get which treatment depends on what sits next to
+   them. An overlapping pair of targets is worse than a small one —
+   whichever paints later silently eats the other's edge — so the
+   steppers, whose buttons sit 30px apart with a number wedged between,
+   grow in HEIGHT only. The isolated round controls grow both ways. */
+.home, .cart, .drawer-x, .ci-del, .si-del,
+.qty.sm button, .ci-qty button { position: relative; }
+
+.home::after, .cart::after, .drawer-x::after,
+.ci-del::after, .si-del::after {
+  content: ""; position: absolute;
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 44px; height: 44px;
+}
+/* height only — see above */
+.qty.sm button::after, .ci-qty button::after {
+  content: ""; position: absolute;
+  top: 50%; left: 0; right: 0; transform: translateY(-50%);
+  height: 44px;
+}
+
+.wrap {
+  max-width: var(--maxw); margin-inline: auto;
+  padding-inline: max(22px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-left));
+}
+
+/* section divider — hairline · label · hairline */
+.label {
+  display: flex; align-items: center; gap: 16px;
+  font-size: 13.5px; color: var(--ink); font-weight: 400;
+}
+.label::before, .label::after {
+  content: ""; flex: 1; height: 1px; background: rgba(30,27,24,.35);
+}
+
+/* ---------- Header ---------- */
+.hdr {
+  position: sticky; top: 0; z-index: 50;
+  background: transparent; padding: 10px 14px;
+}
+
+/* floating capsule */
+.hdr-bar {
+  display: flex; align-items: center; gap: 10px;
+  height: 54px; padding: 0 8px; border-radius: 100px;
+  background: rgba(255,255,255,.72);
+  /* -webkit- FIRST, and not optional: Safari has never shipped the
+     unprefixed property, and iOS is most of this shop's traffic. Without
+     it the capsule is a 72%-opaque white bar with the page scrolling
+     legibly underneath — not broken, but the one element that is meant
+     to separate itself from the content behind it does not. */
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+          backdrop-filter: blur(16px) saturate(180%);
+  box-shadow: 0 2px 20px rgba(30,27,24,.08);
+}
+/* An engine with neither gets an opaque bar instead of a translucent
+   one. Legibility is not negotiable; the blur is. */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .hdr-bar { background: rgba(255,255,255,.95); }
+}
+
+.hdr-stack {
+  position: relative; flex: 1; order: 1; height: 38px;
+  border-radius: 100px; overflow: hidden;
+}
+.hdr-in, .ship-bar {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .5s cubic-bezier(.22,.61,.36,1), opacity .32s ease;
+}
+/* neither layer is interactive — only the cart icon is clickable */
+.hdr-stack { pointer-events: none; }
+.hdr-in { transform: translateY(0); opacity: 1; }
+.ship-bar { transform: translateY(100%); opacity: 0; }
+
+.hdr.alt .hdr-in { transform: translateY(-100%); opacity: 0; }
+.hdr.alt .ship-bar { transform: translateY(0); opacity: 1; }
+
+/* set exactly as printed on the box: mixed case, spaced ampersand, coral ink */
+.logo {
+  font-family: var(--latin); font-weight: 400;
+  font-size: 21px; letter-spacing: .3px;
+  color: var(--brand); white-space: nowrap; text-decoration: none;
+  /* -webkit- as well: Safari only took the unprefixed property in 17,
+     and without it a long press on the wordmark — easy to do while
+     scrolling one-handed — raises the selection handles and the
+     copy/look-up sheet over the page. */
+  cursor: default; user-select: none; -webkit-user-select: none;
+}
+.logo b { font-weight: 400; padding-inline: 1px; }
+
+/* free-shipping progress — grey track, gold fill from where the reading
+   starts (right in Arabic, left on /en/), no outline */
+/* The whole centre once the language switch took its share of the
+   capsule: at 72% of what was left, "30 OMR للتوصيل المجاني" no longer
+   fitted on a 390pt phone. */
+.ship-track {
+  position: relative; width: 100%; max-width: 280px; height: 100%;
+  border-radius: 100px; background: #d8d4cf; overflow: hidden;
+}
+.ship-track i {
+  position: absolute; top: 0; bottom: 0; inset-inline-start: 0; width: 0;
+  background: var(--grad-gold); border-radius: 100px;
+  transition: width .9s cubic-bezier(.22,.61,.36,1), background .4s ease;
+}
+.ship-track i.done { background: var(--leaf); }   /* threshold reached */
+.ship-txt {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(9.5px, 2.8vw, 11px);
+  /* one line when it fits; a longer message ("أضف للسلة ويصير التوصيل
+     مجاني") takes two inside the pill rather than being cut off */
+  text-align: center; line-height: 1.15; padding: 0 6px;
+  color: var(--ink); transition: color .4s ease;
+}
+.ship-txt.over { color: #fff; }
+
+/* home — RTL: sits at the far right */
+.home {
+  flex: 0 0 auto; order: 0;
+  display: grid; place-items: center;
+  width: 38px; height: 38px; border-radius: 50%; transition: background .2s;
+}
+.home:hover { background: rgba(30,27,24,.05); }
+.home svg { width: 21px; height: 21px; fill: var(--gold); stroke: none; }
+
+/* cart */
+.cart {
+  position: relative; flex: 0 0 auto; order: 3;   /* RTL: sits at the far left */
+  display: grid; place-items: center;
+  width: 38px; height: 38px; border-radius: 50%; transition: background .2s;
+}
+.cart:hover { background: rgba(30,27,24,.05); }
+.cart svg {
+  width: 22px; height: 22px; stroke: none;
+  fill: var(--icon-off);                 /* grey until something is in it */
+  transition: fill .45s ease;
+}
+.cart.filled svg { fill: var(--gold); }
+
+.cart b {
+  position: absolute; top: -1px; inset-inline-start: -2px;
+  min-width: 17px; height: 17px; padding: 0 4px; border-radius: 100px;
+  background: var(--berry); color: #fff;
+  font-family: var(--sans); font-size: 10px; font-weight: 500;
+  line-height: 17px; text-align: center;
+}
+.cart b[hidden] { display: none; }
+
+/* ---------- THE LANGUAGE SWITCH: EN / عربي ----------
+   A round two-way control between the centre and the basket, in the
+   capsule's own quiet grey: the language you are reading sits on a white
+   chip, the other is the link. Order 2 puts it beside the basket in
+   either direction — left of centre in Arabic, right of it on /en/. */
+.lang {
+  flex: 0 0 auto; order: 2;
+  display: inline-flex; align-items: center; gap: 2px;
+  height: 30px; padding: 3px; border-radius: 100px;
+  background: rgba(30,27,24,.06);
+}
+.lang a {
+  display: grid; place-items: center;
+  height: 24px; min-width: 30px; padding: 0 8px; border-radius: 100px;
+  font-size: 11.5px; font-weight: 600; line-height: 1;
+  color: var(--muted); text-decoration: none;
+  transition: background .2s ease, color .2s ease;
+}
+.lang a[lang="en"] { font-family: var(--sans); letter-spacing: .03em; }
+.lang a[aria-current="page"] {
+  background: #fff; color: var(--ink);
+  box-shadow: 0 1px 3px rgba(30,27,24,.12);
+  pointer-events: none;
+}
+.lang a:not([aria-current]):hover { color: var(--ink); }
+/* A 320pt phone has 276px of capsule for four things. The logo and the
+   gaps give a little so the switch keeps its full size. */
+@media (max-width: 359px) {
+  .hdr-bar { gap: 6px; }
+  .logo { font-size: 16px; }
+  .lang a { min-width: 27px; padding: 0 6px; }
+  /* scrolled, the centre holds the delivery line, which needs the room
+     more than a label for the language already on screen: only the
+     other language's link stays */
+  .hdr.alt .lang a[aria-current] { display: none; }
+}
+
+/* add-to-cart feedback */
+@keyframes lm-pop {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+.cart.pop { animation: lm-pop .5s cubic-bezier(.22,.61,.36,1); }
+.btn.ok { background: var(--grad-gold); }
+
+/* ==========================================================
+   PRODUCT
+   ========================================================== */
+.pdp { padding-bottom: 10px; }
+
+/* gallery — main panel + 4 stacked thumbs, equal total height */
+/* flex (not grid): the thumb column must never drive the row height —
+   it stretches to whatever the square main panel resolves to. */
+.gal {
+  display: flex; align-items: stretch;
+  gap: 10px;
+  padding: 10px 22px 0;
+}
+
+.gal-slides {
+  flex: 1 1 auto;
+  aspect-ratio: 1 / 1;
+  min-width: 0; min-height: 0;
+  border-radius: 20px; overflow: hidden;
+  background: var(--grad-sand);
+  display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+  /* Momentum. Without this, iOS before 13 stops the gallery dead the
+     instant a finger lifts — the flick that works everywhere else on
+     the phone just doesn't, and the strip feels broken rather than
+     stiff. Newer WebKit ignores the line; it costs nothing to keep. */
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; -ms-overflow-style: none;
+  /* Swiping past the last slide must not become a swipe past the PAGE.
+     Both Safari and Chrome on Android read a horizontal over-scroll at
+     the end of a strip as "go back", and this strip is the first thing
+     a thumb lands on. `contain` keeps the gesture in the gallery.
+
+     Deliberately no `touch-action` here: pinning it to pan-x would
+     stop the page scrolling when a finger starts on the photo — which
+     is most of them, the gallery being the top of the page — and any
+     value but `auto` also kills pinch-zoom on the one image a shopper
+     actually wants to zoom. The browser's own disambiguation is
+     better than anything declared here. */
+  overscroll-behavior-x: contain;
+}
+.gal-slides::-webkit-scrollbar { display: none; }
+.gal-slide { flex: 0 0 100%; height: 100%; min-width: 0; scroll-snap-align: center; }
+
+/* Safari took aspect-ratio in 15. Before that this box has no height of
+   its own and its slides ask for 100% OF NOTHING, so the hero image —
+   the first thing on the page — is simply absent. The padding-bottom
+   trick can't help a flex container, so state a height instead: ~72% of
+   the canvas is what the square resolves to once the thumb column and
+   the gutters are taken out, and the cap is that same sum at 480px.
+   Approximate on purpose. It is a floor, not the design. */
+@supports not (aspect-ratio: 1 / 1) {
+  .gal-slides { height: min(72vw, 347px); }
+}
+
+.gal-thumbs {
+  flex: 0 0 calc((100% - 40px) / 5);   /* keeps thumbs ≈ square */
+  display: flex; flex-direction: column; gap: 10px;
+  min-height: 0; height: auto;
+}
+.gal-thumbs button {
+  flex: 1 1 0; min-height: 0;
+  border-radius: 12px; overflow: hidden; padding: 0;
+  background: var(--grad-sand); opacity: .45;
+  transition: opacity .3s ease;
+}
+.gal-thumbs button[aria-current="true"] { opacity: 1; }
+
+.gal picture { display: block; height: 100%; }
+.gal img { width: 100%; height: 100%; object-fit: cover; }
+
+/* info */
+.info { padding: 34px 22px 0; }
+
+/* ==========================================================
+   THE FREE-DELIVERY STRIP
+
+   A solid green capsule directly above the bundle card: a white truck,
+   the offer in one line, a dot, and the days left in a lighter pill.
+   Green, not gold: gold on this page means "press here", and the
+   bundle's saving pill is already this green.
+
+   One line on every phone. Type, gaps and height come off clamp(), so
+   a 320pt screen gets the same sentence a size smaller rather than a
+   clipped one. If a long market name for the currency or the
+   "على جميع الطلبات" wording still runs out of room, it wraps: the
+   radius is half the ONE-line height, not 100px, so two lines read as
+   a rounded card instead of a squashed pill.
+   ========================================================== */
+.fs-bar {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+  gap: 4px clamp(6px, 2vw, 8px);
+  /* 36px of .opt above collapses to 24; the bundle below is 12 away */
+  margin: -12px 0 12px;
+  min-height: clamp(34px, 9.4vw, 38px);
+  padding: 4px clamp(10px, 3.6vw, 14px);
+  border-radius: clamp(17px, 4.7vw, 19px);
+  background: var(--leaf); color: #fff;
+  box-shadow: 0 6px 18px rgba(47,107,74,.28);
+  font-size: clamp(11.5px, 3.3vw, 13px); font-weight: 500; line-height: 1.5;
+}
+.fs-bar[hidden] { display: none; }
+.fs-ico { flex: 0 0 auto; display: grid; place-items: center; }
+.fs-ico svg {
+  width: clamp(16px, 4.6vw, 18px); height: clamp(16px, 4.6vw, 18px); display: block;
+  fill: none; stroke: #fff; stroke-width: 1.7; stroke-linejoin: round;
+}
+.fs-txt { min-width: 0; text-align: center; }
+.fs-txt b { font-weight: 700; }
+/* the figure and its currency mark never part */
+.fs-amt { white-space: nowrap; }
+.fs-dot { opacity: .55; }
+.fs-dot[hidden] { display: none; }
+.fs-left {
+  flex: 0 0 auto;
+  padding: 2px clamp(7px, 2.2vw, 9px); border-radius: 100px;
+  background: rgba(255,255,255,.18);
+  font-weight: 700; white-space: nowrap;
+}
+.fs-left[hidden] { display: none; }
+.fs-left b {
+  direction: ltr; unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1;
+  font-weight: 700;
+}
+/* below 360pt the dot is the first thing to go — the pill already
+   sets the days apart */
+@media (max-width: 359px) { .fs-dot { display: none; } }
+
+/* title + country picker — rounded, sat on the title's own line */
+.title-row {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 12px;
+}
+/* RTL: the title takes the slack, so the chip sits at the far LEFT, centred vertically */
+.title-row h1 { flex: 1 1 auto; margin-bottom: 0; }
+.cty {
+  flex: 0 0 auto;
+  /* 13px, stated in full and at weight 500: a native select does not
+     reliably inherit the page's type, and at 12/300 some Androids drew
+     the country name small enough to squint at. This is a control the
+     shop wants FOUND — prices follow it. */
+  font-family: var(--sans); font-size: 13px; font-weight: 500; line-height: 1;
+  color: var(--ink); background: var(--panel);
+  border: none; border-radius: 10px;           /* the cards' own corner */
+  height: 38px; cursor: pointer;
+  /* native selects size to the widest option, so centre the label
+     instead of leaving a gap on short names like "البحرين" */
+  text-align: center; text-align-last: center;
+  appearance: none; -webkit-appearance: none;
+  /* chevron drawn in, so the box stays a clean rectangle */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%231e1b18' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left 10px center;
+  background-size: 11px;
+  padding-inline-start: 12px;
+  padding-inline-end: 28px;
+}
+.cty:focus { outline: none; box-shadow: inset 0 0 0 1.5px var(--gold-dp); }
+
+/* THE ENGLISH TITLE is longer than the Arabic one — "Frankincense" alone
+   is wider than "لُبان" — so on /en/ it is set smaller (2px under what
+   it first was, at the shop's request), and the
+   country chip is allowed to drop under it on a phone too narrow for
+   both (the title's longest word decides, not its whole line). */
+[dir="ltr"] h1 { font-size: clamp(22px, calc(6.4vw - 2px), 32px); line-height: 1.2; letter-spacing: -.5px; }
+[dir="ltr"] .title-row { flex-wrap: wrap; row-gap: 12px; }
+[dir="ltr"] .title-row h1 { flex: 1 1 0; }
+/* the chevron at the chip's end, which is the right on /en/ */
+[dir="ltr"] .cty { background-position: right 10px center; }
+
+h1 {
+  font-family: var(--serif); font-weight: 500;
+  font-size: clamp(30px, 8vw, 42px); line-height: 1.35;
+  letter-spacing: -.8px; margin-bottom: 12px;
+}
+
+
+/* fixed feature grid — 3 right, 3 left */
+
+/* ==========================================================
+   Opening pitch — four lines under the rating
+   The emoji is a fixed-width marker so every sentence starts on the
+   same edge however wide the glyph renders; without that the flag,
+   which is two code points, would push its line out of line with
+   the rest.
+   ========================================================== */
+/* One size for everything in this block — 15px, up two, and the claims
+   panel below it moves with it so the two still read as one voice.
+   This is the product description: the four lines that say what the
+   thing actually is, and they were set smaller than the navigation. */
+/* ==========================================================
+   THE DESCRIPTION AND THE SECTIONS BELOW THE FOLD. .pg2/.pg3 in the
+   selectors are the classes baked onto <html> (see index.html): since
+   v200 the Maison page is the only page, and the old style-switch
+   rules for the classic page live in CLAUDE WEB/theme-backup.
+   ========================================================== */
+
+/* BELOW THE FOLD (v196, from the design canvas): the two
+   section headings bold, the brand white in the comparison's gold
+   header (a hair of shadow keeps it legible on the light end of the
+   gold), and the preparation steps' tiles gold with the drawing white.
+   The drawings carry their own stroke/fill attributes, which CSS
+   overrides; a part drawn with stroke="none" keeps none. */
+.pg2 .scard-txt h3 { font-weight: 700; }
+.pg2 .duo-brand { color: #fff; text-shadow: 0 1px 1px rgba(30,27,24,.22); }
+.pg2 .step-art { background: linear-gradient(135deg, #b8974f 0%, #8f7238 100%); }
+.pg2 .step-art svg { stroke: #fff; }
+.pg2 .step-art svg [stroke]:not([stroke="none"]) { stroke: #fff; }
+.pg2 .step-art svg [fill]:not([fill="none"]) { fill: #fff; }
+
+/* STYLE 2's description: the rating in a white pill, one paragraph,
+   then five facts — three product facts as white boxes, then shipping
+   and returns as two ink pills. One six-column grid: a box spans two
+   columns, a pill three, so the rows split 3 and 2 on any width. */
+.desc2 { display: grid; gap: 14px; margin-bottom: 24px; }
+.rate2 {
+  justify-self: start; display: inline-flex; align-items: center; gap: 6px;
+  background: var(--panel); border-radius: 100px; padding: 5px 12px;
+  font-size: 12.5px; line-height: 1.4; color: #6f675d;
+}
+.rate2 b { font-weight: 700; color: var(--ink); }
+.rate2 .stars { display: inline-flex; gap: 2px; color: var(--gold); font-size: 13px; }
+.rate2 .stars .half {
+  background: linear-gradient(to right, var(--gold) 50%, var(--gold-dim) 50%);
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent; -webkit-text-fill-color: transparent;
+}
+[dir="rtl"] .rate2 .stars .half {
+  background-image: linear-gradient(to left, var(--gold) 50%, var(--gold-dim) 50%);
+}
+.rate2 .stars i { font-style: normal; }
+.lead { font-size: 11px; font-weight: 700; line-height: 1.9; color: #3a352f; }
+.facts2 {
+  list-style: none; display: grid; gap: 8px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+/* one line each: 11px from a 380px screen up, stepping down with the
+   width below that so "لبان ظفار الحوجري" and the shipping pill still
+   fit on one line at 320 */
+.facts2 li {
+  display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 0;
+  font-size: clamp(9px, 2.9vw, 11px); font-weight: 700; line-height: 1.4; text-align: center; white-space: nowrap;
+}
+.facts2 svg {
+  width: 18px; height: 18px; flex: 0 0 auto;
+  fill: none; stroke: var(--gold-dp); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+}
+.facts2 .fb {
+  grid-column: span 2; flex-direction: column;
+  background: var(--panel); color: var(--ink); border-radius: 14px; padding: 12px 4px;
+}
+/* the English is longer than the box: it wraps, centred, rather than spill */
+[dir="ltr"] .facts2 li { white-space: normal; }
+
+/* option rows */
+.opt { margin-bottom: 36px; }
+/* the strip already reads as a break between sections, so the label
+   under it does not need to reintroduce one */
+.opt .label { margin-bottom: 14px; }
+
+@keyframes icon-pop {
+  0%   { transform: scale(.88); }
+  55%  { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+
+
+/* EVERY MEASURE IN THIS CARD IS SET ONCE, HERE, AND SCALES WITH THE
+   SCREEN. The picker is the busiest row on the page — an icon, two
+   lines of type, a five-star rating and a three-part stepper, all on
+   one line — and it was drawn at one fixed set of sizes. On a 393pt
+   phone those sizes add up to 349px inside a 319px row, so the rating
+   simply sat ON TOP of the scent's notes; narrower phones were worse.
+
+   clamp(min, vw, max) rather than a breakpoint: the row is a sum of
+   widths, so it has to shrink CONTINUOUSLY between 320 and 480 rather
+   than jump at one width and overflow at 391. The max is the size this
+   card has always been drawn at, so nothing changes at 480 and above —
+   the store is capped at --app, and every value here is already at its
+   ceiling by then. The min is the floor at 320pt, the narrowest phone
+   still in use.
+
+   Changing a number here changes it in the size row, the scent rows,
+   the rating and the stepper together, which is the only way the four
+   of them stay on one line. */
+.sizes {
+  display: grid; gap: 9px;
+
+  --row-pad-x:  clamp(12px,  3.8vw, 15px);   /* the card's one gutter  */
+  --row-pad-y:  clamp(11px,  3.3vw, 13px);
+  --row-gap:    clamp(7px,   2.3vw,  9px);
+  --row-font:   clamp(12px,  3.3vw, 13px);
+  --row-dot:    clamp(13px,  3.8vw, 15px);
+
+  --prow-gap:   clamp(6px,   2.1vw, 11px);
+  --prow-art:   clamp(26px,  7.6vw, 34px);
+  --prow-icon:  clamp(23px,  6.7vw, 30px);
+
+  --star:       clamp(10px,  2.9vw, 13px);
+  --star-gap:   clamp(1px,   .45vw,  2px);
+
+  --step-btn:   clamp(26px,  7.4vw, 32px);
+  --step-num:   clamp(17px,  5vw,   20px);
+  --step-w:     calc(var(--step-btn) * 2 + var(--step-num));
+
+  /* the shared product pair (--pname / --pnote), given room to shrink:
+     this is the one place those two lines share a row with three other
+     things, so it is the one place they cannot be a fixed size */
+  --pname-fit:  clamp(11.5px, 3.1vw,  13px);
+  --pnote-fit:  clamp(9px,    2.55vw, 10.5px);
+}
+
+/* White card, black type, and the gold saved for the button at the
+   bottom of the panel.
+
+   The rows are a list to read — three names, three weights, three
+   prices — and they were competing with the one thing on this page that
+   is a decision. Paper reads better than metal for that, and it leaves
+   the gold meaning exactly one thing in this column: press here.
+
+   There is no sweep any more. It was a white band moving across gold;
+   on a white row it is white on white, which is nothing, and a row that
+   holds still is what lets the button move.
+
+   And no outline. White on the page's warm grey is edge enough — the
+   rounded corner is where the card ends, and a hairline around every
+   row drew the container rather than what is in it. The sold-out row
+   keeps its line: there it is a status, not a frame. */
+.size {
+  position: relative;
+  display: flex; align-items: center; width: 100%; text-align: start;
+  gap: var(--row-gap, 9px);
+  padding: var(--row-pad-y, 13px) var(--row-pad-x, 15px);
+  border-radius: 12px;
+  background: var(--panel);
+  font-size: var(--row-font, 13px); color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+}
+/* The name is the one thing here that may be shortened. Everything else
+   in the row — the weight, the badge, the two prices — is a fact that
+   is either shown whole or not shown at all, so the name takes the
+   squeeze on a narrow screen and the prices never wrap under it. */
+.size .sz-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* An empty ring until it is chosen, then a solid gold disc — the same
+   gradient as the button, so the two gold things in the picker are the
+   same gold. `none`, not simply a new background: the ring is drawn as a
+   box-shadow, and leaving it would put a pale outline around the disc.
+   The unchosen ring stays, because an empty circle with no edge is not
+   a circle at all. */
+.size i {
+  width: var(--row-dot, 15px); height: var(--row-dot, 15px);
+  border-radius: 50%; flex: 0 0 auto;
+  background: transparent; border: none;
+  box-shadow: inset 0 0 0 1.5px var(--line);
+  transition: background .35s ease, box-shadow .35s ease;
+}
+.size[aria-checked="true"] i {
+  background: var(--grad-gold);
+  box-shadow: none;
+}
+
+/* THE OPEN ROW AND ITS PANEL ARE ONE CARD: square bottom corners, and
+   .picker below carries on the same white with no line where they meet. */
+.size.open { border-radius: 12px 12px 0 0; }
+
+/* ==========================================================
+   "Not available in your country"
+
+   A basket survives a country change, so a line can name a size this
+   market has run out of — or does not carry. The rows are flagged as
+   soon as the country changes, and this dialog stops the confirm.
+   ========================================================== */
+.ci-off, .sum-off { opacity: .62; }
+.ci-off .ci-meta, .sum-off .m {
+  color: var(--berry); font-weight: 500; opacity: 1;
+}
+.ci-off .ci-price, .sum-off .p { text-decoration: line-through; }
+
+/* Above the cart drawer (z-index 90): the drawer's Pay button is one of
+   the two places this dialog opens from, and at 80 it opened UNDER the
+   open drawer — the shopper saw nothing happen and could not reach
+   the button that unblocks the basket. */
+.avail-pop { position: fixed; inset: 0; z-index: 95; display: grid; place-items: center; }
+.avail-pop[hidden] { display: none; }
+.avail-veil { position: absolute; inset: 0; background: rgba(30,27,24,.55); }
+.avail-panel {
+  position: relative; width: min(360px, calc(100% - 36px));
+  background: var(--panel); border-radius: 16px; padding: 22px 20px 18px;
+  box-shadow: 0 26px 70px rgba(30,27,24,.4);
+  animation: avail-in .24s cubic-bezier(.22,.61,.36,1);
+  /* This panel's list is one row per line the basket can't ship, so its
+     height is the shopper's, not ours. Turn a phone sideways — 390px of
+     viewport — or bring four unavailable lines, and the box outgrows
+     the screen. `.avail-pop` is fixed and centred, so the overflow is
+     simply gone: the two buttons at the bottom, one of which is the
+     only way out of this dialog, cannot be reached or scrolled to.
+
+     Cap the panel at the viewport and let the LIST take the scrolling,
+     so the heading and the buttons are always on screen. */
+  display: flex; flex-direction: column;
+  max-height: calc(100vh - 36px);
+  max-height: calc(100dvh - 36px);
+}
+.avail-panel > ul {
+  overflow-y: auto; min-height: 0;
+  overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+}
+.avail-panel > h2, .avail-panel > p, .avail-acts { flex: 0 0 auto; }
+@keyframes avail-in { from { opacity: 0; transform: translateY(10px) scale(.97); } }
+@media (prefers-reduced-motion: reduce) { .avail-panel { animation: none; } }
+.avail-panel h2 { font-size: 15px; font-weight: 500; color: var(--berry); margin-bottom: 8px; }
+.avail-panel p { font-size: 12.5px; color: var(--ink-soft); line-height: 1.7; }
+.avail-panel ul { list-style: none; margin: 12px 0 4px; }
+.avail-panel li {
+  font-size: 12.5px; color: var(--ink); padding: 8px 12px; margin-bottom: 6px;
+  background: var(--card); border-radius: 10px;
+}
+.avail-acts { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.avail-acts .btn { width: 100%; }
+.btn.btn-quiet {
+  background: none; color: var(--ink-soft); box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/* every size switched off for this country — rare, but the picker must
+   say something rather than render an empty box */
+.none-here {
+  padding: 18px 16px; border-radius: 12px; background: var(--card);
+  font-size: 12.5px; color: var(--ink-soft); text-align: center;
+}
+
+/* ---- closed rows: sold out, or not sold in this country ----
+   Both keep their place in the list. A shopper who has seen the 100g box
+   before should find it here and read why it cannot be ordered, rather
+   than wonder whether the shop dropped it — and the price stays visible
+   so they know what it costs if they order to another address, or when
+   stock returns.
+
+   It is a real disabled <button>, so it takes no focus and fires nothing.
+   The price is struck through and the dot loses its fill, so the row
+   cannot be mistaken for the selected one. */
+/* A row that cannot be bought steps off the white: sand rather than
+   paper, grey rather than ink. The white rows say "these three are
+   yours"; this one has to fall out of that set at a glance, and it can
+   no longer do it by simply not being gold. */
+.size.shut {
+  cursor: default; background: var(--sand-50); color: var(--muted);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.size.shut .sz-name, .size.shut .sz-wt { color: var(--muted); }
+.size.shut i { background: transparent; box-shadow: inset 0 0 0 1.5px #c6c0b8; }
+/* The white plate under the badge is gone with the gold it was drawn to
+   sit on. On paper the badge's own colour is the contrast. */
+.sz-tag.out {
+  background: var(--ink-soft); color: #fff;   /* 8.2:1 — a status, not decoration */
+  font-size: 9px;                             /* "غير متوفر في بلدك" is a long badge */
+}
+
+/* ==========================================================
+   THE SIZES AS PHOTO TILES (v192; the page's only size grid since
+   v200)
+   The sizes as photo tiles side by side; the chosen one outlined in ink
+   with a tick, and ONE grid under them for it: the market's points,
+   then the scents on a sand panel. A sold-out size's photo goes grey
+   and its tile cannot be chosen (main.js disables it).
+   ========================================================== */
+.sizes.s3 { gap: 14px; }
+.sz-tiles {
+  display: grid; grid-template-columns: repeat(var(--n, 2), minmax(0, 1fr));
+  gap: 10px;
+}
+.s3 .size.tile {
+  position: relative; flex-direction: column; align-items: stretch; text-align: center;
+  gap: 8px; padding: 7px 7px 11px; border-radius: 14px;
+  background: var(--panel); box-shadow: inset 0 0 0 1px #d6cfc4;
+  animation: none;
+}
+/* the chosen photo: a thin gold line with a soft gold glow (v196) */
+.s3 .size.tile[aria-checked="true"] {
+  box-shadow: inset 0 0 0 1.5px var(--gold), 0 0 0 3px rgba(184,151,79,.22), 0 6px 20px -4px rgba(184,151,79,.45);
+}
+.s3 .size.tile i { display: none; }
+.sz-shot {
+  flex: 0 0 auto; border-radius: 10px; overflow: hidden; background: var(--sand-100); line-height: 0;
+}
+.sz-shot picture, .sz-shot img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.tile-shot.sz-shot { width: 100%; height: auto; aspect-ratio: 5 / 4; border-radius: 10px; }
+.tile-tag {
+  position: absolute; top: 13px; inset-inline-start: 13px; z-index: 1;
+  font-style: normal; background: var(--tag, var(--berry)); color: #fff;
+  font-size: 10.5px; font-weight: 700; border-radius: 6px; padding: 3px 8px;
+  white-space: nowrap;
+}
+.tile-tag.out { background: var(--ink-soft); }
+.tile-tick {
+  position: absolute; top: 13px; inset-inline-end: 13px; z-index: 1;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: linear-gradient(135deg, #b8974f 0%, #8f7238 100%); box-shadow: 0 2px 6px rgba(143,114,56,.35);
+  display: none; place-items: center;
+}
+.tile-tick svg { width: 13px; height: 13px; fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.s3 .size.tile[aria-checked="true"] .tile-tick { display: grid; }
+.tile-name { font-size: clamp(13px, 3.9vw, 15px); font-weight: 700; }
+/* sold out: the photo in grey, the tile off the white, and no tap */
+.s3 .size.tile.shut { background: var(--sand-50); box-shadow: inset 0 0 0 1px var(--line); cursor: not-allowed; }
+.s3 .size.tile.shut .tile-shot img { filter: grayscale(1); opacity: .55; }
+.s3 .size.tile.shut .tile-name { color: var(--muted); }
+
+/* the chosen size's grid: a white card outlined in ink */
+.szcard {
+  border: 1px solid #d6cfc4; border-radius: 16px; overflow: hidden;
+  background: var(--panel);
+}
+.szcard.open { border: 1px solid var(--gold); box-shadow: 0 0 0 3px rgba(184,151,79,.22), 0 8px 26px -6px rgba(184,151,79,.4); }
+.s3card { padding: clamp(12px, 4vw, 16px); }
+.s3card-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-bottom: 14px;
+}
+.s3card-head .sz-id { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.s3card-head .sz-name { font-size: clamp(15px, 4.4vw, 17px); font-weight: 700; }
+.s3card-head .sz-wt { font-size: 12px; color: #6f675d; }
+.sz-save {
+  font-style: normal; white-space: nowrap;
+  background: #e2efe6; color: var(--leaf);
+  font-size: 11px; font-weight: 700; border-radius: 100px; padding: 3px 9px;
+}
+.s3 .picker { margin-top: 0; border-radius: 0; background: transparent; padding: 0; }
+.s3 .picker::before { display: none; }
+.sz-perks {
+  list-style: none; margin: 0 0 14px; padding: 0;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px;
+}
+/* A point that runs to a second line starts that line under its text,
+   not under its icon: the icon sits on the first line, not centred. */
+.sz-perks li {
+  display: flex; align-items: flex-start; gap: 7px; min-width: 0;
+  font-size: clamp(9px, 2.6vw, 10px); font-weight: 700; line-height: 1.5; color: var(--ink);
+}
+.sz-perks .nw { white-space: nowrap; }
+.sz-perks svg {
+  width: 16px; height: 16px; flex: 0 0 auto; margin-top: 1px;
+  fill: none; stroke: var(--gold-dp); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+}
+.s3 .prows {
+  background: var(--sand-100); border-radius: 12px;
+  padding: 12px clamp(10px, 3.6vw, 14px) 4px; gap: 0; margin-bottom: 14px;
+}
+.s3 .prow { border-radius: 0; border-bottom: 1px solid #e6dccd; }
+.s3 .prow:last-child { border-bottom: 0; }
+
+/* ==========================================================
+   Scent picker — opens under the size that was tapped
+   ========================================================== */
+/* The bottom half of the open row's card: same white, no outline, and
+   nothing marking the join — the row and the scents are one piece of
+   paper rather than a card with a tray under it. */
+/* ONE GUTTER FOR THE WHOLE CARD: 15px, the size row's own padding.
+   The panel used 12 and the scent rows added another 10 on top of it,
+   so the card had three different left edges — the price at 15, the
+   button at 12, the scent icons at 22 — and nothing lined up with
+   anything. The scent rows' horizontal padding is gone (see .prow) and
+   this is the only inset left. */
+.picker {
+  background: var(--panel);
+  border-radius: 0 0 12px 12px;
+  margin-top: -9px;                 /* close the grid gap above it */
+  /* the same gutter the size row above it uses, at every width — see
+     --row-pad-x. Two constants here was how the card ended up with
+     three different left edges the last time. */
+  padding: 4px var(--row-pad-x, 15px) var(--row-pad-x, 15px);
+  animation: pick-in .28s cubic-bezier(.22,.61,.36,1);
+}
+/* The one mark inside the card: a thin gold rule between the size you
+   chose and the scents you choose from. Inset from both edges on
+   purpose — a line touching the sides would cut the card in two, which
+   is the opposite of what it is for. It divides; it does not separate. */
+.picker::before {
+  content: ""; display: block; height: 1px;
+  margin: 5px 14px 11px;
+  background: var(--grad-gold);
+}
+@keyframes pick-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .picker { animation: none; } }
+
+/* ONE COLUMN THAT MAY BE NARROWER THAN ITS WIDEST ROW. A bare grid
+   sizes its track to the rows' min-content, and a scent's notes are one
+   unbreakable line (nowrap, see .prow-txt) — so on a 320px phone the
+   track grew past the card and pushed the steppers over its edge (style
+   2's grid sits inside two insets). minmax(0, 1fr) keeps the row the
+   card's width and lets the notes take the ellipsis instead. */
+.prows { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; margin-bottom: 12px; }
+
+/* No surface of its own, chosen or not. These are rows on the card, not
+   cards on a tray: the panel behind them is white now, so a white plate
+   under each one was an outline around nothing. The row used to warm to
+   sand when a quantity was set as well, which put two marks on screen
+   for one fact — the count in the stepper is that fact. */
+.prow {
+  display: flex; align-items: center; gap: var(--prow-gap, 11px); min-width: 0;
+  /* no horizontal padding: the picker's 15px is the card's one gutter,
+     and another 10 on top of it put the scent icons 22px in while the
+     price above them sat at 15 */
+  padding: 9px 0; border-radius: 10px;
+  background: none;
+}
+/* Out of stock in this country. The row stays, so the scent is still
+   visible and a shopper who came looking for it can see why it cannot
+   be added — there is simply nothing to add it with.
+
+   No outline, like everything else in this card. The tint, the grey
+   text and the words نفدت الكمية are three signals already; a hairline
+   was a fourth, and the only one that drew a box. */
+/* The tint bleeds 8px past the gutter on both sides and pads itself
+   back by the same 8, so the CONTENT still starts on the card's one
+   edge while the tinted block has room around the words. Without the
+   bleed the sand stopped exactly at the first letter. */
+.prow.shut {
+  background: var(--sand-50);
+  margin-inline: -8px; padding-inline: 8px;
+}
+.prow.shut .prow-txt b, .prow.shut .prow-txt span { color: var(--muted); }
+.prow.shut .prow-art svg { fill: var(--icon-off); }
+/* A shut row's middle cell is empty on purpose — it holds the column
+   open so the row's last element lands where every other row's does.
+   The words themselves are the last element, in the stepper's width;
+   see .prow .sz-tag.out. */
+/* The middle cell. It holds the rating and the scent's label, or
+   nothing, and it is exactly as wide as what is in it.
+
+   It used to take the row's spare width and centre its contents, which
+   is why no two ratings in the column started at the same x: the cell
+   moved with the length of the scent's name. And because it was the
+   flexible cell, the rating inside it — which cannot shrink — simply
+   overflowed onto the notes when the row ran out of room.
+
+   Now the TEXT is the flexible cell (see .prow-txt) and this one is
+   pinned against the stepper. The rating is the last thing in it, so
+   it abuts the stepper's column on every row, at the same x, whether
+   or not the scent also carries a badge. */
+.prow-mid {
+  flex: 0 0 auto; min-width: 0;
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: clamp(5px, 1.8vw, 7px);
+}
+
+/* THE RATING. Five stars, as many of them filled as the shop set in
+   /admin > Catalogue > Scents. It replaces the single gold disc that
+   used to stand for the scent's LABEL — one star read as a rating,
+   which is not what a label says, and the words were hidden in a
+   tooltip nobody opens on a phone. The label is words again below.
+
+   THE STARS ARE THE MARK NOW, NOT THE TILE THEY SAT ON. Each one used
+   to be a white star punched out of a rounded gold key, five of them
+   in a row: at 15px square that reads as a strip of gold buttons —
+   another grid of controls beside the stepper — rather than as a
+   rating, and it was the single heaviest thing in a row whose subject
+   is a scent's NAME. The star itself is the gold now and there is no
+   key behind it, which is both quieter and 20% narrower — width this
+   row did not have.
+
+   The unset ones stay, in the palest gold: five positions that do not
+   move between scents is what makes three of five and four of five
+   comparable down a column.
+
+   One flat gold rather than the button's gradient. A gradient needs a
+   <linearGradient> and an id per row to reach an SVG fill, and --gold
+   is that gradient's own midpoint, so at 12px the two are the same
+   colour to the eye. */
+.prow .sc-rate {
+  flex: 0 0 auto; display: inline-flex; align-items: center;
+  gap: var(--star-gap, 2px);
+}
+.prow .sc-rate i {
+  width: var(--star, 13px); height: var(--star, 13px);
+  display: block; background: none; border-radius: 0;
+}
+.prow .sc-rate svg {
+  width: 100%; height: 100%; display: block;
+  fill: var(--gold-dim); stroke: none;
+}
+.prow .sc-rate i.on svg { fill: var(--gold); }
+
+/* the scent's own label, in the badge a size's label has always used */
+.prow .sz-tag { flex: 0 0 auto; }
+
+/* Kept: .sz-mark is no longer written by main.js, but a catalogue
+   published before this change can still be in a browser's cache for
+   as long as its ?v= lives, and a mark with no rule is a 300x150 svg
+   across the row. */
+.prow .sz-mark {
+  flex: 0 0 auto;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--grad-gold);
+  display: grid; place-items: center;
+}
+.prow .sz-mark svg {
+  width: 12px; height: 12px; display: block;
+  fill: #fff; stroke: none;
+}
+
+/* Out of stock reads as part of the row it belongs to, not as a
+   warning bolted onto it: the same grey as the scent's own notes,
+   which is what the rest of that row has already gone.
+
+   It stands in the STEPPER's column — 32 + 20 + 32, the width of
+   −/0/+ — so that scanning down the list, every row's last element
+   starts on the same line whether it is a control or a sentence. */
+.prow .sz-tag.out {
+  flex: 0 0 auto; min-width: var(--step-w, 84px);
+  background: none; padding: 0; border-radius: 0;
+  color: var(--muted); font-size: 11px; font-weight: 500;
+  text-align: center;
+}
+
+.prow-art { flex: 0 0 var(--prow-art, 34px); display: grid; place-items: center; }
+/* Its own colour from the start. The icon is what a scent LOOKS like —
+   the lavender sprig, the lemon, the berries — and greying it until a
+   quantity was set made three products look switched off until someone
+   pressed +. Colour is identity here, not state. */
+.prow-art svg {
+  width: var(--prow-icon, 30px); height: var(--prow-icon, 30px); display: block;
+  fill: var(--accent); stroke: none;
+  transition: fill .35s ease;
+}
+/* adding one still pops it, the same reward the old scent card gave —
+   but it is a movement, not a colour change */
+.prow.on .prow-art svg {
+  animation: icon-pop .55s cubic-bezier(.22,.61,.36,1);
+}
+
+/* THE TEXT IS THE FLEXIBLE CELL. The rating and the stepper are sums
+   of fixed parts and cannot give anything back, so the one thing in
+   this row that CAN shrink has to be the one that does — otherwise the
+   row overflows and, because nothing here clips, the overflow lands on
+   top of the notes. That is the crowding this fixes.
+
+   Both lines are single-line with an ellipsis: on a 320pt phone the
+   longest scent's notes still do not fit at the smallest type this
+   will go to, and a clean ellipsis is the honest end of that line. */
+.prow-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.prow-txt b, .prow-txt span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* the shared product-line pair — see --pname / --pnote */
+.prow-txt b { font-size: var(--pname-fit, var(--pname)); font-weight: 500; color: var(--ink); line-height: 1.5; }
+/* The scent's notes, back to 10.5 — and 10.5 is now the shop's note
+   size everywhere a product is listed. They went up with the rest of
+   the description, but this line sits directly under the scent's NAME,
+   and at 12.5 the two were close enough to read as one block of text
+   rather than a title and its gloss. */
+.prow-txt span { font-size: var(--pnote-fit, var(--pnote)); color: var(--muted); line-height: 1.5; }
+
+/* compact stepper, same language as the old one but count-only */
+/* No pill. The row it sits in is white now, so a white pill on white
+   was an outline around nothing — it only ever read as a shape because
+   the row behind it was sand. */
+/* Narrower on a narrow screen, but never shorter: the invisible
+   ::after that makes these 44px to a finger is a HEIGHT, and it is not
+   in this rule for exactly that reason. See tests/test-device-fit.js. */
+.qty.sm {
+  display: inline-flex; align-items: center; flex: 0 0 auto;
+  height: 32px; background: none;
+}
+.qty.sm button {
+  width: var(--step-btn, 32px); height: 100%;
+  font-size: clamp(14px, 4vw, 16px); font-weight: 300;
+  color: var(--ink-soft); transition: color .2s;
+}
+.qty.sm button:hover { color: var(--gold-dp); }
+.qty.sm b {
+  min-width: var(--step-num, 20px); text-align: center;
+  font-size: clamp(12px, 3.3vw, 13px); font-weight: 500;
+  font-variant-numeric: tabular-nums; unicode-bidi: isolate;
+}
+
+/* the add button is inside the panel, so it only exists once a size is open */
+/* Gold, and now the only gold in the column. The rows above it are
+   white and the panel it sits in is sand, so this is the one warm
+   surface between the gallery and the bundle — which is where the eye
+   should finish, because it is the last thing you press.
+
+   White type. Recorded so the next person does not "fix" it by
+   halves: white on this gradient's light stop (#c8a75f) measures 2.3:1,
+   and a gradient of #8a6d35 → #6d5527 would carry white at 4.9:1 while
+   still reading as gold, if the shop ever wants that.
+   tests/test-store-look.js prints both figures on every run.
+
+   Hover is the same gold — the `.btn:hover` default would otherwise
+   "turn it gold" and nothing would happen — and the "added" flash goes
+   green, which is what the bundle's does and the only colour here that
+   is not already saying something else. */
+.picker .btn {
+  width: 100%; border-radius: 10px;
+  background: var(--grad-gold); color: #fff;
+}
+.picker .btn:hover { background: var(--grad-gold); color: #fff; }
+.picker .btn.ok { background: var(--leaf); color: #fff; }
+.picker .btn:disabled { opacity: .45; cursor: default; }
+.sz-name { font-weight: 500; }
+/* "300 جم" — the row's own size, not larger than it. This was the last
+   survivor of the batch that put the whole description up two points:
+   a secondary detail set bigger than the name it qualifies, on a row
+   whose own type is 13. */
+.sz-wt { font-size: var(--row-font, 13px); opacity: .85; white-space: nowrap; }
+.sz-tag {
+  font-style: normal; font-size: 9.5px;
+  padding: 2.5px 8px; border-radius: 100px;
+  /* --tag comes from the catalogue, per market: /admin > Catalogue, on
+     the size row or the scent row (Badge, Badge colour). Both kinds of
+     badge are this element. --berry shows if no colour was chosen. */
+  background: var(--tag, var(--berry)); color: #fff; white-space: nowrap;
+}
+/* the badge is a claim, so it never wraps and never shrinks below
+   legible — it just gives back its padding first on a narrow screen */
+.sizes .sz-tag:not(.out) { font-size: clamp(8.5px, 2.4vw, 9.5px); padding: 2.5px clamp(5.5px, 2vw, 8px); }
+
+/* qty + price + cta */
+/* qty + add-to-cart, side by side */
+.btn em {
+  font-style: normal; font-weight: 400;
+  opacity: .72; margin-inline-start: 7px;
+}
+
+.qty {
+  display: inline-flex; align-items: center; flex: 0 0 auto;
+  height: 54px; border-radius: 100px; background: var(--card);
+}
+.qty button { width: 38px; height: 100%; font-size: 17px; font-weight: 300; transition: color .2s; }
+.qty button:hover { color: var(--gold-dp); }
+.qty input {
+  width: 34px; height: 100%; text-align: center; border: none; background: none;
+  font-family: var(--sans); font-size: 16px; font-weight: 500; color: var(--ink);
+  -moz-appearance: textfield;
+}
+.qty input::-webkit-outer-spin-button,
+.qty input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+
+.btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 54px; border-radius: 3px;
+  background: var(--ink); color: #fff;
+  font-family: var(--sans); font-size: 12.5px; font-weight: 500;
+  transition: .3s;
+}
+.btn:hover { background: var(--grad-gold); }
+.btn-ghost {
+  background: transparent; color: var(--ink); border: 1px solid var(--ink);
+}
+.btn-ghost:hover { background: var(--ink); color: #fff; }
+
+/* go-to-checkout — grey until something is in the cart, no outline */
+.btn-co {
+  margin-top: 10px; border: none;
+  background: var(--card); color: var(--muted);
+  pointer-events: none;
+  transition: background .3s ease, color .3s ease;
+}
+.btn-co:hover { background: var(--card); }
+.btn-co.on { background: #fff; color: var(--ink); pointer-events: auto; }
+.btn-co.on:hover,
+.btn-co.on:active,
+.btn-co.on:focus-visible { background: var(--leaf); color: #fff; }
+
+/* confirm-style buttons go green on press, red when something is missing */
+.btn-go:hover,
+.btn-go:active,
+.btn-go.ok-go { background: var(--leaf); color: #fff; }
+.btn-go.bad,
+.btn-go.bad:hover { background: #b4483c; color: #fff; }
+
+/* customer support — the one blue thing on the page, so it reads as help, not checkout */
+.btn-support {
+  margin-top: 12px; gap: 9px;
+  background: var(--support); color: #fff;
+}
+.btn-support svg {
+  width: 17px; height: 17px; flex: 0 0 auto;
+  fill: none; stroke: #fff; stroke-width: 1.6;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.btn-support:hover, .btn-support:active { background: var(--support-dp); }
+
+/* the drawer's pay button: green on press, never gold */
+#drawerPay:hover,
+#drawerPay:active { background: var(--leaf); }
+
+/* accordion */
+/* Moved out of .info to sit directly above تتبع طلبك, so it no longer
+   inherits that block's 22px side padding and has to carry its own. */
+.acc { margin-top: 46px; padding: 0 22px; }
+.acc details { border-top: 1px solid var(--line); }
+.acc details:first-of-type { border-top: none; }
+.acc details:last-of-type { border-bottom: 1px solid var(--line); }
+.acc summary {
+  list-style: none; cursor: pointer; padding: 20px 0;
+  font-size: 13.5px; color: var(--ink);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.acc summary::-webkit-details-marker { display: none; }
+.acc summary::after { content: "+"; font-size: 16px; color: var(--muted); font-weight: 300; }
+.acc details[open] summary::after { content: "\2212"; }
+.acc .body { padding-bottom: 22px; font-size: 13.5px; line-height: 2; color: var(--ink-soft); }
+.acc .body li { padding-inline-start: 15px; position: relative; }
+.acc .body li::before {
+  content: ""; position: absolute; inset-inline-start: 0; top: 13px;
+  width: 3px; height: 3px; border-radius: 50%; background: var(--gold);
+}
+
+/* ---------- Footer ---------- */
+.ftr {
+  margin-top: 64px; padding: 32px 22px calc(30px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  color: var(--muted); text-align: center;
+}
+.ftr-social { display: flex; gap: 12px; margin-bottom: 6px; }
+.ftr-social a {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--card); color: var(--ink);
+  display: grid; place-items: center; transition: transform .2s ease;
+}
+.ftr-social a:hover { transform: translateY(-2px); }
+.ftr-social svg {
+  width: 20px; height: 20px; fill: none; stroke: currentColor;
+  stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+}
+.ftr-num { font-size: 13px; color: var(--ink); }
+.ftr-link {
+  font-size: 12px; color: var(--muted);
+  border-bottom: 1px solid var(--line); padding-bottom: 2px;
+  transition: color .2s ease, border-color .2s ease;
+}
+.ftr-link:hover { color: var(--ink); border-color: var(--ink); }
+.ftr-link[aria-current="page"] { color: var(--ink); border-color: var(--ink); }
+.ftr-copy { font-size: 10.5px; letter-spacing: 1.5px; }
+
+/* ---------- legal pages ----------
+   Every block of text starts on the same edge and both edges stay
+   flush: justified Arabic, no list indent, no bullets. Line height
+   is 1.5 throughout so headings, paragraphs and list items sit on
+   one consistent rhythm.
+   ------------------------------------------------------------- */
+/* ONE SIZE FOR EVERYTHING THAT IS READ, two points down.
+
+   The page carried three body sizes — 13 for the prose and the lists,
+   13.5 for the summary, 14 for the section headings — and half a point
+   apart is not a distinction anyone perceives as deliberate. It reads
+   as three settings nobody decided. The headings keep their weight and
+   their ink, which is what makes them headings; the size stops doing
+   that job. --legal is the one number.
+
+   The title stays a title, down two with the rest. */
+:root { --legal: 11.5px; }
+.legal { padding: 30px 22px 0; }
+.legal h1 { font-size: 22px; font-weight: 400; margin-bottom: 14px; line-height: 1.5; }
+
+/* the one highlighted block on the page: the summary */
+.legal-lead {
+  margin-bottom: 6px; padding: 15px 16px;
+  background: var(--grad-sand); border-radius: 12px;
+}
+
+.legal-sec { margin-top: 26px; }
+.legal-sec h2 {
+  font-size: var(--legal); font-weight: 500; color: var(--ink);
+  margin: 0 0 8px; padding: 0; border: none; line-height: 1.5;
+}
+
+/* the list carries no indent, so its text lines up with the prose */
+.legal-sec ul { margin: 0; padding: 0; list-style: none; }
+.legal-sec li + li { margin-top: 8px; }
+.legal-sec li b { font-weight: 500; color: var(--ink); }
+.legal-sec p + p, .legal-sec ul + p { margin-top: 10px; }
+
+/* justify so the ragged edge disappears on both sides */
+.legal-lead,
+.legal-sec p,
+.legal-sec li {
+  font-size: var(--legal);
+  line-height: 1.5;
+  color: var(--ink-soft);
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: none;
+}
+/* English is set ragged-right: justified across a phone-width column,
+   Latin words (which do not stretch the way Arabic does) open rivers of
+   space between them */
+[dir="ltr"] .legal-lead,
+[dir="ltr"] .legal-sec p,
+[dir="ltr"] .legal-sec li { text-align: start; }
+/* the summary is set apart by its weight, its ink and the sand block
+   it sits in — it no longer needs half a point as well */
+.legal-lead { color: var(--ink); font-weight: 500; }
+
+.legal-sec .btn-support { margin-top: 16px; }
+.legal-date { margin-top: 34px; font-size: var(--legal); color: var(--muted); text-align: center; }
+
+/* floating WhatsApp — pinned inside the mobile canvas */
+.fabs {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: var(--app); height: 0;
+  z-index: 55; pointer-events: none;
+}
+/* WhatsApp green, so the button is recognised before it is read. This is
+   #128C7E, the darker of WhatsApp's two brand greens - the one their own
+   app chrome uses - rather than the bright #25D366 of the mobile FAB.
+
+   The reason is contrast. A white glyph on #25D366 measures 1.98:1, and
+   the button's edge against this sand page is 1.69:1; the logo IS what
+   identifies the button, so it has to be legible. #128C7E puts the glyph
+   at 4.14:1 and the edge at 3.53:1, both over the 3:1 bar for non-text
+   contrast, and is still unmistakably WhatsApp.
+
+   Only this floating button changes — the footer icon and the support
+   link keep the page palette, because a second green block would compete
+   with the دفع آمن badge rather than reinforce it. */
+.fab {
+  position: absolute; right: 16px; bottom: 94px;
+  width: 50px; height: 50px; border-radius: 50%;
+  background: #128C7E; color: #fff;
+  display: grid; place-items: center; pointer-events: auto;
+  /* the shadow is tinted with the button's own green rather than ink,
+     which keeps it from looking like a grey smudge on the sand page */
+  box-shadow: 0 4px 18px rgba(18,140,126,.34);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+/* ON /en/ AT THE OTHER CORNER. The button sits over the side of the page
+   the rows START on in Arabic — the scent's name and icon — and the
+   steppers are at the far end. Mirrored, it was over the English rows'
+   end, and covered the + a shopper taps to add a box. So it follows the
+   reading direction: the start side, right in Arabic, left in English. */
+[dir="ltr"] .fab { right: auto; left: 16px; }
+.fab:hover { transform: scale(1.07); box-shadow: 0 6px 22px rgba(18,140,126,.46); }
+.fab:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.fab svg {
+  width: 26px; height: 26px; fill: none; stroke: currentColor;
+  /* a touch heavier than the page's other icons: a thin white stroke on
+     a mid green loses more to antialiasing than it does on paper */
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* ---------- Sticky buy (mobile) ---------- */
+.sticky {
+  position: fixed; bottom: 0; left: 50%; z-index: 60;
+  width: 100%; max-width: var(--app);
+  /* .96 opaque already, so the blur is a refinement rather than the
+     thing that makes it readable — but Safari still needs the prefix */
+  background: rgba(237,237,237,.96);
+  -webkit-backdrop-filter: blur(12px);
+          backdrop-filter: blur(12px);
+  border-top: 1px solid var(--line);
+  padding: 11px 18px calc(11px + env(safe-area-inset-bottom));
+  display: flex; align-items: center; gap: 14px;
+  transform: translate(-50%, 115%); transition: transform .35s ease;
+}
+.sticky.show { transform: translate(-50%, 0); }
+.sticky .s-price { font-family: var(--serif); font-size: 19px; flex: 1; }
+.sticky .btn { width: auto; padding-inline: 30px; height: 46px; }
+
+/* ---------- A phone turned sideways ----------
+   Landscape on a modern handset is about 390px tall. The floating
+   header claims 74 of those and the buy bar another 68: over a third
+   of the screen is chrome before a single word of the product is
+   visible, and the picture — square, by aspect-ratio — then wants more
+   height than what's left.
+
+   Nobody shops in landscape on purpose, but phones rotate in bed and
+   in cars, so the page should still be usable rather than pretty.
+   Trim the two fixed bars, and let the gallery be wider than it is
+   tall instead of insisting on the square. Everything else keeps its
+   proportions; this is a squeeze, not a second design. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .hdr { padding: 6px 14px; }
+  .hdr-bar { height: 46px; }
+  .home, .cart { width: 34px; height: 34px; }
+  .hdr-stack { height: 34px; }
+
+  .sticky { padding: 7px 18px calc(7px + env(safe-area-inset-bottom)); }
+  .sticky .btn { height: 40px; padding-inline: 22px; }
+  .sticky .s-price { font-size: 17px; }
+  body { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
+
+  .gal-slides { aspect-ratio: 4 / 3; }
+
+  /* the dialog is already capped at the viewport; give it room to be */
+  .avail-panel { padding: 16px 18px 14px; }
+}
+
+/* ==========================================================
+   CART DRAWER
+   ========================================================== */
+.drawer {
+  position: fixed; top: 0; bottom: 0; left: 50%; z-index: 90;
+  width: 100%; max-width: var(--app); transform: translateX(-50%);
+}
+.drawer[hidden] { display: none; }
+
+/* no slide, no fade — the panel is simply there */
+.drawer-veil { position: absolute; inset: 0; background: rgba(30,27,24,.32); }
+
+/* on the basket's side: left in Arabic, right on /en/ */
+.drawer-panel {
+  position: absolute; top: 0; bottom: 0; inset-inline-end: 0; z-index: 1;
+  width: 88%; background: var(--panel);
+  display: flex; flex-direction: column;
+}
+
+.drawer-top {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 26px 24px 18px; border-bottom: 1px solid var(--line);
+}
+.drawer-top h2 { font-size: 22px; font-weight: 500; letter-spacing: -.4px; }
+.drawer-x {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: grid; place-items: center; margin-inline-end: -6px;
+  transition: background .2s ease;
+}
+.drawer-x:hover { background: var(--card); }
+.drawer-x svg {
+  width: 19px; height: 19px; fill: none; stroke: var(--ink);
+  stroke-width: 1.6; stroke-linecap: round;
+}
+
+/* `contain` stops the scroll chaining out: reach the last line of the
+   basket and keep dragging, and without it the PAGE behind the drawer
+   starts moving instead — iOS ignores the body's overflow:hidden often
+   enough that the lock alone cannot be trusted. Momentum for old iOS. */
+.drawer-body {
+  flex: 1; overflow-y: auto; padding: 22px 24px;
+  overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+}
+
+/* image column stretches to whatever the text column needs */
+.ci {
+  display: grid; grid-template-columns: 86px 1fr; gap: 14px;
+  align-items: stretch; margin-bottom: 24px;
+}
+.ci:last-child { margin-bottom: 0; }
+.ci picture {
+  display: block; min-height: 0; border-radius: 10px;
+  overflow: hidden; background: var(--card);
+}
+.ci img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ci-body {
+  min-width: 0; display: flex; flex-direction: column;
+  justify-content: center; gap: 5px;
+}
+/* the shared product-line pair — see --pname / --pnote */
+.ci-name { font-size: var(--pname); }
+.ci-price { font-size: var(--pnote); color: var(--muted); }
+.ci-meta { font-size: var(--pnote); color: var(--muted); }
+.ci-row { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
+.ci-qty { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 100px; }
+.ci-qty button { width: 30px; height: 28px; font-size: 14px; transition: color .2s; }
+.ci-qty button:hover { color: var(--gold-dp); }
+.ci-qty span { min-width: 22px; text-align: center; font-size: 13px; }
+/* trash buttons — cart drawer + checkout summary */
+.ci-del, .si-del {
+  display: grid; place-items: center; flex: 0 0 auto;
+  width: 32px; height: 32px; border-radius: 50%;
+  color: var(--muted); transition: color .2s ease, background .2s ease;
+}
+.ci-del:hover, .si-del:hover { color: #b4483c; background: rgba(180,72,60,.08); }
+.ci-del svg, .si-del svg {
+  width: 17px; height: 17px; fill: none; stroke: currentColor;
+  stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+}
+.si-del { margin-inline-start: 4px; }
+
+.drawer-empty { text-align: center; padding: 60px 0; font-size: 13.5px; color: var(--muted); }
+
+.drawer-foot { padding: 20px 24px calc(24px + env(safe-area-inset-bottom)); }
+.drawer-note { font-size: 11.5px; color: var(--muted); text-align: center; margin-bottom: 14px; }
+.drawer-foot .btn { max-width: none; gap: 6px; }
+.drawer-foot .btn em { font-style: normal; opacity: .7; }
+
+/* ==========================================================
+   CHECKOUT
+   ========================================================== */
+.co { padding: 34px 0 80px; display: grid; gap: 34px; }
+.co h2 {
+  font-family: var(--serif); font-weight: 400; font-size: 22px;
+  margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--line);
+}
+.f { margin-bottom: 16px; }
+.f label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 7px; }
+.f input, .f select, .f textarea {
+  width: 100%; font-family: var(--sans); font-weight: 300; font-size: 16px;
+  padding: 12px 0; border: none; border-bottom: 1px solid var(--line);
+  background: none; color: var(--ink); border-radius: 0;
+}
+/* ONE HEIGHT FOR EVERY FIELD, stated rather than inherited. iOS Safari
+   draws a native <select> at its own height and ignores the vertical
+   padding above, so the country and governorate boxes came out shorter
+   than the text inputs, their underlines a few pixels above the rest —
+   and the flag emoji in the country's option nudged that one alone by
+   another pixel or two, so even the two selects in the same row did
+   not agree. A fixed height with the text centred in it puts every
+   underline on one line, whatever the engine's idea of a select is.
+   appearance: none takes the native chrome with it (the stacked ⌃⌄ on
+   iOS), and the chevron is drawn in, on the inline-end side, so the
+   two look like the inputs they sit among. */
+.f input, .f select {
+  height: 46px; padding-top: 0; padding-bottom: 0; line-height: 44px;
+}
+.f select {
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%237b746b' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left 2px center;      /* RTL: the far side */
+  background-size: 11px;
+  padding-inline-end: 20px;
+  cursor: pointer;
+}
+/* the far side on /en/ is the right */
+[dir="ltr"] .f select { background-position: right 2px center; }
+.f input:focus, .f select:focus, .f textarea:focus { outline: none; border-color: var(--gold-dp); }
+.f .hint { font-size: 11.5px; color: var(--muted); margin-top: 6px; }
+
+/* "اختياري" in the house gold. Not --gold (#b8974f, 2.37:1 here) nor
+   --gold-dp (3.87:1) — at 11px this is small text and both sit under the
+   4.5:1 bar. --gold-ink is the same hue carried darker and clears it at
+   5.04:1. It matters more than a decorative gold would: this word is the
+   only thing telling a shopper the field can be skipped, so a shopper
+   who cannot read it fills in a box they did not have to. */
+:root { --gold-ink: #7a611f; }
+.opt-tag { font-size: 11px; color: var(--gold-ink); font-weight: 400; }
+
+/* phone reads LTR: dial code first, number after it */
+.tel {
+  display: flex; align-items: center; direction: ltr;
+  border-bottom: 1px solid var(--line);
+}
+.tel input { text-align: left; }
+.tel:focus-within { border-color: var(--gold-dp); }
+.tel-code {
+  flex: 0 0 auto; font-size: 16px; color: var(--muted);
+  padding-inline-end: 10px; margin-inline-end: 10px;
+  border-inline-end: 1px solid var(--line);
+}
+.tel input { border-bottom: none; padding-inline: 0; }
+.tel input:focus { border-color: transparent; }
+/* v309: the dial code in its own small box, right against the number,
+   no divider line */
+html.pg3 .tel-code {
+  /* v312: inverted — a grey box, light figures (5.3:1); still the field's only edge */
+  border: 0; border-radius: 6px; background: #6f6a64; color: var(--paper);   /* v312: no stroke — the grey fill is the edge; figures in the page's stone */
+  padding: 3px 7px; margin-inline-end: 8px; line-height: 1.3; font-size: 15px;
+}
+/* Two fields side by side, bottoms level. `end` so that if a label ever
+   wraps on a narrow phone the underlines still meet on one line — it
+   is the underline the eye reads as the row, not the label. */
+.f-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: end; }
+
+.pays { display: grid; gap: 2px; margin-bottom: 8px; }
+/* same dot language as the size picker: grey, no stroke, solid gold when
+   picked. One block, not two: this was split across two `.pay` rules and
+   the second's `transition: color .25s` replaced the first's bare `.2s`
+   outright — so the border-bottom the shorthand was there to animate
+   stopped animating, and nothing said so. A transition shorthand is not
+   additive. */
+.pay[hidden] { display: none; }
+.pay {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: start;
+  padding: 16px 0; border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  transition: color .25s ease, border-color .25s ease;
+}
+.pay i {
+  width: 15px; height: 15px; border-radius: 50%; flex: 0 0 auto;
+  background: #c6c0b8; border: none;
+  transition: background .35s ease;
+}
+.pay[aria-checked="true"] { color: var(--ink); }
+.pay[aria-checked="true"] i { background: var(--grad-gold); }
+/* The card label is 19 characters now, not 5. It gets the shrink so a
+   narrow phone wraps the words rather than squashing the Visa and
+   Mastercard marks, which stop being recognisable the moment they are
+   scaled down. */
+.pay > span { font-size: 13.5px; min-width: 0; flex: 0 1 auto; }
+.pay em {
+  font-style: normal; font-size: 12px; color: var(--muted);
+  margin-inline-start: auto; font-weight: 500; transition: color .25s ease;
+}
+/* the fee reads in the tone of what it costs you: gold for a charge, green for free */
+.pay[aria-checked="true"][data-pay="cod"]  em { color: var(--gold-dp); }
+.pay[aria-checked="true"][data-pay="card"] em { color: var(--leaf); }
+
+/* accepted card marks */
+.brands {
+  margin-inline-start: auto; display: flex; align-items: center; gap: 5px;
+  flex: 0 0 auto; opacity: .55; transition: opacity .25s ease;
+}
+.pay[aria-checked="true"] .brands { opacity: 1; }
+.brands .brand {
+  width: 34px; height: 22px; display: block; border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(30, 27, 24, .09);
+}
+/* the fee label keeps the far-left slot, the marks sit just inside it */
+.brands + em { margin-inline-start: 12px; }
+
+/* accepted-payment strip under the free-shipping line */
+.pay-marks {
+  display: flex; justify-content: center; align-items: center; gap: 6px;
+  margin-top: 12px;
+}
+.pay-marks .brand {
+  width: 34px; height: 22px; display: block; border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(30, 27, 24, .09);
+}
+@media (max-width: 359px) {
+  .brands { gap: 3px; }
+  .brands .brand, .pay-marks .brand { width: 30px; height: 19px; }
+}
+
+.sum { background: var(--grad-sand); border-radius: 3px; padding: 26px 22px; }
+.sum h3 { font-size: 12.5px; color: var(--muted); margin-bottom: 22px; font-weight: 400; }
+.sum-item { display: flex; gap: 14px; align-items: center; padding-bottom: 18px; margin-bottom: 18px; border-bottom: 1px solid rgba(30,27,24,.08); }
+.sum-item img { width: 58px; height: 58px; object-fit: cover; border-radius: 2px; }
+/* the shared product-line pair — see --pname / --pnote */
+.sum-item .n { font-size: var(--pname); }
+.sum-item .m { font-size: var(--pnote); color: var(--muted); }
+/* ---------- free-delivery bar, above التوصيل ----------
+   The header's version of this is a label inside the track, because it
+   has half a line to work in. This one has a row, so the sentence sits
+   above the bar at a readable size and the track stays a track. */
+/* No margin: .co is a grid with a 34px gap, and .sum carries order:-1,
+   so this lands between الطلب and التوصيل with the gap already spacing
+   it. A margin here would be added to that gap, not instead of it. */
+.free-bar {
+  margin: 0;
+  padding: 13px 16px 14px;
+  border-radius: 12px;
+  background: var(--grad-sand);
+}
+.free-bar[hidden] { display: none; }
+.free-msg {
+  margin: 0 0 9px;
+  font-size: 12.5px; line-height: 1.45; color: var(--ink-soft);
+}
+/* the track is .ship-track, shared with the header — but there it is
+   sized to the header's own row, so it needs a height of its own here */
+.free-bar .ship-track { display: block; width: 100%; height: 6px; }
+.free-bar.free .free-msg { color: var(--leaf); }
+/* "العينات لا تُحتسب…" — a quieter second line under the amount */
+.free-note { display: block; margin-top: 2px; font-size: 11.5px; color: var(--muted); }
+.free-prog[hidden] { display: none; }
+
+/* The suggested scent. A real button, full width, because on a phone the
+   whole row is the target — a small "add" chip beside text people will
+   try to tap anyway is a row that mostly does nothing.
+
+   It sits on --panel inside the sand card so it reads as a thing to
+   press rather than more of the card. margin-top only when the progress
+   row is above it: as the only row, it needs no gap. */
+.free-prog + .free-add { margin-top: 12px; }
+/* the extras follow whichever row is above them — the progress bar, the
+   suggestion, or neither — with the same gap, so the card reads as one
+   stack however many of the three are on screen */
+.free-prog + .extras, .free-add + .extras { margin-top: 8px; }
+/* No outline, like every other row on the site now. White against the
+   sand card it sits in — and against the page, for the sampler's block
+   below — is edge enough, and a hairline was drawing the container
+   rather than what is in it. The press is what confirms a tap. */
+.free-add {
+  display: flex; align-items: center; gap: 11px; width: 100%;
+  padding: 9px 11px; border-radius: 10px;
+  background: var(--panel); text-align: start;
+  transition: transform .12s ease;
+}
+.free-add[hidden] { display: none; }
+.free-add:active { transform: scale(.985); }
+.free-add:focus-visible { outline: 2px solid var(--gold-dp); outline-offset: 2px; }
+/* THE PICTURE COLUMN IS 36px, on every row in this stack. The scent
+   suggestion carried a 28px round chip, the add-ons a 44px square and
+   the sampler a 44px cluster — three sizes and two shapes in one
+   column, so the names beside them started at three different places.
+   36 because that is what the two lines of type beside it measure: a
+   picture taller than its own row reads as a tile with a caption.
+
+   v187: the suggestion shows the BOX it is offering — the small red one
+   or the large white one — with the scent's chip in the corner, the
+   cart thumbnail at row size. The chip shrinks with the tile: 22px on
+   a 36px packshot would hide the box it is meant to label. */
+.fa-art { flex: 0 0 auto; display: block; line-height: 0; }
+.fa-art .thumb picture {
+  width: 36px; height: 36px; border-radius: 9px;
+  overflow: hidden; background: var(--card);
+}
+.fa-art .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fa-art .thumb .scent-mark {
+  top: 2px; left: 2px; width: 15px; height: 15px;
+  box-shadow: 0 1px 3px rgba(30,27,24,.3);
+}
+.fa-art .thumb .scent-mark svg { width: 10px; height: 10px; }
+.fa-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+/* the shared product-line pair — see --pname / --pnote */
+.fa-txt b { font-size: var(--pname); font-weight: 500; color: var(--ink); line-height: 1.5; }
+.fa-txt em { font-style: normal; font-size: var(--pnote); color: var(--muted); line-height: 1.4; }
+.fa-cta {
+  flex: 0 0 auto; font-size: 12px; font-weight: 500; color: var(--gold-dp);
+  white-space: nowrap; unicode-bidi: isolate;
+}
+
+/* ---- the shop's add-ons ----
+   Same row as the scent suggestion above them, deliberately: they are
+   the same gesture — one tap, one thing added — and giving them a
+   second shape would say they were a different kind of offer. What
+   differs is the picture: a photographed product in a square with
+   rounded corners, where the scent carries its drawn chip. */
+.extras { display: grid; gap: 8px; }
+.extras[hidden] { display: none; }
+.extras .free-add { margin: 0; }
+
+/* 36, not 44. The row is two lines of type — a 13px name over a 10.5px
+   note, about 36px of text — and a 44px picture beside it stood taller
+   than the thing it belongs to, which is what made these read as tiles
+   with captions rather than as rows. */
+.ex-art {
+  flex: 0 0 auto; display: block; line-height: 0;
+  width: 36px; height: 36px; border-radius: 9px; overflow: hidden;
+  background: var(--sand-100);
+}
+.ex-art img {
+  width: 100%; height: 100%; display: block;
+  object-fit: cover;              /* a square crop of any photograph */
+}
+/* No photograph yet: a neutral tile rather than a broken image, so an
+   extra can go on sale the moment it has a price and the picture can
+   follow. The mark is the shop's own sand-to-gold, faint enough to read
+   as a placeholder rather than as a product. */
+.ex-art-none {
+  background: var(--grad-sand);
+  box-shadow: inset 0 0 0 1px rgba(30, 27, 24, .06);
+}
+/* a drawing rather than a photograph: same square, sand behind it so
+   the object has something to sit on. Sized in per cent, because this
+   same drawing also fills the cart drawer's and the summary's
+   thumbnails, which are not 36px. */
+.ex-art-draw {
+  background: var(--sand-100);
+  display: grid; place-items: center;
+}
+.ex-draw { display: block; line-height: 0; width: 86%; height: 86%; }
+.ex-draw svg { width: 100%; height: 100%; display: block; }
+
+/* ---- the sampler ----
+   Outside the delivery card, and quieter than it: no sand panel, just
+   a hairline round a white row. It is an aside, not an offer competing
+   with the postage arithmetic above it. */
+/* A grid item of .co, which already spaces its children 34px apart —
+   a margin here would be ADDED to that gap, not instead of it. -24
+   pulls the sampler back under the delivery card it follows, so the
+   two read as neighbouring shelves rather than separate subjects a
+   heading apart. */
+/* And it sits INSIDE the same edges as the rows above it. The delivery
+   card pads its rows 16px in from its own sides; the sampler is outside
+   that card, so it had the card's full width and its white row stood
+   16px proud of every row above it on both sides — one shelf wider
+   than the others. Same inset here, so the four rows share one pair of
+   edges and the eye reads a single column. */
+.samples { margin-top: -24px; padding-inline: 16px; }
+.samples[hidden] { display: none; }
+.samples .free-add { background: var(--panel); }
+
+/* THE SCENTS THEMSELVES, in place of a product photograph — which is
+   what a sampler is. One up, two below: a triangle reads as a set at
+   44px where a row of three reads as a list.
+
+   A scent already in the basket goes grey. The row then answers "which
+   of these have I not tried" by looking, which is the question a
+   sampler is the answer to. */
+/* Everything here is a percentage of the box, so the same cluster
+   draws at 36px in the delivery bar and at whatever the cart drawer's
+   stretched thumbnail turns out to be. Fixed pixels would have made a
+   second copy of this necessary for every size it appears at. */
+.sa-art {
+  position: relative; flex: 0 0 auto;
+  width: 36px; height: 36px; display: block;
+}
+.sa-dot {
+  position: absolute; width: 48%; height: 48%; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--icon-off);
+  box-shadow: 0 1px 4px rgba(30, 27, 24, .18);
+  transition: background .3s ease, opacity .3s ease;
+}
+.sa-dot svg { width: 62%; height: 62%; display: block; fill: #fff; }
+.sa-dot:nth-child(1) { top: 0;    left: 26%; }   /* the apex */
+.sa-dot:nth-child(2) { bottom: 0; left: 0; }
+.sa-dot:nth-child(3) { bottom: 0; right: 0; }
+/* already in the basket: no accent, and faded — present but spent */
+.sa-dot.off { background: var(--icon-off); opacity: .45; box-shadow: none; }
+
+/* The line price is a small stack: the pre-offer figure struck through,
+   the price charged beneath it. `align-items: flex-end` rather than a
+   text-align, because in RTL the column's inline end is the left edge
+   and the two numbers have to share it exactly — a half-pixel apart and
+   the strike looks like it belongs to the wrong line. */
+.sum-item .p {
+  margin-inline-start: auto; font-size: 13.5px; white-space: nowrap;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 1px;
+}
+.sum-item .p .was {
+  font-size: 11px; color: var(--muted);
+  text-decoration: line-through; text-decoration-thickness: 1px;
+  line-height: 1.3;
+}
+.sum-item .p .now { line-height: 1.3; }
+.sum-line { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 10px; color: var(--ink-soft); }
+.sum-total {
+  display: flex; justify-content: space-between; align-items: baseline;
+  border-top: 1px solid rgba(30,27,24,.12); margin-top: 16px; padding-top: 16px;
+}
+.sum-total .t { font-size: 12.5px; color: var(--muted); }
+/* settlement band sitting right above "تأكيد الطلب" */
+.pay-hl {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-top: 26px; padding: 14px 16px; border-radius: 12px;
+  background: var(--grad-sand);
+}
+.pay-hl .k { font-size: 12.5px; color: var(--ink-soft); }
+.pay-hl .v {
+  font-family: var(--serif); font-size: 19px; color: var(--ink);
+  display: flex; align-items: baseline; gap: 8px; white-space: nowrap;
+}
+.pay-hl .v i { font-style: normal; color: var(--muted); font-size: 15px; }
+.pay-hl .v b { font-weight: 600; color: var(--gold-dp); }
+.pay-hl.same .v i, .pay-hl.same .v b { display: none; }
+
+/* settlement note — pulled out of the grey so it actually gets read */
+/* Plain text, not a callout. It matches .sum-line above it — same 13px,
+   same --ink-soft — so it reads as part of the summary rather than as a
+   warning. Kept at --ink-soft rather than the lighter --muted used for
+   the labels: this is the currency the card is actually charged in, so
+   it should be as legible as the figures it explains. */
+.sum-note {
+  margin-top: 14px;
+  font-size: 13px; font-weight: 300; color: var(--ink-soft);
+  text-align: start; line-height: 1.7;
+}
+.sum-total .v { font-family: var(--serif); font-size: 24px; }
+.co-msg { text-align: center; padding: 80px 22px; }
+.co-msg h2 { border: none; font-size: 26px; margin-bottom: 10px; padding: 0; }
+.co-msg p { font-size: 13.5px; color: var(--muted); margin-bottom: 28px; }
+.co-msg .btn { max-width: 260px; margin-inline: auto; }
+
+/* checkout order on the mobile canvas */
+.co .sum { order: -1; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+  html { scroll-behavior: auto; }
+}
+
+/* ==========================================================
+   Rendering cost: skip layout/paint for blocks that are still
+   off-screen. contain-intrinsic-size reserves the right space
+   so the scrollbar never jumps when they come into view.
+   ========================================================== */
+.ftr  { content-visibility: auto; contain-intrinsic-size: auto 220px; }
+
+/* ---------- payment feedback ---------- */
+.pay-msg {
+  margin-top: 18px; padding: 12px 14px; border-radius: 10px;
+  background: #fff5f3; border-inline-start: 3px solid #b4483c;
+  font-size: 12.5px; line-height: 1.8; color: var(--ink);
+}
+.spin {
+  width: 26px; height: 26px; margin: 22px auto 0;
+  border: 2px solid var(--line); border-top-color: var(--gold);
+  border-radius: 50%; animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation-duration: 2.4s; } }
+
+/* ==========================================================
+   Prices are now pure Latin runs ("120 AED") sitting inside RTL
+   Arabic. Isolating each one stops neighbouring punctuation or a
+   currency change from reordering the number and the code.
+   ========================================================== */
+.s-price,
+.sum-line span, .sum-total .v, .pay-hl .v, .pay-hl .v b,
+.pay em, .sum-item .p, .sum-item .p .was, .sum-item .p .now, .ci-price {
+  unicode-bidi: isolate;
+}
+
+/* the last section is a call to action: heading plus button, no prose */
+.legal-sec h2 + .btn-support { margin-top: 12px; }
+
+/* ==========================================================
+   Story cards
+   ========================================================== */
+.story {
+  margin-top: 40px; padding: 0 22px;
+  display: flex; flex-direction: column; gap: 12px;
+  content-visibility: auto; contain-intrinsic-size: auto 700px;
+}
+
+.scard {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px; border-radius: 14px;
+  background: var(--panel);      /* no outline — the fill carries the shape */
+}
+.scard-txt { flex: 1; min-width: 0; }
+.scard-txt h3 {
+  font-size: 14px; font-weight: 500; color: var(--ink);
+  line-height: 1.5; margin-bottom: 4px;
+}
+
+
+/* ---- comparison: us / the rest ----------------------------------------
+   Two columns rather than four. A three-product table at 480px forces the
+   text down to 10.5px; folding both alternatives into one column buys
+   back nearly double that, and the section is read at a glance rather
+   than studied.
+
+   Our column is one continuous white strip lifted off the page. The lift
+   is drawn with horizontal-only shadows repeated on every cell — a
+   shadow all the way round each cell would show a seam at every row
+   boundary — plus a cap above the header and below the last row. */
+.scard.compare {
+  flex-direction: column; align-items: stretch; gap: 12px;
+  background: none; padding: 6px 0 0;
+}
+.scard.compare .scard-txt h3 { margin-bottom: 0; }
+
+.duo {
+  table-layout: fixed;
+  border-collapse: separate; border-spacing: 9px 0;
+  /* border-spacing also pads the outer edges, so pull those 9px back off
+     and the table sits flush with the rest of the section */
+  width: calc(100% + 18px); margin-inline: -9px;
+}
+/* the visible title is the h3 above; this is for screen readers only */
+.duo caption {
+  position: absolute; width: 1px; height: 1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+.duo th, .duo td { padding: 11px 11px; vertical-align: top; }
+
+.duo thead th {
+  font-size: 11px; font-weight: 500; text-align: center;
+  padding-block: 13px; color: var(--ink-soft); background: var(--card);
+  border-start-start-radius: 13px; border-start-end-radius: 13px;
+}
+.duo tbody td {
+  font-size: 12px; line-height: 1.55; color: var(--ink-soft);
+  background: var(--card);
+  border-bottom: 1px solid rgba(30,27,24,.07);
+}
+.duo tbody tr:last-child td {
+  border-bottom: 0; padding-bottom: 13px;
+  border-end-start-radius: 13px; border-end-end-radius: 13px;
+}
+
+/* the mark sits in its own track so a wrapped second line hangs under
+   the text rather than under the tick */
+.duo-in {
+  display: grid; grid-template-columns: 15px 1fr; gap: 8px; align-items: start;
+}
+.duo-in::before {
+  content: ""; width: 15px; height: 15px; margin-top: 2px;
+  background: #6b645b;                 /* 4.4:1 on --card — a graphic */
+  -webkit-mask: var(--cross) center / contain no-repeat;
+          mask: var(--cross) center / contain no-repeat;
+}
+
+/* Latin brand mark: isolated so the RTL paragraph direction cannot
+   reorder "LUBAN & MUSK" around the ampersand */
+.duo-brand {
+  font-family: var(--latin); font-size: 11.5px; letter-spacing: .03em;
+  unicode-bidi: isolate; display: inline-block;
+}
+
+/* our column. White on the gold gradient measures 2.3:1 at its light
+   stop, so the heading is ink (7.5:1) rather than white. */
+.duo .us { box-shadow: -8px 0 18px -11px rgba(30,27,24,.42),
+                        8px 0 18px -11px rgba(30,27,24,.42); }
+.duo thead th.us {
+  background: var(--grad-gold); color: var(--ink);
+  box-shadow: -8px 0 18px -11px rgba(30,27,24,.42),
+               8px 0 18px -11px rgba(30,27,24,.42),
+               0 -5px 15px -10px rgba(30,27,24,.5);
+}
+.duo tbody td.us {
+  background: var(--panel); color: var(--ink);
+  border-bottom-color: #f1ede7;
+}
+.duo tbody tr:last-child td.us {
+  box-shadow: -8px 0 18px -11px rgba(30,27,24,.42),
+               8px 0 18px -11px rgba(30,27,24,.42),
+               0 7px 17px -10px rgba(30,27,24,.5);
+}
+.duo td.us .duo-in::before {
+  background: var(--gold-dp);           /* 4.5:1 on white */
+  -webkit-mask: var(--tick) center / contain no-repeat;
+          mask: var(--tick) center / contain no-repeat;
+}
+
+/* The steps card drops the white panel entirely and centres itself — it
+   reads as a closing sequence rather than a third product claim. */
+.scard.steps {
+  flex-direction: column; align-items: stretch; gap: 14px;
+  background: none; padding: 6px 0 0;
+}
+.scard.steps .scard-txt h3 { margin-bottom: 0; }
+.step-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.step-list li {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: 11px;
+  background: var(--grad-sand);  /* no outline — the fill carries the shape */
+  counter-increment: step;
+}
+.step-art {
+  flex: 0 0 46px; width: 46px; height: 46px;
+  display: grid; place-items: center;
+  background: var(--panel); border-radius: 10px;
+}
+.step-art svg { width: 32px; height: 32px; display: block; }
+
+/* ==========================================================
+   Cart / checkout thumbnail: packshot + scent chip
+   The chip sits in the top-INLINE-end corner, which is the top left in
+   this RTL layout — matching where the eye lands first.
+   ========================================================== */
+.thumb { position: relative; display: block; flex: 0 0 auto; line-height: 0; }
+.thumb picture { display: block; }
+/* An add-on whose photograph does not exist yet. It holds the column
+   open — the row is a grid and an empty cell collapses it — and it
+   carries the add-on's DRAWING, the same one the delivery bar shows.
+   A line in the summary with no picture, beside three that have one,
+   reads as a picture that failed to load. */
+.thumb-none {
+  width: 58px; height: 58px; border-radius: 10px;
+  background: var(--grad-sand);
+  display: grid; place-items: center;
+}
+.ci .thumb-none { width: 100%; height: 100%; border-radius: 10px; }
+/* the cluster fills its tile at whatever size the tile happens to be */
+.thumb-none .sa-art { width: 72%; height: 72%; }
+/* the drawer's image column is a stretch grid cell — the wrapper has to
+   pass that height through or the packshot collapses to its intrinsic size */
+.ci .thumb, .ci .thumb picture { height: 100%; }
+/* The chip itself is position-neutral so it can sit in a row as well as on
+   a packshot; only the thumbnail pins it to a corner. */
+.scent-mark {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: grid; place-items: center;
+  box-shadow: 0 1px 5px rgba(30,27,24,.28);
+  pointer-events: none;
+}
+/* Sits ON the packshot, inset rather than overhanging: the drawer body
+   scrolls, and an overhanging badge either gets clipped or adds a
+   scrollbar. `left` is physical on purpose — the logical properties both
+   flip with direction, and this corner should stay put in either. */
+.thumb .scent-mark { position: absolute; top: 5px; left: 5px; }
+/* solid fill, no stroke — same treatment as the product card icons */
+.scent-mark svg {
+  width: 15px; height: 15px; display: block;
+  fill: #fff; stroke: none;
+}
+
+/* ==========================================================
+   Preparation steps — each one pops in turn, 2s apart, looping.
+   The whole cycle is CSS; main.js only adds/removes .playing as
+   the section enters and leaves the viewport, so nothing runs
+   while it's off screen and there is no timer to drift.
+   6s loop = 3 steps x 2s. Each step's delay is its position.
+   ========================================================== */
+@keyframes step-pop {
+  0%            { transform: scale(1);    box-shadow: 0 0 0 0 rgba(184,151,79,0); }
+  8%            { transform: scale(1.045); box-shadow: 0 6px 18px 0 rgba(184,151,79,.28); }
+  22%           { transform: scale(1);    box-shadow: 0 2px 8px 0 rgba(184,151,79,.14); }
+  33%, 100%     { transform: scale(1);    box-shadow: 0 0 0 0 rgba(184,151,79,0); }
+}
+@keyframes step-art-pop {
+  0%        { transform: scale(1) rotate(0); }
+  8%        { transform: scale(1.14) rotate(-4deg); }
+  22%       { transform: scale(1) rotate(0); }
+  33%, 100% { transform: scale(1) rotate(0); }
+}
+
+.step-list li { transform-origin: center; }
+.step-art     { transform-origin: center; }
+
+/* will-change only while it's actually animating — held permanently it
+   just pins three needless compositor layers */
+.step-list.playing li { animation: step-pop 6s ease-in-out infinite; will-change: transform; }
+.step-list.playing li .step-art { animation: step-art-pop 6s ease-in-out infinite; }
+.step-list.playing li:nth-child(2),
+.step-list.playing li:nth-child(2) .step-art { animation-delay: 2s; }
+.step-list.playing li:nth-child(3),
+.step-list.playing li:nth-child(3) .step-art { animation-delay: 4s; }
+
+/* motion-sensitive shoppers get the layout, never the movement */
+@media (prefers-reduced-motion: reduce) {
+  .step-list.playing li,
+  .step-list.playing li .step-art { animation: none; }
+}
+.step-txt { font-size: 12.5px; line-height: 1.5; color: var(--ink-soft); }
+.step-txt b {
+  display: block; font-weight: 500; color: var(--ink); margin-bottom: 1px;
+}
+
+@media (max-width: 359px) {
+  .scard { gap: 11px; padding: 13px; }
+    }
+
+/* ==========================================================
+   Trust badges — sit under the card marks, two across
+   Grey tile, gold icon and heading, exactly the pairing used
+   elsewhere for anything that reassures rather than sells.
+   ========================================================== */
+.trust {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 9px;
+  margin-top: 12px;
+}
+.trust li {
+  display: flex; align-items: center; gap: 9px;
+  padding: 11px 12px; border-radius: 12px;
+  background: var(--card);
+}
+.trust svg {
+  width: 22px; height: 22px; flex: 0 0 auto;
+  fill: none; stroke: var(--gold);
+  stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+}
+/* Both tiles are reassurance rather than luxury, so both read green
+   where gold would read "premium". */
+.trust li.safe svg { stroke: var(--leaf); }
+.trust li.safe b   { color: var(--leaf); }
+/* a one-line tile needs no special case: .trust li is align-items:center,
+   so its span is already centred against the two-line neighbour */
+/* <span><b>heading</b>then a bare text node</span> — the span sets the
+   small size, the b overrides it for the gold heading */
+.trust li > span {
+  display: flex; flex-direction: column; min-width: 0;
+  font-size: 10px; color: var(--ink-soft); line-height: 1.5;
+}
+.trust b {
+  font-size: 11.5px; font-weight: 500; color: var(--gold-dp); line-height: 1.5;
+}
+
+@media (max-width: 359px) {
+  .trust { grid-template-columns: 1fr; }
+}
+
+/* ==========================================================
+   Fly to cart — the scent's own icon travels to the header
+   Fixed to the viewport and out of flow, so it neither reflows the
+   page nor drifts if the page scrolls mid-flight. The arc comes from
+   translating x and y on different easings rather than a path: it
+   reads as a toss, and it stays cheap enough for three at once.
+   ========================================================== */
+.fly {
+  position: fixed; z-index: 60; pointer-events: none;
+  display: grid; place-items: center;
+  animation: fly-x .78s cubic-bezier(.55,0,.9,.45) forwards;
+  will-change: transform, opacity;
+}
+.fly svg {
+  width: 100%; height: 100%; display: block;
+  fill: var(--accent); stroke: none;
+  animation: fly-spin .78s ease-in forwards;
+}
+/* horizontal on a lazy ease, vertical on a sharp one — the difference
+   between the two curves is what bends the path into an arc */
+@keyframes fly-x {
+  0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+  15%  { transform: translate(0, -18px) scale(1.18); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(.28); opacity: .15; }
+}
+@keyframes fly-spin {
+  0%   { transform: rotate(0); }
+  100% { transform: rotate(28deg); }
+}
+@media (prefers-reduced-motion: reduce) { .fly { display: none; } }
+
+/* ==========================================================
+   Order tracking
+   ========================================================== */
+.track { margin-top: 46px; }
+.track .label { margin-bottom: 18px; }
+
+.track-box { display: flex; gap: 9px; }
+.track-box input {
+  flex: 1; min-width: 0; height: 46px; padding: 0 14px;
+  border: none; border-radius: 12px; background: var(--card);
+  font-family: var(--sans); font-size: 14px; color: var(--ink);
+  letter-spacing: .5px;
+}
+.track-box input::placeholder { color: var(--muted); letter-spacing: normal; }
+.track-box .btn { flex: 0 0 auto; width: 96px; height: 46px; }
+
+.track-hint { margin-top: 8px; font-size: 11px; color: var(--muted); }
+
+.track-out {
+  margin-top: 14px; padding: 15px 16px; border-radius: 12px;
+  background: var(--grad-sand);
+}
+.track-out .t-id {
+  display: block; font-size: 11px; color: var(--muted);
+  letter-spacing: .5px; unicode-bidi: isolate;
+}
+.track-out .t-state {
+  display: block; font-size: 15px; font-weight: 500; color: var(--ink);
+  margin-top: 2px; line-height: 1.6;
+}
+.track-out.bad .t-state { color: var(--berry); }
+
+/* four dots and a rail; the filled ones are how far the parcel has got */
+.t-rail { display: flex; align-items: center; gap: 0; margin-top: 14px; }
+.t-rail i {
+  width: 11px; height: 11px; border-radius: 50%; flex: 0 0 auto;
+  background: #cfc8bd;
+}
+.t-rail b { flex: 1; height: 2px; background: #cfc8bd; }
+.t-rail i.on { background: var(--grad-gold); }
+.t-rail b.on { background: var(--gold); }
+.t-rail i.done { background: var(--leaf); }
+.t-rail b.done { background: var(--leaf); }
+
+.t-dates { margin-top: 12px; display: grid; gap: 4px; }
+.t-dates span {
+  display: flex; justify-content: space-between; gap: 12px;
+  font-size: 11.5px; color: var(--ink-soft);
+}
+.t-dates span em { font-style: normal; color: var(--muted); unicode-bidi: isolate; }
+
+/* The savings line, in green rather than gold — it is a result, not a
+   promotion, and the page already uses green for "this went your way"
+   on the secure-payment badge.
+
+   A shade darker than --leaf, which is used on white elsewhere. The
+   summary panel is a sand GRADIENT, and against its darkest stop
+   (#e6d4b6) --leaf measures 4.35:1 — just under the 4.5:1 bar for 13px
+   text. --leaf-ink clears it at 5.8:1 there and 8.4:1 on the drawer's
+   white, and the two greens are near-indistinguishable side by side. */
+:root { --leaf-ink: #26573b; }
+.saved-line { color: var(--leaf-ink); }
+.saved-line span { color: inherit; }
+
+/* ---------- ingredient strip ----------
+   All four visible at once, so it is a grid rather than a carousel now:
+   there is nothing off-screen to scroll to, and leaving the scroll
+   affordances in would promise movement that never comes.
+
+   1fr columns rather than a percentage — the four share whatever is left
+   after the page padding and the gaps, so they stay equal on any width
+   without a magic number to maintain. */
+
+
+/* ---------- dirham mark ----------
+   A mask, not an <img> and not an inline <svg>: it inherits currentColor
+   so a price in gold, green or grey needs no second rule, and every use
+   is one empty span rather than a repeated path.
+
+   The path is traced from the official artwork rather than approximated,
+   and rather than trusted to a font: the UAE's 2025 symbol is too new
+   for reliable coverage, and a missing codepoint renders as a blank box
+   on the price of every product.
+
+   The vertical nudge is the point of the exercise. The glyph box is
+   1.154:1 and its optical centre sits above the Latin baseline, so left
+   alone it floats. -0.06em drops it onto the numerals beside it. */
+.dh {
+  display: inline-block;
+  width: .92em; height: .8em;
+  vertical-align: -0.06em;
+  margin-inline-start: .12em;
+  background: currentColor;
+  -webkit-mask: var(--dh-svg) no-repeat center / contain;
+          mask: var(--dh-svg) no-repeat center / contain;
+}
+/* The Omani rial mark, same technique as the dirham above: one CSS mask
+   filled with currentColor, so it inherits the colour and weight of the
+   price it sits in and there is no inline SVG repeated down the page.
+
+   Traced from the supplied artwork at 98.97% IoU. The glyph is WIDE —
+   1.91:1 — so it is sized off its height and left to take the width that
+   follows, rather than being squashed into a square box.
+
+   The source PNG was near-black in RGB (max value 41) with the shape
+   carried entirely in the alpha channel; tracing luminance would have
+   produced a solid rectangle. */
+.omr {
+  display: inline-block;
+  width: 1.18em; height: .62em;
+  vertical-align: 0.02em;
+  margin-inline-start: .14em;
+  background: currentColor;
+  -webkit-mask: var(--omr-svg) no-repeat center / contain;
+          mask: var(--omr-svg) no-repeat center / contain;
+}
+/* The Saudi riyal mark, 2025. Same technique again, and for the same
+   reason as the dirham: the symbol is newer than most of the phones that
+   will see it, so a codepoint would render as a blank box beside the
+   price rather than as a currency.
+
+   Traced from the supplied artwork at 99.05% IoU, in six separate
+   strokes — the glyph has no enclosed counters, so nothing here depends
+   on the fill rule. It is TALL rather than wide (0.905:1, where the
+   dirham is 1.154:1), so the box is sized off the dirham's height and
+   given the width that ratio asks for; the mask is `contain`, and a box
+   of the wrong ratio would letterbox the glyph smaller than its
+   neighbours rather than distort it — visible, but only just.
+
+   Like the other two, the artwork was near-black in RGB with the shape
+   in the alpha channel; the trace reads alpha. */
+.sar {
+  display: inline-block;
+  width: .724em; height: .8em;
+  vertical-align: -0.06em;
+  margin-inline-start: .12em;
+  background: currentColor;
+  -webkit-mask: var(--sar-svg) no-repeat center / contain;
+          mask: var(--sar-svg) no-repeat center / contain;
+}
+/* in a strikethrough price the line must cross the mark too, or the old
+   price reads as struck-through digits beside a live currency symbol */
+.was .omr,
+.was .sar { opacity: .75; }
+
+:root {
+  --sar-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90.47 100.00'%3E%3Cpath fill-rule='evenodd' d='M41.74 0.00 36.39 3.43 33.10 6.99 31.94 9.46 31.87 74.37 27.55 75.81 3.84 81.01 1.64 83.82 0.00 90.20 0.00 92.25 21.80 88.07 31.94 85.54 35.92 82.32 41.54 73.89 42.15 71.83 42.15 0.69ZM90.40 38.25 89.72 37.97 87.39 38.38 86.50 38.79 85.26 38.86 69.43 42.43 68.13 42.49 67.31 42.91 65.66 43.04 44.14 47.64 43.73 48.12 43.80 58.19 44.00 58.40 45.58 58.26 86.22 49.49 87.46 48.59 88.83 46.26 89.92 42.15ZM53.05 58.60 53.05 75.94 53.39 76.42 53.94 76.63 86.15 69.64 87.73 67.92 88.35 66.48 89.31 63.06 89.92 59.36 89.65 58.40 88.62 58.40 67.44 62.99 63.54 63.61 63.26 63.26 63.26 56.68 63.06 56.27 61.69 56.34 54.08 57.98ZM89.92 82.04 89.65 81.63 89.24 81.56 88.07 81.97 84.17 82.59 78.34 84.03 59.77 87.80 59.08 88.14 57.30 88.28 55.65 89.58 54.63 91.78 53.53 95.89 53.46 97.94 53.12 99.73 53.26 99.93 54.69 99.93 55.24 99.59 57.98 98.97 59.22 98.90 65.04 97.46 66.28 97.40 67.65 96.92 71.28 96.30 72.24 95.89 73.61 95.82 77.04 94.86 78.27 94.79 79.44 94.38 80.95 94.24 81.97 93.83 85.74 93.15 87.11 92.05 88.28 90.06 89.38 86.36ZM62.92 3.43 62.23 3.50 58.94 5.55 56.68 7.54 54.01 10.69 53.05 12.89 53.05 43.66 53.26 43.93 54.56 43.87 60.45 42.43 61.62 42.36 63.06 41.88 63.26 41.47 63.26 4.11ZM30.23 50.86 29.47 50.72 28.44 51.13 26.94 51.27 25.77 51.68 22.07 52.30 18.71 53.19 17.61 53.26 16.11 53.74 14.80 53.87 13.98 54.22 9.73 54.90 8.84 55.31 7.95 56.00 6.72 58.40 5.76 61.89 5.21 65.59 5.28 66.42 5.62 66.62 6.79 66.55 8.43 66.07 9.94 65.87 10.83 65.52 11.99 65.46 13.23 65.04 13.85 65.04 15.42 64.56 19.12 63.95 20.49 63.47 23.78 62.92 24.88 62.51 26.46 62.37 27.55 61.96 28.58 61.89 30.02 61.48 30.29 61.07Z'/%3E%3C/svg%3E");
+  --omr-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100.00 52.34'%3E%3Cpath fill-rule='evenodd' d='M50.63 0.00 52.85 0.25 55.19 0.95 58.23 2.28 62.03 4.68 65.51 7.78 65.95 8.35 65.89 8.99 64.37 14.43 64.24 15.82 63.73 16.71 62.34 22.91 61.84 23.61 57.22 19.05 54.87 17.22 51.65 15.25 47.72 13.99 44.75 13.99 42.85 14.62 41.58 15.32 40.13 16.71 39.43 18.92 40.00 20.82 40.76 22.03 43.92 25.63 99.81 25.95 99.75 26.77 96.84 31.14 95.32 34.18 93.67 36.33 58.29 36.39 59.43 37.47 64.05 40.06 67.53 41.33 89.24 42.03 89.11 42.66 83.67 51.77 83.23 52.09 65.51 52.22 0.13 52.15 0.13 51.33 2.47 47.91 5.76 42.09 6.33 41.77 42.53 41.90 43.04 41.65 43.16 41.33 41.14 38.61 38.80 36.20 11.01 36.27 10.70 35.76 16.58 25.89 35.32 25.70 35.57 25.25 35.70 20.06 36.39 16.71 38.23 11.46 40.13 7.97 42.78 4.18 44.75 2.28 48.23 0.32 50.63 0.00Z'/%3E%3C/svg%3E");
+  --dh-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 23.07 20'%3E%3Cpath fill-rule='evenodd' d='M2.25 0.02 11.24 0.09 12.85 0.36 13.96 0.68 15.01 1.11 16.24 1.81 17.8 3.16 18.5 4.08 19.23 5.45 19.67 6.83 19.84 7.01 21.75 7.06 22.48 7.51 22.77 7.92 23.07 8.83 23.07 9.31 22.98 9.42 22.23 9.03 20.07 9.06 20.05 10.88 20.18 11.01 21.75 11.06 22.34 11.39 22.93 12.24 23.07 12.83 23.05 13.35 22.96 13.42 22.28 13.03 19.82 13.01 18.92 15.26 17.69 17.02 16.65 17.96 15.96 18.43 15.14 18.87 13.72 19.41 12.62 19.71 10.49 19.98 2.25 19.98 2.16 19.87 2.72 18.93 3 17.66 3.04 13.14 2.86 12.99 1.54 12.98 0.91 12.73 0.3 12.03 0.02 11.06 0.13 10.58 0.64 10.9 1.09 11.01 2.89 11.01 3.04 10.87 3.02 9.08 2.84 8.99 1.52 8.97 0.91 8.72 0.3 8.03 0.02 7.01 0.04 6.68 0.14 6.58 0.68 6.92 1.11 7.01 2.86 7.02 3.04 6.86 2.98 2.32 2.68 1.05 2.16 0.07 2.25 0.02ZM6.25 1.02 10.54 1.07 12.4 1.52 13.51 2.07 14.53 2.93 15.37 4.09 15.96 5.47 16.26 6.93 6.15 6.97 6.04 6.74 6.06 1.18 6.25 1.02ZM7.52 8.95 15.51 8.95 7.52 8.95ZM16.12 9.01 16.4 9.01 16.53 9.15 16.53 10.81 16.4 10.99 6.22 10.99 6.06 10.81 6.04 9.2 6.2 9.03 16.12 9.01ZM6.25 13.01 16.1 13.01 16.24 13.05 16.28 13.19 15.94 14.51 15.37 15.82 14.53 16.98 13.49 17.86 12.35 18.43 10.7 18.87 9.29 19 6.22 19 6.04 18.75 6.04 13.19 6.25 13.01Z'/%3E%3C/svg%3E");
+}
+/* in a strikethrough price the line must cross the mark too, or the old
+   price reads as struck-through digits next to a live currency symbol */
+.was .dh { opacity: .75; }
+
+/* ==========================================================
+   THE SHOWCASE REEL
+
+   Five portrait clips as a row of cards, swiped sideways. RTL, so the
+   first card sits at the right and the strip pulls leftward — which is
+   what the page's own reading direction already does, and needs no
+   arrow or dot to explain.
+
+   Two cards fit across with a slice of the third showing: the peek IS
+   the invitation to swipe, which is why there is no chevron, no dot
+   rail, no frame — nothing around the pictures at all. A horizontal
+   strip in a vertical page also costs none of what the vertical column
+   did: a thumb scrolling the page moves the page, a thumb going
+   sideways moves the cards, and the browser tells the two apart on
+   its own.
+
+   pointer-events: none is the whole of "it cannot be selected": no
+   selection, no long-press menu, no accidental pause, no scrub. The
+   element is also out of the tab order and aria-hidden in the markup,
+   so nothing lands on it by keyboard or screen reader either.
+   ========================================================== */
+/* OUT OF THE GUTTER. .info pads its children 22px on both sides, and
+   every block in there simply inherits that — which is right for text
+   and wrong for a strip: a card that stops 22px short of the screen
+   edge reads as a cropped grid, while one that slides under the gutter
+   reads as a strip with more to come. So the reel steps out of .info's
+   padding, and the TRACK puts the same 22px back inside itself, where
+   it is scrollable space rather than a wall. scroll-padding keeps the
+   snap in step with it.
+
+   Safe-area insets are deliberately not added on top: the body is
+   capped at 480 and centred, so on a notched phone held sideways the
+   canvas sits well inside the notch already. */
+.reel { position: relative; margin: 26px -22px 22px; }
+
+/* THE FRAME STAYS; THE VIDEOS PASS THROUGH IT. A 3px gold stroke fixed
+   at the centre, exactly the size and corner of a card at rest, drawn
+   over everything and deaf to touch. A swipe slides the front card out
+   of it and the next one in, so the frame reads as the place a video
+   is shown rather than as part of any one video. Sized in the reel's
+   own width so it can only ever match the card, which is sized the
+   same way. */
+.reel::after {
+  content: "";
+  position: absolute; z-index: 4; pointer-events: none;
+  /* one pixel larger than the card on every side, so the stroke sits
+     ON the card's edge rather than beside it: a sub-pixel rounding of
+     either box then lands under the gold instead of as a hair of page
+     between the two */
+  top: 5px; left: 50%; transform: translateX(-50%);
+  width: calc(44% + 2px); aspect-ratio: 9 / 16;   /* = --card on the track, +1px a side */
+  border-radius: 17px;
+  border: 3px solid var(--gold);
+}
+
+/* ONE IN FRONT, THE REST BEHIND. The card at the centre is full size
+   and on top; its neighbours sit tucked behind its edges, smaller and
+   dimmed, still playing. A swipe brings the next one forward — it
+   grows into the centre as the one it replaces shrinks back — and the
+   snap lands it exactly there. The scaling is done by main.js on each
+   scroll frame from the card's distance to the centre, so it is
+   continuous under the finger rather than a jump on release.
+
+   The overlap is real: cards are 52% wide but advance 36% per step
+   (a -8% margin each side), so the neighbours genuinely sit behind
+   the front card and are cropped by it, which is what makes it read
+   as a stack rather than a row. z-index follows the same distance.
+
+   The track's own inline padding is what lets the FIRST and LAST card
+   reach the centre; snapping to `center` with nothing to scroll past
+   would leave them stuck at the edges. */
+.reel-track {
+  /* 44% of the canvas: 211px wide and 375 tall at 480 — the front card
+     about the size one of the old pair was, the two behind it smaller
+     still. Kept on the small side on purpose: this is a band across
+     the page, not a screen of it. The frame in .reel::after is the
+     same 44% and must move with it. */
+  --card: 44%;                       /* a card's width */
+  --ov: 7%;                          /* how far each card tucks under its neighbour, per side */
+  display: flex;
+  padding-block: 6px;                /* the frame sits 1px outside the card; a little air above and below */
+  overflow-x: auto; overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;    /* the last card is not "go back" */
+  scrollbar-width: none; -ms-overflow-style: none;
+}
+.reel-track::-webkit-scrollbar { display: none; }
+/* Spacers at both ends rather than padding on the track, and the
+   difference is not cosmetic: a flex item's percentage width resolves
+   against the container's CONTENT box, and percentage padding would
+   have shrunk that box — so a 52% card would have come out at 52% of
+   what was left, not 52% of the reel, and never matched the frame.
+   Two empty flex items take no width away from anyone. Each is the
+   distance from the edge to the first card's resting place, allowing
+   for the card pulling itself back by --ov. */
+.reel-track::before, .reel-track::after {
+  content: ""; flex: 0 0 calc((100% - var(--card)) / 2 + var(--ov));
+}
+
+.reel-slide {
+  --d: 1;                            /* 0 at the centre, 1 a full step away; set by main.js */
+  flex: 0 0 var(--card);
+  margin-inline: calc(-1 * var(--ov));
+  aspect-ratio: 9 / 16;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;          /* one card per swipe, so the front is always a whole card */
+  border-radius: 16px; overflow: hidden;
+  background: #efece6;
+  transform: scale(calc(1 - .22 * var(--d)));
+  z-index: 1;
+  transition: opacity .2s ease, box-shadow .25s ease;
+  will-change: transform;
+}
+/* The front card casts a shadow DOWNWARD — offset, spread pulled in —
+   so it lands on the cards and page below it and never on the stroke
+   beside it. A shadow that hugged the edge read as a rim inside the
+   frame; one that falls away from it reads as the card standing
+   proud of the stack. */
+.reel-slide.front {
+  z-index: 3;
+  box-shadow: 0 18px 30px -18px rgba(30, 27, 24, .5);
+}
+.reel-slide.near { z-index: 2; }
+/* Three cards and no more. The two beside the front one are drawn
+   plain — no dimming veil, on request; the size difference and the
+   overlap are enough to say which is in front — and anything a
+   second step out is not drawn at all. `visibility` rather than
+   display, so the card keeps its place in the strip and the snap
+   arithmetic, and only stops painting. */
+.reel-slide.far { opacity: 0; visibility: hidden; }
+
+/* THE DOTS, under the strip: one per clip, the current one gold and a
+   little longer, the rest sand. They say two things — how many there
+   are, and that this moves. The second is said a third way until the
+   first swipe: the gold dot slides a step toward the next dot and
+   back, the same direction a swipe would go, and stops for good the
+   moment the strip has moved once. Nobody needs to be nudged twice. */
+.reel-dots {
+  display: flex; justify-content: center; align-items: center; gap: 7px;
+  margin-top: 10px; height: 8px;
+}
+.reel-dots i {
+  display: block; width: 6px; height: 6px; border-radius: 3px;
+  background: rgba(30,27,24,.18);
+  transition: width .25s ease, background .25s ease;
+}
+.reel-dots i.on { width: 16px; background: var(--gold); }
+.reel-dots.hint i.on { animation: dot-nudge 1.5s ease-in-out infinite; }
+@keyframes dot-nudge {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(-6px); }   /* RTL: toward the next card */
+}
+/* and toward it on /en/, where the next card is to the right */
+@keyframes dot-nudge-ltr {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(6px); }
+}
+[dir="ltr"] .reel-dots.hint i.on { animation-name: dot-nudge-ltr; }
+@media (prefers-reduced-motion: reduce) {
+  .reel-dots.hint i.on { animation: none; }
+}
+/* a clip whose file is missing or refused takes its card out with it —
+   see initClip. An empty beige box is worse than no strip at all. */
+.reel-slide[hidden] { display: none; }
+.reel[hidden] { display: none; }
+@supports not (aspect-ratio: 9 / 16) {
+  .reel-slide { height: 400px; }
+}
+
+.clip-v {
+  display: block;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  background: #efece6;
+  pointer-events: none;              /* not a control */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* no motion asked for: the still frames still swipe, they just do not run */
+
+/* ==========================================================
+   MAISON, GALLERY WHITE (v197; the page since v200)
+
+   Once page style 3. Style 2's page — the same paragraph,
+   fact boxes, photo tiles and one grid, the same markup and scripts
+   (<html> carries .pg2 as well) — dressed the way the house pages of
+   the big perfume names are: one warm white, one near-black, hairlines
+   instead of boxes and shadows, a serif for the names and the prices,
+   square corners, and gold only where something is chosen or offered.
+   It reaches the basket drawer, the checkout and the policy page too,
+   whose head scripts put .pg3 on <html> before they paint.
+
+   Built from the "Luxe A — Maison" board on the design canvas, with the
+   shop's own changes to it: a black delivery band, the country beside
+   the name, the whole paragraph, no size or saving tags, the perks
+   under the "Scents" label, green trust marks, an ink line round the
+   chosen size and round the reel's centre card, the bundle's clock in
+   whole hours, a shining gold line on the
+   bundle with its clock in gold.
+
+   Everything here is scoped to html.pg3, so styles 1 and 2 are
+   untouched, and most of it is the palette: the page reads its colours
+   and faces from the custom properties set just below.
+   ========================================================== */
+html.pg3 {
+  --ink:      #1b1a19;
+  --ink-soft: #5f5b56;
+  --muted:    #6f6a64;
+  --line:     #e3dfd8;
+  /* v301: the page is warm stone (#f2efea), not white; the panels and
+     cards sit a step lighter on it, the hairline a step darker */
+  --paper:    #f2efea;
+  --panel:    #f2efea;
+  --card:     #faf8f5;
+  --lx-img:   #ebe7e1;   /* behind every photograph */
+  --lx-acc:   #8a6c33;   /* the gold that text is set in (4.7:1 on the paper) */
+  --lx-btn:   #2d3033;   /* charcoal, the buttons */
+  --lx-green: #2f6b45;   /* the trust marks */
+  --lx-hair:  #d6d1c8;   /* a step darker than a hairline: resting controls */
+  --lx-latin: "Cormorant Garamond", "Cormorant", Georgia, serif;
+  /* Arabic: Amiri for names and prices, IBM Plex Sans Arabic for the
+     rest (light, the house weight). The English page keeps Arial for
+     text — :root[lang="en"] is the stronger rule — and sets its names
+     and prices in Cormorant Garamond (below). */
+  --sans:  "IBM Plex Sans Arabic", "Almarai", "Noto Sans Arabic",
+           -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --serif: "Amiri", "Times New Roman", serif;
+}
+html.pg3[lang="en"] { --serif: var(--lx-latin); }
+
+/* ---- the header: a black delivery band over a white bar ----
+   The free-delivery line (header.js paints it) is the band, always in
+   view; its progress is the thin gold rule along the band's foot. The
+   bar under it keeps the wordmark in view — style 3 does not swap the
+   two on scroll. */
+html.pg3 .hdr {
+  padding: 30px 0 0; background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+/* the band itself, under the delivery line: the policy page and the
+   404 have no delivery line, and keep the black band all the same */
+html.pg3 .hdr::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 30px;
+  background: var(--lx-btn);   /* v312: as تتبع */
+}
+html.pg3 .hdr-bar {
+  height: 54px; padding: 0 12px; gap: 6px; border-radius: 0;
+  background: transparent; box-shadow: none;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+html.pg3 .hdr-stack { position: static; height: 100%; overflow: visible; border-radius: 0; }
+html.pg3 .hdr-in,
+html.pg3 .hdr.alt .hdr-in { position: absolute; inset: 30px 0 0; transform: none; opacity: 1; }
+html.pg3 .hdr-in { pointer-events: none; }
+/* v400: the wordmark is a way home (the band around it still lets taps through) */
+html.pg3 .hdr-in .logo { pointer-events: auto; }
+html.pg3 .ship-bar,
+html.pg3 .hdr.alt .ship-bar { top: 0; bottom: auto; left: 0; right: 0; height: 30px; transform: none; opacity: 1; }
+html.pg3 .hdr .ship-track { max-width: none; border-radius: 0; background: var(--lx-btn); }   /* v312: the buttons' charcoal, as تتبع */
+html.pg3 .hdr .ship-track i,
+html.pg3 .hdr .ship-track i.done { top: auto; height: 2px; border-radius: 0; background: var(--gold); }
+html.pg3 .ship-txt,
+html.pg3 .ship-txt.over { color: #fff; font-size: 11px; font-weight: 400; letter-spacing: .06em; }
+/* v309: the message runs from right to left, on a loop, until delivery
+   is free — then it stops in the middle and the bar turns green */
+/* the running line: the messages one after another, a wide gap and a
+   dot between them, scrolling smoothly right to left — two copies end to
+   end, laid left to right whatever the page (each reads in the page's
+   own direction), sliding one copy's width, so it never runs empty */
+/* the box the line runs in reads left to right whatever the page: in
+   Arabic, flex-start was the RIGHT edge, so the track began 570px in
+   and ran off the end before the loop came round (v311) */
+html.pg3 .hdr .ship-txt { white-space: nowrap; overflow: hidden; direction: ltr; justify-content: flex-start; padding: 0; }
+html.pg3 .hdr .ship-track.free .ship-txt { justify-content: center; }
+/* its own compositor layer (v310): the slide is a transform the GPU moves
+   on its own, so the page does no layout or paint for it while idle */
+html.pg3 .hdr .ship-run { display: flex; direction: ltr; width: max-content; animation: lmShipRun 9s linear infinite; will-change: transform; backface-visibility: hidden; }
+html.pg3 .hdr .ship-seq { display: flex; align-items: center; flex: none; }
+html.pg3[dir="rtl"] .hdr .ship-seq { direction: rtl; }
+/* English: every word capitalised, "A Unique Taste Of Omani Heritage" */
+html.pg3[lang="en"] .hdr .ship-txt { text-transform: capitalize; }
+html.pg3 .hdr .ship-seq > .ship-dot { padding: 0 28px; opacity: .6; }
+html.pg3 .hdr .ship-track.free { background: #2f6b47; }
+html.pg3 .hdr .ship-track.free i { opacity: 0; }
+/* one copy's width (header.js sets --ship-w); -50% is the two-copy fallback */
+@keyframes lmShipRun { from { transform: translateX(0); } to { transform: translateX(var(--ship-w, -50%)); } }
+@media (prefers-reduced-motion: reduce) {
+  html.pg3 .hdr .ship-txt { justify-content: center; }
+  html.pg3 .hdr .ship-run { animation: none; width: auto; }
+  html.pg3 .hdr .ship-run > .ship-seq + .ship-seq, html.pg3 .hdr .ship-seq .ship-x, html.pg3 .hdr .ship-seq .ship-dot { display: none; }
+}
+/* (v406) THE HEADER AND THE BAND, PLAIN: no gold and no lines — no rule
+   under the header, no gold progress line in the band, no underline
+   under the country in the header */
+html.pg3 .hdr { border-bottom: 0; }
+html.pg3 .hdr .ship-track i,
+html.pg3 .hdr .ship-track i.done { display: none; }
+html.pg3 .hdr .cty,
+html.pg3 .hdr .cty:focus { border-bottom: 0; }
+html.pg3 .home, html.pg3 .cart, html.pg3 .lang { position: relative; z-index: 1; }
+html.pg3 .home svg { width: 20px; height: 20px; fill: var(--ink); }
+html.pg3 .cart svg, html.pg3 .cart.filled svg { width: 21px; height: 21px; fill: var(--ink); }
+html.pg3 .cart b { background: var(--ink); }
+html.pg3 .logo {
+  font-family: var(--lx-latin); font-weight: 600; font-size: 19px;
+  letter-spacing: .18em; text-transform: uppercase; color: var(--ink);
+}
+html.pg3 .logo b { font-weight: 600; }
+/* the language switch as a word: the other language only */
+html.pg3 .lang { height: auto; padding: 0; background: none; margin-inline-start: auto; }
+html.pg3 .lang a[aria-current] { display: none; }
+html.pg3 .lang a {
+  height: 30px; min-width: 0; padding: 0 6px; border-radius: 0;
+  font-size: 12px; font-weight: 400; letter-spacing: .1em; color: var(--ink);
+}
+@media (max-width: 359px) {
+  html.pg3 .logo { font-size: 16px; letter-spacing: .12em; }
+}
+/* v202, measured with the real faces: on the English pages "عربي" sits
+   right of the centred wordmark and touched it on 320 and 360px phones
+   (4-5px overlap). Arabic is never letter-spaced (it breaks the joins
+   and widened the word), the link's side padding halves on a phone,
+   and the wordmark's tracking eases a touch — at 390px and up nothing
+   changes. */
+html.pg3 .lang a[lang="ar"] { letter-spacing: 0; }
+@media (max-width: 389px) {
+  html.pg3 .lang a { padding: 0 3px; }
+  html.pg3 .logo { letter-spacing: .16em; }
+}
+@media (max-width: 359px) {
+  html.pg3 .logo { letter-spacing: .1em; }
+}
+
+/* ---- the gallery: full width, the thumbnails under it ---- */
+html.pg3 .gal { flex-direction: column; gap: 8px; padding: 0; }
+html.pg3 .gal-slides {
+  order: 0; flex: 0 0 auto; width: 100%;
+  aspect-ratio: 13 / 14; border-radius: 0; background: var(--lx-img);
+}
+html.pg3 .gal-thumbs {
+  order: 1; flex: 0 0 auto; flex-direction: row; gap: 6px;
+  padding: 0 24px;
+  justify-content: flex-start;
+}
+/* Each thumbnail keeps the width of a four-across row, whatever the
+   count: three photos (v205) keep the size they always had, rather than
+   growing to fill the row, and the height held for the row before it
+   is built (.gal-thumbs:empty, below) stays exact. They start where the
+   name starts — the right edge in Arabic, the left in English (the
+   row's 24px padding is the name's) — and the spare slot is at the
+   far end. More than four would shrink to fit. */
+html.pg3 .gal-thumbs button {
+  flex: 0 1 calc((100% - 18px) / 4); min-width: 0; aspect-ratio: 1 / 1;
+  border-radius: 0; background: var(--lx-img); opacity: .6;
+}
+html.pg3 .gal-thumbs button[aria-current="true"] { opacity: 1; outline: 1px solid var(--ink); outline-offset: -1px; }
+
+/* ---- the name, the country beside it, the subtitle ---- */
+html.pg3 .info { padding: 28px 24px 0; }
+html.pg3 h1 {
+  font-family: var(--serif); font-weight: 400;
+  font-size: 30px; line-height: 1.3; letter-spacing: 0;
+}
+html.pg3[lang="en"] h1 { font-weight: 500; font-size: clamp(27px, 8vw, 32px); line-height: 1.15; }
+/* v205: no subtitle under the name any more, so the rating follows the
+   name at the distance it used to keep from the subtitle */
+html.pg3 .title-row { gap: 12px; margin-bottom: 16px; }
+html.pg3 .cty {
+  height: auto; padding: 0 0 3px; padding-inline-end: 16px;
+  border-radius: 0; border-bottom: 1px solid var(--ink);
+  background-color: transparent; background-position: left 0 center;
+  font-size: 12px; font-weight: 400; line-height: 1.6; text-align: start; text-align-last: auto;
+}
+html.pg3[dir="ltr"] .cty { background-position: right 0 center; }
+html.pg3 .cty:focus { box-shadow: none; border-bottom-color: var(--lx-acc); }
+
+/* ---- rating, paragraph, facts ---- */
+html.pg3 .desc2 { gap: 0; margin-bottom: 0; }
+/* v400: the fuller description on a phone too, under the rating */
+html.pg3 .desc-d { margin: 18px 0 0; font-size: 13px; font-weight: 300; line-height: 1.9; color: var(--ink-soft); }
+/* v409: the three blends under the paragraph, each on its own line with
+   a gold dot; inside the <p> (spans), so the desktop grid is unchanged */
+html.pg3 .desc-d .desc-k { display: block; margin-top: 10px; font-weight: 500; color: var(--ink); }
+html.pg3 .desc-d .desc-i { display: block; position: relative; padding-inline-start: 16px; margin-top: 2px; }
+html.pg3 .desc-d .desc-i::before {
+  content: ""; position: absolute; inset-inline-start: 2px; top: .82em;
+  width: 5px; height: 5px; border-radius: 50%; background: var(--lx-acc, #b8974f);
+}
+html.pg3 .rate2 {
+  background: none; padding: 0; border-radius: 0; gap: 8px;
+  font-size: 12px; color: var(--ink-soft);
+}
+html.pg3 .rate2 b { font-weight: 500; color: var(--ink); }
+html.pg3 .rate2 .stars { font-size: 11px; }
+html.pg3 .lead { margin-top: 20px; font-size: 13px; font-weight: 300; line-height: 1.9; color: var(--ink-soft); }
+/* v211: the paragraph is three short ones now, all one weight;
+   v301: no space between them, one block of text */
+html.pg3 .lead + .lead { margin-top: 0; }
+
+/* ---- the painting under the words (v301) ----
+   Full width of the page, the height of the description; the painting
+   (the harvester at the tree) is cropped from its left and runs under
+   the whole block, and a veil of the page's own stone — never solid —
+   lightens the half the words sit on. On the English page the picture
+   is mirrored so the figure faces the words, which sit on the left. */
+html.pg3 .tale {
+  /* v400: after the reel, as on a desktop — a child of the page now, so
+     no negative margin to reach the edges */
+  position: relative; margin: 44px 0 0; height: 246px; overflow: hidden;
+  background: var(--paper);
+}
+html.pg3 .tale-art { position: absolute; inset: 0; display: block; }
+html.pg3 .tale-art img {
+  display: block; width: 100%; height: 100%; object-fit: cover; object-position: 38% 50%;
+  /* a touch out of focus, so the words read first; scaled a hair so
+     the blur's soft edge stays outside the box */
+  filter: blur(.75px); opacity: .9; transform: scale(1.02);
+}
+html.pg3 .tale::before {
+  content: ""; position: absolute; inset: 0; z-index: 1;
+  background: linear-gradient(to right, rgba(242,239,234,0) 34%, rgba(242,239,234,.72) 58%, rgba(242,239,234,.86) 100%);
+}
+html.pg3 .tale::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 40px; z-index: 1;
+  background: linear-gradient(to bottom, rgba(242,239,234,0), var(--paper));
+}
+html.pg3 .tale-words {
+  position: absolute; z-index: 2; top: 0; bottom: 0; inset-inline-start: 0; width: 62%;
+  box-sizing: border-box; padding: 16px 0; padding-inline-start: 24px;
+  display: flex; flex-direction: column; justify-content: center;
+}
+html.pg3 .tale-sign {
+  margin: 0 0 12px; font-family: var(--serif); font-size: 16px; font-weight: 700; line-height: 1.2; color: var(--lx-acc);
+}
+html.pg3 .tale .lead { margin-top: 0; font-size: 12px; font-weight: 400; line-height: 1.8; color: #2b2622; }
+/* (v404) the three lines read as one paragraph: inline, the first closed
+   with a full stop (the markup keeps its three lines for make-en) */
+html.pg3 .tale .lead { display: inline; }
+/* a flex column would make each line a block again: centred by its middle instead */
+html.pg3 .tale-words { display: block; top: 50%; bottom: auto; transform: translateY(-50%); line-height: 0; }   /* the lines keep their own spacing */
+html.pg3 .tale .tale-sign + .lead::after { content: "."; }
+/* English: the words on the left, the painting mirrored to face them */
+html.pg3[lang="en"] .tale-art img { transform: scale(-1.02, 1.02); }
+html.pg3[lang="en"] .tale::before {
+  background: linear-gradient(to left, rgba(242,239,234,0) 34%, rgba(242,239,234,.72) 58%, rgba(242,239,234,.86) 100%);
+}
+html.pg3[lang="en"] .tale .lead { font-size: 11px; line-height: 1.6; }
+html.pg3[lang="en"] .tale-sign { margin-bottom: 8px; }
+@media (min-width: 480px) {
+  html.pg3 .tale { height: 290px; }
+  html.pg3 .tale .lead { font-size: 13.5px; }
+  html.pg3 .tale-sign { font-size: 18px; }
+}
+html.pg3 .facts2 { margin-top: 24px; gap: 0; }
+html.pg3 .facts2 li { font-size: 11px; font-weight: 400; color: var(--ink); }
+html.pg3 .facts2 svg { width: 20px; height: 20px; stroke: var(--lx-acc); stroke-width: 1.3; }
+html.pg3 .facts2 .fb {
+  gap: 8px; padding: 16px 4px; border-radius: 0; background: none;
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  /* the three product facts in the text gold, like their icons (v205);
+     the shipping and returns line under them keeps its own colour */
+  color: var(--lx-acc);
+}
+html.pg3 .facts2 .fb + .fb { border-inline-start: 1px solid var(--line); }
+
+/* ---- sizes: square photos, the chosen one framed in ink ---- */
+html.pg3 .opt { margin: 32px 0 0; }
+html.pg3 .opt .label {
+  justify-content: flex-start; margin-bottom: 12px;
+  font-size: 11px; font-weight: 400; letter-spacing: .06em; color: var(--muted);
+}
+html.pg3 .opt .label::before, html.pg3 .opt .label::after { display: none; }
+html.pg3 .sizes.s3 { gap: 0; }
+html.pg3 .sz-tiles { gap: 12px; }
+html.pg3 .s3 .size.tile,
+html.pg3 .s3 .size.tile[aria-checked="true"] {
+  padding: 0; gap: 6px; border-radius: 0; text-align: start;
+  background: none; box-shadow: none;
+}
+/* the chosen photo's frame: the bundle's gold, 2px (v203 — was a 1px
+   ink line). Every tile carries the 2px, transparent until chosen, so
+   choosing one never shifts the row. */
+html.pg3 .s3 .size.tile .tile-shot {
+  aspect-ratio: 1 / 1; border-radius: 0; background: var(--lx-img);
+  border: 2px solid transparent;
+  transition: padding .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+html.pg3 .s3 .size.tile[aria-checked="true"] .tile-shot {
+  padding: 3px; border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(184,151,79,.12);
+}
+/* the tile says its size and price; the best-seller tag and the tick
+   are gone (the frame is the choice). Sold out still says so. */
+html.pg3 .s3 .size.tile .tile-tag:not(.out),
+html.pg3 .s3 .size.tile .tile-tick { display: none; }
+html.pg3 .tile-tag.out {
+  top: 8px; inset-inline-start: 8px; border-radius: 0;
+  background: var(--lx-btn); font-size: 10px; font-weight: 400; letter-spacing: .04em;
+}
+html.pg3 .tile-name { font-size: 14px; font-weight: 400; }
+/* (v405) what is left, in the red-orange of checkout's free-delivery line */
+html.pg3 .tile-name.is-left { color: #b8431c; }
+html.pg3 .s3 .size.tile.shut { background: none; box-shadow: none; }
+
+/* ---- the scents: a label, the four perks over a hairline, then rows ---- */
+html.pg3 .szcard,
+html.pg3 .szcard.open {
+  margin-top: 28px; border: 0; border-radius: 0; background: none;
+  box-shadow: none; overflow: visible;
+}
+html.pg3 .s3card { padding: 0; }
+html.pg3 .s3card-head { margin-bottom: 0; }
+html.pg3 .s3card-head .sz-id, html.pg3 .s3card-head .sz-save { display: none; }
+.s3-lbl { display: none; }
+/* the chosen size, in the text gold and bold (v203) */
+html.pg3 .s3-lbl { display: block; font-size: 13px; font-weight: 700; color: var(--lx-acc); }
+html.pg3[lang="en"] .s3-lbl { letter-spacing: .04em; }
+/* and beside it, the pieces left of that size (v206): the label and the
+   count sit together at the start of the line, a hairline between */
+html.pg3 .s3card-head { justify-content: flex-start; gap: 10px; }
+html.pg3 .s3-left { display: inline-flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 500; color: var(--ink-soft); }
+html.pg3 .s3-left::before { content: ""; width: 1px; height: 12px; background: var(--line); }
+html.pg3 .s3-left[hidden] { display: none; }
+html.pg3 .sz-perks {
+  /* v309: two columns again, filled down then across — the first three
+     points on the right, the last three (15 days, fast delivery, the
+     scents) back in the left column, each under the last */
+  /* v310: every point on ONE line at any width — each column as wide as
+     its longest point, the two pushed to the edges, and the words scaled
+     with the screen (13px from a 450px screen up) instead of wrapping */
+  grid-template-columns: max-content max-content; justify-content: space-between;
+  grid-template-rows: repeat(3, auto);
+  grid-auto-flow: column; gap: 8px 10px;
+  margin: 14px 0 0; padding-bottom: 16px; border-bottom: 0;   /* v309: no line above "اختر روائح" */
+}
+/* the four points in the trust green, words and icons (v206) */
+html.pg3 .sz-perks li { font-size: clamp(9.5px, 2.88vw, 13px); font-weight: 400; line-height: 1.6; color: var(--gold-ink); white-space: nowrap; gap: 5px; align-items: center; }   /* v309: gold (was the trust green) */
+html.pg3 .sz-perks svg { width: clamp(13px, 3.6vw, 16px); height: clamp(13px, 3.6vw, 16px); margin-top: 0; stroke: var(--gold-ink); stroke-width: 1.3; }
+html.pg3 .s3 .prows { background: none; border-radius: 0; padding: 0; margin-bottom: 0; }
+html.pg3 .s3 .prow,
+html.pg3 .s3 .prow:last-child { padding: 14px 0; border-bottom: 1px solid var(--line); }
+html.pg3 .prow-txt b { font-size: clamp(12.5px, 3.6vw, 14px); font-weight: 400; }
+html.pg3 .prow-txt span { font-size: clamp(9.5px, 2.8vw, 11px); }
+/* square steppers: a pale line at rest, ink once a scent is in */
+html.pg3 .qty.sm { height: 34px; border-radius: 0; border: 1px solid var(--lx-hair); }
+html.pg3 .prow.on .qty.sm { border-color: var(--ink); }
+html.pg3 .qty.sm button { width: clamp(28px, 8.7vw, 34px); font-size: 16px; color: var(--ink); }
+html.pg3 .qty.sm b { min-width: 22px; font-size: 13px; font-weight: 300; }
+html.pg3 .prow.on .qty.sm b { font-weight: 500; }
+html.pg3 .picker .btn {
+  margin-top: 20px; height: 52px; border-radius: 2px;
+  background: var(--lx-btn); color: #fff;
+  font-size: 13px; letter-spacing: .04em;
+}
+html.pg3 .picker .btn:hover { background: var(--ink); }
+html.pg3 .picker .btn.ok { background: var(--lx-green); }
+
+/* ---- the free-delivery strip, squared ---- */
+html.pg3 .fs-bar {
+  margin: 24px 0 0; border-radius: 2px; background: var(--lx-green); box-shadow: none;
+  font-weight: 400; letter-spacing: .02em;
+}
+html.pg3 .fs-left { border-radius: 2px; }
+
+/* v204: the reel's pulsing dot pauses while the reel is off screen
+   (main.js initAnimIdle) — resumed from the same frame, so unseen */
+html.pg3 .reel.anim-idle .reel-dots.hint i.on { animation-play-state: paused; }
+
+/* ---- to the checkout; how to pay; the two promises ---- */
+html.pg3 .btn { border-radius: 2px; background: var(--lx-btn); font-size: 13px; letter-spacing: .04em; }
+html.pg3 .btn:hover { background: var(--ink); }
+/* the charcoal above must not cover the states that say something */
+html.pg3 .btn.ok { background: var(--lx-green); }
+html.pg3 .btn.btn-quiet { background: none; color: var(--ink-soft); box-shadow: inset 0 0 0 1px var(--line); }
+html.pg3 .btn-go.ok-go { background: var(--leaf); }
+html.pg3 .btn-go.bad, html.pg3 .btn-go.bad:hover { background: #b4483c; }
+html.pg3 .btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
+html.pg3 .btn-ghost:hover { background: var(--ink); color: #fff; }
+html.pg3 .btn-co {
+  margin-top: 24px; height: 52px;
+  border: 1px solid var(--line); background: transparent; color: var(--muted);
+}
+html.pg3 .btn-co:hover { background: transparent; }
+html.pg3 .btn-co.on { border-color: var(--ink); background: transparent; color: var(--ink); }
+html.pg3 .btn-co.on:hover,
+html.pg3 .btn-co.on:active,
+html.pg3 .btn-co.on:focus-visible { background: var(--ink); color: #fff; }
+html.pg3 .pay-marks { margin-top: 24px; filter: grayscale(1); opacity: .8; }
+html.pg3 .trust {
+  gap: 0; margin-top: 18px;
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+}
+/* v301: each tile centred in its half */
+html.pg3 .trust li { gap: 10px; padding: 14px 0; border-radius: 0; background: none; justify-content: center; }
+html.pg3 .trust li + li { border-inline-start: 1px solid var(--line); padding-inline-start: 14px; }
+html.pg3 .trust svg,
+html.pg3 .trust li.safe svg { width: 20px; height: 20px; stroke: var(--lx-green); stroke-width: 1.3; }
+html.pg3 .trust b,
+html.pg3 .trust li.safe b { font-size: 12px; font-weight: 400; color: var(--lx-green); }
+html.pg3 .trust li > span { font-size: 10.5px; color: var(--muted); }
+@media (max-width: 359px) {
+  html.pg3 .trust li + li { border-inline-start: 0; padding-inline-start: 0; border-top: 1px solid var(--line); }
+}
+
+/* ---- the reel: square cards, the centre one framed in ink ---- */
+html.pg3 .reel { margin-top: 52px; }
+html.pg3 .reel::after { border: 1.5px solid var(--ink); border-radius: 0; }
+/* the neighbours stay undimmed, as the reel has always had them */
+html.pg3 .reel-slide { border-radius: 0; background: var(--lx-img); }
+html.pg3 .reel-slide.front { box-shadow: 0 10px 28px -12px rgba(27,26,25,.3); }
+html.pg3 .reel-dots { gap: 6px; margin-top: 16px; }
+html.pg3 .reel-dots i { width: 10px; height: 2px; border-radius: 0; background: var(--lx-hair); }
+html.pg3 .reel-dots i.on { width: 18px; background: var(--ink); }
+
+/* ---- the comparison and the ritual: hairline lists ---- */
+html.pg3 .story { margin-top: 52px; padding: 0 24px; gap: 0; }
+html.pg3 .scard-txt h3 {
+  font-family: var(--serif); font-size: 22px; font-weight: 400;
+  line-height: 1.4; color: var(--ink);
+}
+html.pg3[lang="en"] .scard-txt h3 { font-size: 24px; font-weight: 500; }
+html.pg3 .scard.compare,
+html.pg3 .scard.steps { padding: 0; gap: 0; border-radius: 0; }
+html.pg3 .scard.steps { margin-top: 44px; }
+html.pg3 .duo {
+  margin: 16px 0 0; width: 100%;
+  border-collapse: collapse; border-spacing: 0;
+}
+html.pg3 .duo th, html.pg3 .duo td,
+html.pg3 .duo thead th.us, html.pg3 .duo tbody td.us,
+html.pg3 .duo tbody tr:last-child td, html.pg3 .duo tbody tr:last-child td.us {
+  background: none; box-shadow: none; border-radius: 0;
+}
+html.pg3 .duo thead th {
+  padding: 0 0 12px; padding-inline-start: 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px; font-weight: 400; text-align: start; color: var(--muted);
+}
+html.pg3 .duo thead th.us { padding-inline: 0 10px; border-bottom-color: var(--gold-ink); }   /* v312: the line under the brand in gold */
+html.pg3 .duo-brand {
+  font-family: var(--lx-latin); font-size: 13px; font-weight: 600;
+  letter-spacing: .14em; color: var(--gold-ink); text-shadow: none;   /* v312: the brand in gold over the comparison */
+}
+html.pg3 .duo tbody td,
+html.pg3 .duo tbody tr:last-child td {
+  padding: 14px 0; padding-inline-start: 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12.5px; line-height: 1.6; color: var(--muted);
+}
+html.pg3 .duo tbody td.us,
+html.pg3 .duo tbody tr:last-child td.us { padding-inline: 0 10px; color: var(--ink); border-bottom-color: var(--line); }
+html.pg3 .duo-in { grid-template-columns: 14px 1fr; }
+html.pg3 .duo-in::before { width: 13px; height: 13px; margin-top: 4px; background: var(--muted); }
+html.pg3 .duo td.us .duo-in::before { width: 14px; height: 14px; background: var(--lx-acc); }
+/* the three steps: a numeral in gold, not a drawing */
+html.pg3 .step-list { gap: 0; margin-top: 8px; counter-reset: step; }
+html.pg3 .step-list li,
+html.pg3 .step-list.playing li {
+  align-items: flex-start; gap: 18px; padding: 16px 0;
+  border-radius: 0; background: none; border-bottom: 1px solid var(--line);
+  animation: none; transform: none;
+}
+html.pg3 .step-list li::before {
+  content: counter(step, arabic-indic);
+  flex: 0 0 22px; width: 22px; text-align: center;
+  font-family: var(--serif); font-size: 28px; line-height: 1; color: var(--lx-acc);
+}
+html.pg3[lang="en"] .step-list li::before { content: counter(step); }
+html.pg3 .step-art { display: none; }
+html.pg3 .step-txt { font-size: 12px; line-height: 1.6; color: var(--ink-soft); }
+html.pg3 .step-txt b { font-size: 14px; font-weight: 400; margin-bottom: 4px; }
+
+/* ---- questions, tracking, footer ---- */
+html.pg3 .acc { margin-top: 40px; padding: 0 24px; }
+html.pg3 .acc summary { padding: 18px 0; font-size: 14px; }
+html.pg3 .acc summary::after { color: var(--ink); }
+html.pg3 .acc .body li::before { background: var(--lx-acc); }
+html.pg3 .wrap {
+  padding-inline: max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-left));
+}
+html.pg3 .track { margin-top: 40px; }
+html.pg3 .track .label {
+  justify-content: flex-start; margin-bottom: 14px;
+  font-family: var(--serif); font-size: 20px; font-weight: 400;
+}
+html.pg3 .track .label::before, html.pg3 .track .label::after { display: none; }
+html.pg3 .track-box { gap: 12px; align-items: flex-end; }
+html.pg3 .track-box input {
+  height: 44px; padding: 0 2px; border-radius: 0; background: none;
+  border-bottom: 1px solid var(--ink);
+}
+html.pg3 .track-box .btn { width: auto; height: 44px; padding: 0 24px; }
+html.pg3 .track-hint { margin-top: 10px; }
+html.pg3 .track-out { border-radius: 2px; background: var(--card); }
+/* v301: the footer is the black band of the header again — ink
+   background, white type, the rest of the page's stone above it */
+html.pg3 .ftr {
+  margin-top: 64px; padding: 40px 24px calc(36px + env(safe-area-inset-bottom));
+  gap: 16px; border-top: 0; background: var(--lx-btn); color: #fff;   /* v312: as تتبع */
+}
+/* the house name over the links: a line of type, not a logo file */
+html.pg3 .ftr::before {
+  content: "LUBAN & MUSK"; direction: ltr;
+  font-family: var(--lx-latin); font-size: 20px; font-weight: 400;   /* v312: light, like the rest of the footer */
+  letter-spacing: .18em; color: #fff;   /* v312: white, light weight, like the rest of the footer */
+}
+html.pg3 .ftr-social { margin-bottom: 0; }
+html.pg3 .ftr-social a { background: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); color: #fff; }
+html.pg3 .ftr-social svg { width: 18px; height: 18px; stroke-width: 1.3; }
+html.pg3 .ftr-num { color: #fff; }
+html.pg3 .ftr-link {
+  color: #fff; border-bottom: 0; padding-bottom: 0;
+  text-decoration: underline; text-underline-offset: 4px; text-decoration-color: rgba(255,255,255,.45);
+}
+html.pg3 .ftr-link:hover, html.pg3 .ftr-link[aria-current="page"] { color: #fff; text-decoration-color: #fff; }
+html.pg3 .ftr-copy { font-size: 11px; letter-spacing: .12em; color: rgba(255,255,255,.7); }
+/* (v404) the ways to pay, under the privacy link */
+html.pg3 .ftr-pay { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+html.pg3 .ftr-pay svg { display: block; width: 34px; height: 22px; }
+
+/* ---- the bar at the foot, and the WhatsApp button ---- */
+html.pg3 .sticky { background: rgba(242,239,234,.96); }
+html.pg3 .sticky .s-price { font-size: 20px; }
+html.pg3 .sticky .btn { height: 44px; }
+html.pg3 .fab { background: var(--lx-btn); box-shadow: 0 6px 20px -6px rgba(27,26,25,.45); }
+html.pg3 .fab:hover { box-shadow: 0 8px 24px -6px rgba(27,26,25,.55); }
+
+/* ---- the size-availability dialog ---- */
+html.pg3 .avail-panel { border-radius: 2px; background: var(--paper); }
+html.pg3 .avail-panel li { border-radius: 0; background: var(--card); }
+html.pg3 .none-here { border-radius: 0; }
+
+/* ---- the basket drawer ---- */
+html.pg3 .drawer-veil { background: rgba(27,26,25,.4); }
+html.pg3 .drawer-panel { background: var(--paper); }
+html.pg3 .drawer-top h2 { font-family: var(--serif); font-size: 24px; font-weight: 400; letter-spacing: 0; }
+html.pg3 .ci picture, html.pg3 .ci .thumb-none { border-radius: 0; background: var(--lx-img); }
+html.pg3 .ci-name { font-size: 14px; }
+html.pg3 .ci-qty { border-radius: 0; border-color: var(--lx-hair); }
+html.pg3 .drawer-foot { border-top: 1px solid var(--line); }
+html.pg3 #drawerPay:hover, html.pg3 #drawerPay:active { background: var(--ink); }
+
+/* ---- the checkout ---- */
+html.pg3 .co h2 { font-size: 24px; font-weight: 400; letter-spacing: 0; }
+html.pg3[lang="en"] .co h2 { font-size: 26px; font-weight: 500; }
+html.pg3 .sum { background: none; border: 1px solid var(--line); border-radius: 0; padding: 24px 20px; }
+html.pg3 .sum h3 { font-size: 11px; letter-spacing: .06em; color: var(--muted); margin-bottom: 18px; }
+html.pg3 .sum-item { border-bottom-color: var(--line); }
+html.pg3 .sum-item img, html.pg3 .thumb-none { border-radius: 0; }
+html.pg3 .sum-item .thumb picture { background: var(--lx-img); }
+html.pg3 .sum-item .n { font-size: 14px; }
+html.pg3 .sum-total { border-top-color: var(--ink); }
+html.pg3 .sum-total .v { font-size: 26px; }
+html.pg3 .sum-total .v { color: var(--lx-green); }   /* (v405) the total in green */
+html.pg3 .pay em[hidden] { display: none; }   /* (v405) no fee note when cash costs the same */
+html.pg3 .sum-note { font-size: 12px; color: var(--muted); }
+html.pg3 .free-bar { background: none; border: 1px solid var(--line); border-radius: 0; padding: 14px 16px; }
+html.pg3 .free-msg { font-size: 12px; }
+html.pg3 .free-bar.free .free-msg { color: var(--lx-green); }
+html.pg3 .free-bar .ship-track { height: 2px; border-radius: 0; background: var(--line); }
+html.pg3 .free-bar .ship-track i { border-radius: 0; background: var(--gold); }
+html.pg3 .free-bar .ship-track i.done { background: var(--lx-green); }
+/* (v404) short of free delivery: the line and the words in red-orange
+   (4.7:1 on the page); green once it is reached */
+html.pg3 .free-bar:not(.free) .free-msg { color: #b8431c; }
+html.pg3 .free-bar:not(.free) .ship-track i { background: #b8431c; }
+/* the add-on rows: squared, on the warm card grey (no outline — the
+   rows carry none in any style) */
+html.pg3 .free-add,
+html.pg3 .samples .free-add { border-radius: 0; background: var(--card); }
+html.pg3 .fa-cta { color: var(--lx-acc); font-weight: 400; }
+html.pg3 .fa-art .thumb picture, html.pg3 .ex-art { border-radius: 0; background: var(--lx-img); }
+html.pg3 .f label { font-size: 11px; letter-spacing: .04em; }
+/* a field being typed in keeps its paper; only the dial-code box
+   darkens on focus (v312 — the fields had gone black on the phone) */
+html.pg3 .f input:focus, html.pg3 .f select:focus, html.pg3 .f textarea:focus { background: transparent; }
+html.pg3 .tel:focus-within .tel-code { background: var(--lx-btn); }
+html.pg3 .pay i { background: none; box-shadow: inset 0 0 0 1px var(--muted); }
+html.pg3 .pay[aria-checked="true"] i { background: var(--ink); box-shadow: inset 0 0 0 1px var(--ink), inset 0 0 0 4px var(--paper); }
+html.pg3 .pay[aria-checked="true"][data-pay="card"] em { color: var(--lx-green); }
+html.pg3 .pay[aria-checked="true"][data-pay="cod"] em { color: var(--lx-acc); }
+html.pg3 .pay-hl {
+  padding: 16px 0; border-radius: 0; background: none;
+  border-top: 1px solid var(--ink); border-bottom: 1px solid var(--line);
+}
+html.pg3 .pay-hl .v b { color: var(--lx-acc); }
+html.pg3 .btn-go { height: 52px; }
+html.pg3 .btn-support {
+  background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink);
+}
+html.pg3 .btn-support svg { stroke: var(--ink); }
+html.pg3 .btn-support:hover, html.pg3 .btn-support:active { background: var(--ink); color: #fff; }
+html.pg3 .btn-support:hover svg, html.pg3 .btn-support:active svg { stroke: #fff; }
+html.pg3 .pay-msg { border-radius: 0; }
+html.pg3 .co-msg h2 { font-family: var(--serif); font-weight: 400; }
+
+/* ---- the policy page ---- */
+html.pg3 .legal h1 { font-size: 26px; }
+html.pg3 .legal-lead { background: none; border: 1px solid var(--line); border-radius: 0; }
+
+/* ---- pre-production pass (v202): contrast, focus, layout holds ---- */
+html.pg3 .fa-cta { color: var(--gold-ink); }                     /* 5.14:1 on --card */
+html.pg3 .f input, html.pg3 .f select, html.pg3 .f textarea,
+html.pg3 .tel { border-bottom-color: #8f8a83; }                  /* 3.28:1 on paper, 1.4.11 */
+html.pg3 .tel { border-bottom: 0; }   /* v309: no line under the phone field only — the boxed +971 marks it */
+/* v309: in Arabic the whole number (+971 and the digits) sits at the
+   right edge, under its label; the digits still read left to right */
+html.pg3[dir="rtl"] .tel { justify-content: flex-end; }
+/* the digit counter beside the number (v312) */
+html.pg3 .tel-count { flex: none; margin-inline-start: 8px; font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--muted); transition: color .2s ease; }
+html.pg3 .tel-count[hidden] { display: none; }
+html.pg3 .tel-count.bad { color: #b4483c; }
+html.pg3 .tel-count.ok { color: var(--lx-green); font-weight: 600; }
+/* (v404) the note under the number; (v405) on the right, under the label, in Arabic */
+html.pg3 .tel-note { margin: 6px 0 0; font-size: 11.5px; text-align: start; color: var(--muted); transition: color .2s ease; }
+html.pg3 .tel-note[hidden] { display: none; }
+html.pg3 .tel-note.bad { color: #b8431c; }
+html.pg3 .tel-note.ok { color: var(--lx-green); font-weight: 600; }
+html.pg3[dir="rtl"] .tel input { flex: 0 0 auto; width: 6.4em; text-align: left; }
+html.pg3 .tel input { border-bottom: none; }
+html.pg3 .f input::placeholder, html.pg3 .f textarea::placeholder { color: var(--muted); }
+html.pg3 .cty:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+@media (max-height: 500px) and (orientation: landscape) {
+  html.pg3 .gal-slides { aspect-ratio: 4 / 3; }
+}
+
+html.pg3 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+html.pg3 .gal-thumbs:empty { height: calc((min(100vw, var(--app)) - 66px) / 4); }
+html.pg3 .picker .btn.ok:disabled { opacity: 1; }
+
+/* ==========================================================
+   THE LARGE-BOX OFFERS (v303) — design A, "the list": one box, two,
+   three for the price of two, between the size tiles and the grid the
+   chosen offer fills. main.js buildTiers.
+   ========================================================== */
+html.pg3 .tiers { margin: 22px 0 0; }
+html.pg3 .tiers-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+html.pg3 .tiers-head h3 { margin: 0; font-family: var(--serif); font-size: 18px; font-weight: 700; color: var(--ink); }
+html.pg3[lang="en"] .tiers-head h3 { font-weight: 600; font-size: 20px; }
+html.pg3 .tiers-clock {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px;
+  background: var(--lx-btn); color: #fff; font-size: 11px; white-space: nowrap;   /* v312: as تتبع */
+}
+html.pg3 .tiers-clock svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.5; flex: none; }
+html.pg3 .tiers-clock time { font-variant-numeric: tabular-nums; }
+html.pg3 .tiers-clock [hidden] { display: none; }
+html.pg3 .tiers-list { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+html.pg3 .tier {
+  position: relative; display: grid; grid-template-columns: 20px 54px minmax(0, 1fr) auto;
+  align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--line);
+  background: transparent; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+/* the chosen offer: framed in ink, on the card colour; the frame grows
+   inward so choosing never moves the rows */
+html.pg3 .tier.on { background: var(--card); box-shadow: none; border-color: var(--gold); }   /* v312: one gold line, not two */
+/* the radio drawn here, not the browser's: no ring — a soft stone disc,
+   gold with a white centre once chosen (v308) */
+html.pg3 .tier input {
+  appearance: none; -webkit-appearance: none; border-radius: 50%; border: 0;
+  background: var(--lx-hair); cursor: pointer; display: grid; place-items: center;
+}
+html.pg3 .tier input::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #fff; opacity: 0; }
+html.pg3 .tier input:checked { background: var(--gold); }
+html.pg3 .tier input:checked::before { opacity: 1; }
+html.pg3 .tier input:focus-visible { outline: 2px solid var(--lx-acc); outline-offset: 2px; }
+html.pg3 .tier:focus-within { outline: 0; }   /* v312: the tap leaves no second frame; the keyboard ring stays on the radio */
+html.pg3 .tier input { margin: 0; width: 18px; height: 18px; }
+html.pg3 .tier-badge {
+  position: absolute; top: -10px; inset-inline-start: 14px; padding: 2px 10px;
+  background: var(--lx-acc); color: #fff; font-style: normal; font-size: 10.5px; letter-spacing: .04em;
+}
+html.pg3 .tier-shot { position: relative; width: 54px; height: 54px; background: var(--lx-img); overflow: hidden; }
+html.pg3 .tier-shot picture, html.pg3 .tier-shot img { display: block; width: 100%; height: 100%; object-fit: cover; }
+html.pg3 .tier-shot b {
+  position: absolute; bottom: 3px; left: 3px; min-width: 20px; height: 18px; padding: 0 4px;
+  box-sizing: border-box; background: var(--lx-btn); color: #fff; font-size: 10.5px; font-weight: 500;
+  display: flex; align-items: center; justify-content: center;
+}
+html.pg3 .tier-txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+html.pg3 .tier-txt b { font-size: 13.5px; font-weight: 500; color: var(--ink); }
+html.pg3 .tier-txt > span { font-size: 11px; color: var(--muted); }
+html.pg3 .tier-txt > .tier-free { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; color: var(--lx-green); }
+html.pg3 .tier-free svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.4; flex: none; }
+/* v411: the set's free-delivery countdown beside its badge */
+html.pg3 .tier-free .sf-left { font-style: normal; color: var(--lx-acc); font-weight: 500; }
+html.pg3 .tier-free .sf-left::before { content: "·"; margin-inline-end: 5px; color: var(--muted); }
+html.pg3 .tier-price { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; white-space: nowrap; }
+html.pg3 .tier-price b { font-family: var(--serif); font-size: 18px; font-weight: 700; line-height: 1.1; color: var(--ink); }
+html.pg3[lang="en"] .tier-price b { font-weight: 600; font-size: 19px; }
+html.pg3 .tier-price s { font-size: 10px; color: var(--muted); }
+@media (max-width: 359px) {
+  html.pg3 .tier { grid-template-columns: 18px 44px minmax(0, 1fr) auto; gap: 9px; padding: 12px 10px; }
+  html.pg3 .tier-shot { width: 44px; height: 44px; }
+  html.pg3 .tier-price b { font-size: 16px; }
+  html.pg3 .tier-txt b { font-size: 12.5px; }
+  html.pg3 .tier-txt > span { font-size: 10.5px; }
+}
+
+/* THE SMALL BUNDLE, design A · the row (v309): the small size's card,
+   in the look of the large bundle offer — heading and countdown pill,
+   then one framed row: the box with ×3, the words, the price; the three
+   scents beneath in the points' gold; one black button. */
+html.pg3 .s3-bundle { margin-top: 22px; }
+html.pg3 .offer-a[hidden] { display: none; }
+html.pg3 .ob-card {
+  position: relative; margin-top: 16px; padding: 18px 14px 16px;
+  background: var(--card); border: 1px solid var(--line); box-shadow: none;   /* v312: a grey hairline round the set */
+}
+html.pg3 .ob-card .tier-badge { top: -11px; }
+html.pg3 .ob-row { display: grid; grid-template-columns: 62px minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+html.pg3 .ob-row .tier-shot { width: 62px; height: 62px; }
+html.pg3 .ob-row .tier-txt b { font-size: 15px; font-weight: 700; }
+html.pg3 .ob-row .tier-txt > span { font-size: 11.5px; }
+html.pg3 .ob-row .tier-price b { font-size: 22px; }
+html.pg3 .ob-row .tier-price s { font-size: 11px; }
+html.pg3 .ob-scents {
+  margin-top: 14px; padding-top: 0; border-top: 0;   /* v312: no line between the row and its scents */
+  display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap;
+}
+html.pg3 .ob-scent { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--gold-ink); }
+html.pg3 .ob-scent .scent-art { display: block; width: 15px; height: 15px; }
+html.pg3 .ob-scent .scent-art svg { display: block; width: 15px; height: 15px; fill: currentColor; stroke: none; filter: brightness(.72) saturate(1.15); }
+html.pg3 .ob-card .btn-offer {
+  display: flex; align-items: center; justify-content: center; width: 100%; height: 48px; margin-top: 14px;
+  border: 0; border-radius: 2px; background: var(--lx-btn); color: #fff; font-size: 14px; letter-spacing: .03em;   /* v312: as تتبع */
+}
+html.pg3 .ob-card .btn-offer.ok { background: var(--lx-green); }
+@media (max-width: 359px) {
+  html.pg3 .ob-row { grid-template-columns: 50px minmax(0, 1fr) auto; gap: 9px; }
+  html.pg3 .ob-row .tier-shot { width: 50px; height: 50px; }
+  html.pg3 .ob-row .tier-price b { font-size: 18px; }
+}
+
+/* (v403) THE SET AS A CHOICE on the stacked page: the same row as the
+   large box's — radio, box, words, price; framed in gold once chosen —
+   and its scents and add button only under the chosen row */
+html.pg3 .ob-card.pick { padding: 14px; background: transparent; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+html.pg3 .ob-card.pick.on { background: var(--card); border-color: var(--gold); }
+html.pg3 .ob-card.pick .tier-badge { top: -10px; }
+html.pg3 .ob-card.pick .ob-row { grid-template-columns: 20px 54px minmax(0, 1fr) auto; cursor: pointer; }
+html.pg3 .ob-card.pick .ob-row .tier-shot { width: 54px; height: 54px; }
+html.pg3 .ob-card.pick .ob-row .tier-txt b { font-size: 13.5px; font-weight: 600; }
+html.pg3 .ob-card.pick .ob-row .tier-txt > span { font-size: 11px; }
+html.pg3 .ob-card.pick .ob-row .tier-price b { font-size: 18px; }
+html.pg3 .ob-card.pick .ob-row .tier-price s { font-size: 10px; }
+html.pg3 .ob-row input {
+  appearance: none; -webkit-appearance: none; margin: 0; width: 18px; height: 18px; border-radius: 50%; border: 0;
+  background: var(--lx-hair); cursor: pointer; display: grid; place-items: center;
+}
+html.pg3 .ob-row input::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #fff; opacity: 0; }
+html.pg3 .ob-row input:checked { background: var(--gold); }
+html.pg3 .ob-row input:checked::before { opacity: 1; }
+html.pg3 .ob-row input:focus-visible { outline: 2px solid var(--lx-acc); outline-offset: 2px; }
+html.pg3 .ob-card.pick:not(.on) .ob-scents,
+html.pg3 .ob-card.pick:not(.on) .btn-offer { display: none; }
+html.pg3 .tiers-plain .tiers-list { margin-top: 0; }
+@media (max-width: 359px) {
+  html.pg3 .ob-card.pick { padding: 12px 10px; }
+  html.pg3 .ob-card.pick .ob-row { grid-template-columns: 18px 44px minmax(0, 1fr) auto; gap: 9px; }
+  html.pg3 .ob-card.pick .ob-row .tier-shot { width: 44px; height: 44px; }
+  html.pg3 .ob-card.pick .ob-row .tier-price b { font-size: 16px; }
+  /* (v407) as the large rows: the small lines a size down, so
+     "الحجم الصغير · 3 × 100 جم" keeps to one line on a 320px phone */
+  html.pg3 .ob-card.pick .ob-row .tier-txt b { font-size: 12.5px; }
+  html.pg3 .ob-card.pick .ob-row .tier-txt > span { font-size: 10px; }
+}
+
+/* v312 — one page, nothing to choose: the size tiles are pictures that
+   say what is left; the large offers, their points and scents; the
+   three-scent set below */
+html.pg3 .s3 .size.tile.still { cursor: default; }
+html.pg3 .pts-top[hidden] { display: none; }
+/* the scents under the chosen offer row, inside the list (v312) */
+html.pg3 .tiers-list .tier-scents { margin: -4px 0 6px; padding: 14px 4px 4px; border: 0; background: none; animation: tsOpen .25s ease both; }
+/* opacity only: a transform here would make this row the floating
+   count's containing block and pin the pill inside it */
+@keyframes tsOpen { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { html.pg3 .tiers-list .tier-scents { animation: none; } }
+html.pg3 .pts-top { margin: 22px 0 6px; }
+html.pg3 .pts-top .sz-perks { margin: 0; padding-bottom: 0; }
+html.pg3 .s3-bundle { margin-top: 26px; }
+html.pg3 .s3-bundle.s3-bundle-under { margin-top: 0; }
+html.pg3 .s3-bundle-under .ob-card { margin-top: 18px; }
+
+/* an offer in the basket: one chip per scent, overlapping (v303) */
+/* LTR inside, whatever the page: in an Arabic line the overlap pulled
+   each chip outward and the row hung over the photo's edge (v305) */
+html.pg3 .thumb .scent-marks {
+  position: absolute; top: 5px; left: 5px; display: flex; gap: 2px; direction: ltr;
+  max-width: calc(100% - 10px);
+}
+html.pg3 .thumb .scent-marks .scent-art { display: block; width: 16px; height: 16px; }
+/* darker than the scent's own colour, on the photo only, so the shapes
+   stand out against the box and the resin (the shop's choice, v309;
+   v305 had them a fifth brighter). The rows keep the true colour. */
+html.pg3 .thumb .scent-marks .scent-art svg { display: block; width: 16px; height: 16px; fill: currentColor; stroke: none; filter: brightness(.72) saturate(1.15); }
+/* the checkout's 58px tile: three shapes at 16 ran past it (v305) */
+html.pg3 .sum-item .thumb .scent-marks { gap: 1px; }
+html.pg3 .sum-item .thumb .scent-marks .scent-art,
+html.pg3 .sum-item .thumb .scent-marks .scent-art svg { width: 14px; height: 14px; }
+
+/* v409: من نحن and الشحن are off the page (the owner, 17 Oct). The block
+   stays in the markup — main.js still writes the delivery lines into it
+   and the page-order suites pin it — but it is never shown. */
+html.pg3 .acc { display: none !important; }
+
+/* ==========================================================
+   v414 — the checkout column, from the design board
+   ========================================================== */
+/* المجموع: the figure before the offer, struck when there is one;
+   الشحن: "مجاني" in green beside the fee it would have been, struck. */
+html.pg3 .sum-pair { display: inline-flex; align-items: baseline; gap: 8px; }
+html.pg3 #sub.was, html.pg3 #shipWas { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+/* the struck delivery fee in the savings green: it is money not paid */
+html.pg3 #shipWas { color: var(--lx-green, var(--leaf)); }
+/* the struck figure before the offer, in the scents' gold */
+html.pg3 #sub.was { color: var(--scent-gold); }
+/* the line through each basket line's old price, gold (that section only) */
+html.pg3 .sum-item .p .was { text-decoration-color: var(--scent-gold); }
+html.pg3 #ship.free { color: var(--lx-green, var(--leaf)); font-weight: 500; }
+/* التوصيل opens the form without a rule under it (the other headings keep theirs) */
+html.pg3 .co #form > h2:first-child { border-bottom: 0; }
+
+/* ==========================================================
+   v414 — the front page, from the design board
+   ========================================================== */
+/* ONE GOLD FOR THE SCENTS. Every scent shape and scent name on the
+   storefront is drawn in this gold — the picker rows, the set, the
+   description, the basket and checkout thumbnails, the confirmation.
+   The catalogue still carries each scent's own accent (the panel edits
+   it); the storefront no longer paints with it. Remove this block's
+   overrides to bring the three colours back. */
+html.pg3 { --scent-gold: #a0812a; }
+html.pg3 .prow-art, html.pg3 .fly { --accent: var(--scent-gold) !important; }
+html.pg3 .scent-art { color: var(--scent-gold) !important; }
+html.pg3 .scent-art svg { filter: none !important; }
+html.pg3 .scent-mark { background: var(--scent-gold) !important; }
+html.pg3 .prow-txt > b { color: var(--scent-gold); }
+
+/* the line over the three blends in the description's own weight, not bold */
+html.pg3 .desc-d .desc-k { font-weight: 300; }
+
+/* the three blends in the description: each with its scent's shape in
+   place of the dot, the name in the same gold */
+html.pg3 .desc-d .desc-i { padding-inline-start: 26px; color: var(--scent-gold); font-weight: 500; }
+html.pg3 .desc-d .desc-i::before {
+  inset-inline-start: 0; top: .32em; width: 18px; height: 18px; border-radius: 0;
+  background: var(--scent-gold);
+  -webkit-mask: var(--desc-art) center / contain no-repeat; mask: var(--desc-art) center / contain no-repeat;
+}
+html.pg3 .desc-d .desc-i:nth-of-type(2) { --desc-art: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cg transform='translate(20.5 23.6) rotate(0)'%3E%3Cpath d='M0 0C4.8 -3.6 4.8 -7.3 4.8 -9.2C4.8 -12.6 2.9 -14.0 0 -14.0C-2.9 -14.0 -4.8 -12.6 -4.8 -9.2C-4.8 -7.3 -4.8 -3.6 0 0Z'/%3E%3C/g%3E%3Cg transform='translate(24.7 26.6) rotate(72)'%3E%3Cpath d='M0 0C4.8 -3.6 4.8 -7.3 4.8 -9.2C4.8 -12.6 2.9 -14.0 0 -14.0C-2.9 -14.0 -4.8 -12.6 -4.8 -9.2C-4.8 -7.3 -4.8 -3.6 0 0Z'/%3E%3C/g%3E%3Cg transform='translate(23.1 31.6) rotate(144)'%3E%3Cpath d='M0 0C4.8 -3.6 4.8 -7.3 4.8 -9.2C4.8 -12.6 2.9 -14.0 0 -14.0C-2.9 -14.0 -4.8 -12.6 -4.8 -9.2C-4.8 -7.3 -4.8 -3.6 0 0Z'/%3E%3C/g%3E%3Cg transform='translate(17.9 31.6) rotate(216)'%3E%3Cpath d='M0 0C4.8 -3.6 4.8 -7.3 4.8 -9.2C4.8 -12.6 2.9 -14.0 0 -14.0C-2.9 -14.0 -4.8 -12.6 -4.8 -9.2C-4.8 -7.3 -4.8 -3.6 0 0Z'/%3E%3C/g%3E%3Cg transform='translate(16.3 26.6) rotate(288)'%3E%3Cpath d='M0 0C4.8 -3.6 4.8 -7.3 4.8 -9.2C4.8 -12.6 2.9 -14.0 0 -14.0C-2.9 -14.0 -4.8 -12.6 -4.8 -9.2C-4.8 -7.3 -4.8 -3.6 0 0Z'/%3E%3C/g%3E%3Cg transform='translate(39.5 20.0) rotate(0)'%3E%3Cpath d='M0 0C4.2 -3.4 4.2 -6.8 4.2 -8.6C4.2 -11.7 2.5 -13.0 0 -13.0C-2.5 -13.0 -4.2 -11.7 -4.2 -8.6C-4.2 -6.8 -4.2 -3.4 0 0Z'/%3E%3C/g%3E%3C/svg%3E"); }
+html.pg3 .desc-d .desc-i:nth-of-type(3) { --desc-art: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M23.1 46.2c-.7-6.2-.7-12.4 0-18.6.3-1.7 1.7-1.7 2 0 .7 6.2.7 12.4 0 18.6-.3 1.5-1.7 1.5-2 0Z'/%3E%3Cg transform='translate(24.0 16.5) rotate(0)'%3E%3Cpath d='M0 0C4.1 -3.5 4.1 -7.0 4.1 -8.9C4.1 -12.2 2.5 -13.5 0 -13.5C-2.5 -13.5 -4.1 -12.2 -4.1 -8.9C-4.1 -7.0 -4.1 -3.5 0 0Z'/%3E%3C/g%3E%3Cg transform='translate(18.6 26.5) rotate(-27)'%3E%3Cpath d='M0 0C3.8 -3.1 3.8 -6.2 3.8 -7.9C3.8 -10.8 2.3 -12.0 0 -12.0C-2.3 -12.0 -3.8 -10.8 -3.8 -7.9C-3.8 -6.2 -3.8 -3.1 0 0Z'/%3E%3C/g%3E%3Cg transform='translate(29.4 26.5) rotate(27)'%3E%3Cpath d='M0 0C3.8 -3.1 3.8 -6.2 3.8 -7.9C3.8 -10.8 2.3 -12.0 0 -12.0C-2.3 -12.0 -3.8 -10.8 -3.8 -7.9C-3.8 -6.2 -3.8 -3.1 0 0Z'/%3E%3C/g%3E%3Cg transform='translate(17.4 36.5) rotate(-27)'%3E%3Cpath d='M0 0C3.8 -3.1 3.8 -6.2 3.8 -7.9C3.8 -10.8 2.3 -12.0 0 -12.0C-2.3 -12.0 -3.8 -10.8 -3.8 -7.9C-3.8 -6.2 -3.8 -3.1 0 0Z'/%3E%3C/g%3E%3Cg transform='translate(30.6 36.5) rotate(27)'%3E%3Cpath d='M0 0C3.8 -3.1 3.8 -6.2 3.8 -7.9C3.8 -10.8 2.3 -12.0 0 -12.0C-2.3 -12.0 -3.8 -10.8 -3.8 -7.9C-3.8 -6.2 -3.8 -3.1 0 0Z'/%3E%3C/g%3E%3Cg transform='translate(24.0 44.5) rotate(-118)'%3E%3Cpath d='M0 0C4.0 -3.4 4.0 -6.8 4.0 -8.6C4.0 -11.7 2.4 -13.0 0 -13.0C-2.4 -13.0 -4.0 -11.7 -4.0 -8.6C-4.0 -6.8 -4.0 -3.4 0 0Z'/%3E%3C/g%3E%3Cg transform='translate(24.0 44.5) rotate(118)'%3E%3Cpath d='M0 0C4.0 -3.4 4.0 -6.8 4.0 -8.6C4.0 -11.7 2.4 -13.0 0 -13.0C-2.4 -13.0 -4.0 -11.7 -4.0 -8.6C-4.0 -6.8 -4.0 -3.4 0 0Z'/%3E%3C/g%3E%3C/svg%3E"); }
+html.pg3 .desc-d .desc-i:nth-of-type(4) { --desc-art: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M23.1 45.8c-.6-4.8-.6-9.6 0-14.4.3-1.6 1.7-1.6 2 0 .6 4.8.6 9.6 0 14.4-.3 1.5-1.7 1.5-2 0Z'/%3E%3Ccircle cx='24' cy='10.4' r='7.0'/%3E%3Ccircle cx='14.2' cy='23.2' r='7.6'/%3E%3Ccircle cx='33.8' cy='23.2' r='7.6'/%3E%3Cg transform='translate(24.0 45.0) rotate(-122)'%3E%3Cpath d='M0 0C4.3 -3.5 4.3 -7.0 4.3 -8.9C4.3 -12.2 2.6 -13.5 0 -13.5C-2.6 -13.5 -4.3 -12.2 -4.3 -8.9C-4.3 -7.0 -4.3 -3.5 0 0Z'/%3E%3C/g%3E%3Cg transform='translate(24.0 45.0) rotate(122)'%3E%3Cpath d='M0 0C4.3 -3.5 4.3 -7.0 4.3 -8.9C4.3 -12.2 2.6 -13.5 0 -13.5C-2.6 -13.5 -4.3 -12.2 -4.3 -8.9C-4.3 -7.0 -4.3 -3.5 0 0Z'/%3E%3C/g%3E%3C/svg%3E"); }
+
+/* the set, once chosen: its scents in a list down the card, under a
+   dashed rule — the shape and the blend's name, nothing else */
+html.pg3 .ob-card.pick .ob-scents {
+  flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 2px;
+  margin-top: 12px; padding: 10px 14px 0; border-top: 1px dashed var(--line);
+}
+html.pg3 .ob-card.pick .ob-scent { gap: 9px; font-size: 12.5px; font-weight: 500; line-height: 24px; color: var(--scent-gold); }
+html.pg3 .ob-card.pick .ob-scent .scent-art,
+html.pg3 .ob-card.pick .ob-scent .scent-art svg { width: 20px; height: 20px; }
+
+/* the chosen radio: solid gold, no white centre */
+html.pg3 .tier input:checked::before,
+html.pg3 .ob-row input:checked::before { opacity: 0; }
+
+/* the points beside the sizes: words in the page's text colour, the
+   small drawings stay gold */
+html.pg3 .sz-perks li { color: var(--ink-soft); }
+
+/* what is left of a size: gold, not red-orange */
+html.pg3 .tile-name.is-left { color: var(--scent-gold); }
+
+/* the struck price on the size rows and the set: the line through it gold */
+html.pg3 .tier-price s { text-decoration-color: var(--scent-gold); }
+/* and the price now in the same gold */
+html.pg3 .tier-price b { color: var(--scent-gold); }
+/* the set's free-delivery countdown ("باقي 3 أيام") in the badge's green */
+html.pg3 .tier-free .sf-left { color: var(--lx-green); font-weight: 700; }
+/* the set's scents, once chosen: a hairline between one blend and the next */
+html.pg3 .ob-card.pick .ob-scents { gap: 0; }
+html.pg3 .ob-card.pick .ob-scent { align-self: stretch; padding: 5px 0; }
+html.pg3 .ob-card.pick .ob-scent + .ob-scent { border-top: 1px solid var(--line); }
+/* the scent rows carry the blend's full name now: it may take two lines
+   (English) rather than be cut short */
+html.pg3 .prow-txt b { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.35; }
+/* the scent rows' names and shapes, each 2px smaller than before */
+html.pg3 .prow-txt b { font-size: calc(clamp(12.5px, 3.6vw, 14px) - 2px); }
+html.pg3 .prow-art svg { width: calc(var(--prow-icon, 30px) - 2px); height: calc(var(--prow-icon, 30px) - 2px); }
+/* a scent's rating as a number, in grey, read in the page's direction ("5/4.8" on the Arabic page) */
+html.pg3 .prow .sc-rate { font-size: 12px; font-weight: 400; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+html.pg3 .prow .sc-rate b { font-weight: 400; color: var(--muted); }
+/* (v416) the painting of the harvester, in black and white (still a touch out of focus) */
+html.pg3 .tale-art img { filter: blur(.75px) grayscale(1); }
+/* (v416) a chosen large row and its scents are one card: the gold frame
+   and the card colour run on round the scent grid and its button */
+html.pg3 .tiers-list .tier.on { border-bottom-color: transparent; }
+html.pg3 .tiers-list .tier.on + .tier-scents {
+  margin: -10px 0 0; padding: 4px 14px 14px;
+  border: 1px solid var(--gold); border-top: 0; background: var(--card);
+}
+/* (v416) no rule over the set's list of scents once it is chosen */
+html.pg3 .ob-card.pick .ob-scents { border-top: 0; }
+/* (v416) the large size's scent rows, each part 2px smaller: the row's
+   padding, the stepper and its figures, the rating */
+html.pg3 .prow { padding: 7px 0; }
+html.pg3 .qty.sm { height: 32px; }
+html.pg3 .qty.sm button { width: calc(clamp(28px, 8.7vw, 34px) - 2px); font-size: 14px; }
+html.pg3 .qty.sm b { min-width: 20px; font-size: 11px; }
+html.pg3 .prow .sc-rate { font-size: 10px; }
+/* (v417) the scent rows' own padding (the rule that actually spaces them,
+   html.pg3 .s3 .prow) 2px less, and no line under the last row */
+html.pg3 .s3 .prow, html.pg3 .s3 .prow:last-child { padding: 12px 0; }
+html.pg3 .s3 .prow:last-child { border-bottom: 0; }
+/* the two reassurances under the card marks: words in the page's grey on
+   the storefront (the icons stay green); the checkout keeps its green */
+html.pg3 .trust b, html.pg3 .trust li.safe b { color: var(--ink-soft); }
+html.pg3 .co .trust b, html.pg3 .co .trust li.safe b { color: var(--lx-green); }
+/* and their icons the same grey on the storefront; the checkout's stay green */
+html.pg3 .trust svg, html.pg3 .trust li.safe svg { stroke: var(--ink-soft); }
+html.pg3 .co .trust svg, html.pg3 .co .trust li.safe svg { stroke: var(--lx-green); }
+/* the three blends in the description: gold, at the paragraph's own
+   light weight (not bold) */
+html.pg3 .desc-d .desc-i { color: var(--scent-gold); font-weight: inherit; }
+/* the line over them in the paragraph's grey, not the heading ink */
+html.pg3 .desc-d .desc-k { color: inherit; }
+/* the shop's rating figure ("4.78") in the scents' gold */
+html.pg3 .rate2 b { color: var(--scent-gold); }
+/* the set's list of them: gold, at the text's light weight (not bold) */
+html.pg3 .ob-card.pick .ob-scent { color: var(--scent-gold); font-weight: 300; }
+/* and how many of each, "×1", at the far (left) end of the row */
+html.pg3 .ob-scent .ob-n { display: none; }
+html.pg3 .ob-card.pick .ob-scent .ob-n { display: inline; order: 2; margin-inline-start: auto; font-style: normal; font-size: 11.5px; color: var(--muted); }
+/* "توصيل مجاني" on a row (the set and the large offers) in bold, with its countdown */
+html.pg3 .tier-txt > .tier-free { font-weight: 700; }
+
+/* ---- v418: the set row's "توصيل مجاني · باقي ٣ أيام" on one line, whatever the phone ---- */
+/* the badge takes the width its words need and runs on under the price
+   (which sits above it, at the row's end) instead of breaking "Free /
+   delivery" and "3 days / left" over four lines on a narrow screen */
+html.pg3 .tier-txt > .tier-free { white-space: nowrap; flex-wrap: nowrap; width: max-content; max-width: none; }
+@media (max-width: 360px) { html.pg3 .tier-txt > .tier-free { font-size: 10px; } }
+
+/* ---- v419: the set's countdown blinks; no scent shapes on the basket's and the checkout's photos ---- */
+@keyframes sf-blink { 0%, 100% { opacity: 1; } 50% { opacity: .2; } }
+html.pg3 .tier-free .sf-left { animation: sf-blink 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { html.pg3 .tier-free .sf-left { animation: none; } }
+/* the photo alone in the basket drawer and on the checkout's lines (the owner's choice, v419) */
+html.pg3 .thumb .scent-marks { display: none; }
+
+/* ---- v420: on a phone, the sizes straight under the description (the owner's board comment) ----
+   The markup keeps its order (the badges and the points still come
+   before .opt in the source, as the suites read it); a phone reorders
+   the column: title, rating, description, then الحجم والروائح, then the
+   three badges, the points and the rest as before. The desktop grid
+   (desktop.css, 768px and up) places these itself and is untouched. */
+@media (max-width: 767px) {
+  html.pg3 .info { display: flex; flex-direction: column; }
+  html.pg3 .info > .desc2 { display: contents; }
+  html.pg3 .info > *, html.pg3 .info > .desc2 > * { order: 3; }
+  html.pg3 .info > .title-row, html.pg3 .info > .desc2 > .rate2, html.pg3 .info > .desc2 > .desc-d { order: 1; }
+  html.pg3 .info > .opt { order: 2; }
+}
+
+/* ---- v421–v423 (the owner's board comments), ON A PHONE ONLY; the desktop keeps all three ----
+   Below 768px the description is the one paragraph: no "متوفر عندنا 3
+   أنواع…" line and no three blend lines under it (the blends show in
+   the size rows); and no "الحجم والروائح" heading over the sizes (the
+   grid keeps its aria-label "الحجم"). Hidden, not deleted: the desktop
+   (desktop.css, 768px and up) shows them as before, with each blend's
+   own shape. */
+@media (max-width: 767px) {
+  html.pg3 .desc-d .desc-k, html.pg3 .desc-d .desc-i { display: none; }
+  html.pg3 .opt > .label { display: none; }
+}
+
+/* ---- v425: the large size's scent rows (the owner's board comment), phone and desktop ----
+   each scent on its own light-gold card, no lines between them; the
+   blend's name and shape in black; the rating as three gold leaves (the
+   shape of the "زيوت عطرية أصلية" badge), filled as far as it goes */
+html.pg3 .s3 .prows { gap: 8px; }
+html.pg3 .s3 .prow, html.pg3 .s3 .prow:last-child {
+  background: rgba(160, 129, 42, .1); border: 0; border-radius: 0; padding: 12px;
+}
+html.pg3 .s3 .prow .prow-txt > b { color: var(--ink); }
+html.pg3 .s3 .prow .prow-art { --accent: var(--ink) !important; color: var(--ink); }
+html.pg3 .prow .sc-leaves { display: inline-flex; gap: 2px; direction: ltr; line-height: 0; flex: none; }
+html.pg3 .prow .sc-leaves svg { width: 13px; height: 13px; flex: none; fill: var(--scent-gold); stroke: none; }
+
+/* ---- v426: the set's scent list like the large size's rows (the owner's board comment), phone and desktop ----
+   each scent on its own light-gold card, no lines; name and shape in black */
+html.pg3 .ob-card.pick .ob-scents { gap: 8px; padding-inline: 0; }
+html.pg3 .ob-card.pick .ob-scent, html.pg3 .ob-card.pick .ob-scent + .ob-scent {
+  background: rgba(160, 129, 42, .1); border: 0; padding: 10px 12px; color: var(--ink);
+}
+html.pg3 .ob-card.pick .ob-scent .scent-art { color: var(--ink) !important; }
+html.pg3 .ob-card.pick .ob-scent .scent-art svg { filter: none; }
+
+/* ---- v428: on a phone, the checkout opens with the customer's details (the owner's board comment) ----
+   Order below 768px: التوصيل and its fields, then the order summary
+   (الطلب) and the offers under it, then طرق الدفع and the button, so
+   "ادفع الآن" stays the last thing. The form opens (display: contents)
+   so its two halves can be placed apart; it is still one <form>, and
+   submitting it is unchanged. The column's 34px gap moves onto the
+   blocks themselves so the fields keep their own spacing. The desktop
+   (desktop.css, 768px and up) is untouched. */
+@media (max-width: 767px) {
+  html.pg3 .co { gap: 0; }
+  html.pg3 .co #form { display: contents; }
+  html.pg3 .co #form > * { order: 2; }
+  html.pg3 .co #form > h2:first-child, html.pg3 .co #form > .f, html.pg3 .co #form > .f-row { order: -3; }
+  html.pg3 .co .sum { order: -2; margin-top: 34px; }
+  html.pg3 .co .free-bar, html.pg3 .co .samples { order: -1; margin-top: 34px; }
+}
+
+/* ---- v430: no line above or below the three badges (the owner's board comment), every width, both languages ----
+   the hairlines between them stay */
+html.pg3 .facts2 .fb { border-top: 0; border-bottom: 0; }
+
+/* ---- v431: no "طرق الدفع" heading at checkout (the owner's board comment), every market and width ----
+   the methods keep the space the heading's top margin gave them */
+html.pg3 .co #pays { margin-top: 40px; }
+
+/* ---- v432: the rating's last leaf (the one on the left) half filled under 4.6 ----
+   two leaves in one 13px cell: a faint one, and a gold one over it cut
+   to its right half (clip-path), so no gradient is minted per row */
+html.pg3 .prow .sc-leaves .lv-half { position: relative; display: block; width: 13px; height: 13px; flex: none; }
+html.pg3 .prow .sc-leaves .lv-half svg { position: absolute; inset: 0; }
+html.pg3 .prow .sc-leaves .lv-half svg:first-child { fill: rgba(160, 129, 42, .25); }
+html.pg3 .prow .sc-leaves .lv-half svg + svg { clip-path: inset(0 0 0 50%); }
+
+/* ---- v432 (audit): a sold-out scent's row on the v425 cards ----
+   it kept its old 8px bleed, so it stood 8px out on each side of the
+   cards above and below; and the black name of v425 outranked its grey.
+   Lined up with the others, the name grey like its shape. */
+html.pg3 .s3 .prow.shut { margin-inline: 0; }
+html.pg3 .s3 .prow.shut .prow-txt > b { color: var(--muted); }
+
+/* ---- v433: no grey line under "المبلغ المستحق" (the owner's board comment), phone and desktop; the black line above it stays ---- */
+html.pg3 .pay-hl { border-bottom: 0; }
+
+/* ---- v434: no "المبلغ المستحق" row on a phone (the owner's board comment) ----
+   the order summary, which a phone now shows just above the payment
+   methods, already carries the total; the desktop keeps the row */
+@media (max-width: 767px) { html.pg3 .co .pay-hl { display: none; } }
+
+/* ---- v436: no reassurance list at checkout (the owner's board comments: "صديق للبيئة", then "دفع آمن"); the store page keeps its pair ---- */
+
+/* ---- v437: the owner's board comments, round 2 ---- */
+/* the chosen size and the chosen set: their card colour, no frame
+   (the open scent panel under the large row goes with it) */
+html.pg3 .ob-card.pick.on, html.pg3 .tiers-list .tier.on { border-color: transparent; }
+html.pg3 .tiers-list .tier.on + .tier-scents { border-color: transparent; }
+/* the blends' names on one line, the type sized to the room it has
+   (container units, iOS 16 and later; an older phone keeps a fixed
+   10.5px, which still fits on one line); in English, which runs twice as long, the names
+   still shrink but may wrap on the narrowest phones rather than go
+   below a readable size */
+html.pg3 .s3 .prow-txt { container-type: inline-size; }
+html.pg3 .s3 .prow-txt > b { white-space: nowrap; overflow: visible; font-size: 10.5px; font-size: clamp(10px, 9.6cqi, 12px); }
+html.pg3[lang="en"] .s3 .prow-txt > b { white-space: normal; font-size: 10px; font-size: clamp(9.5px, 5.4cqi, 12px); }
+html.pg3 .ob-card.pick .ob-scents { container-type: inline-size; }
+html.pg3 .ob-card.pick .ob-scent { white-space: nowrap; font-size: 10.5px; font-size: clamp(10px, 4.2cqi, 12.5px); }
+html.pg3[lang="en"] .ob-card.pick .ob-scent { white-space: normal; font-size: 10px; font-size: clamp(9.5px, 3cqi, 12.5px); }
+/* on a phone the three leaves go under the name, so the name has the
+   row's width to itself between the shape and the stepper */
+@media (max-width: 767px) {
+  html.pg3 .s3 .prow:not(.shut) {
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "art txt qty" "art mid qty"; column-gap: var(--prow-gap, 11px); row-gap: 5px; align-items: center;
+  }
+  html.pg3 .s3 .prow:not(.shut) > .prow-art { grid-area: art; }
+  html.pg3 .s3 .prow:not(.shut) > .prow-txt { grid-area: txt; align-self: end; }
+  html.pg3 .s3 .prow:not(.shut) > .prow-mid { grid-area: mid; justify-content: flex-start; align-self: start; }
+  html.pg3 .s3 .prow:not(.shut) > .qty { grid-area: qty; }
+}
+/* the ways to pay: the set's round mark, in green */
+html.pg3 .pay i { width: 18px; height: 18px; background: var(--lx-hair); box-shadow: none; }
+html.pg3 .pay[aria-checked="true"] i { background: var(--lx-green); box-shadow: none; }
+/* no line under the last way to pay (cash, or the card where cash is off) */
+html.pg3 .pays .pay:last-child, html.pg3 .pays.no-cod .pay { border-bottom: 0; }
+/* the support button on one line, its type stepping down with the screen */
+html.pg3 .btn-support { white-space: nowrap; font-size: clamp(12px, 3.8vw, 15px); }
+/* the store page's reassurance: no line above or below (the one between stays) */
+html.pg3 .trust { border-top: 0; border-bottom: 0; }
+/* the painting's fade runs a pixel past its edge, so no hairline of the
+   picture can show under it at any zoom */
+html.pg3 .tale::after { bottom: -1px; height: 41px; }
+/* a phone's currency difference under the summary's note (v434 took the
+   amount-due row away there) */
+html.pg3 .sum-fx { font-size: 12px; color: var(--muted); margin: 4px 0 0; }
+
+/* ---- v439: the rating mirrored on the English page (the owner's request) ----
+   Arabic reads right to left, so its half leaf is the last, on the left;
+   English reads left to right, so the whole group turns: the half leaf
+   is last on the right, and every leaf faces the other way */
+html.pg3[lang="en"] .prow .sc-leaves { transform: scaleX(-1); }
+
+/* ---- v439: one black for the text, the footer's charcoal (the owner's request) ----
+   every black word on the store (the ink, and the painting's own
+   near-black) takes the footer's #2d3033; the greys stay as they are */
+html.pg3 { --ink: var(--lx-btn); }
+html.pg3 .tale .lead { color: var(--ink); }
+
+/* ---- v440: on a phone the description is the owner's three lines, each its own;
+   a desktop keeps the paragraph (and its blends, v424) ---- */
+html.pg3 .desc-d .desc-o { font-style: normal; }
+html.pg3 .desc-d .desc-l { display: none; font-style: normal; }
+@media (max-width: 767px) {
+  html.pg3 .desc-d .desc-o { display: none; }
+  html.pg3 .desc-d .desc-l { display: block; }
+  html.pg3 .desc-d .desc-l + .desc-l { margin-top: 8px; }
+}
+
+/* ---- v442: the small bundle's box in light gold, with a slow shine (the owner's request, phones only) ----
+   Two backgrounds on the box itself, no pseudo-element: a band of light
+   2.5 times the box's width over the gold, its position animated, so the
+   badge above the box is never clipped. It sweeps the way the page reads,
+   right to left in Arabic, left to right in English; still for anyone
+   who asks for less motion. Picked or not, the box keeps its gold. */
+@media (max-width: 767px) {
+  html.pg3 .ob-card.pick, html.pg3 .ob-card.pick.on {
+    background-color: #f3e5bf;
+    background-image:
+      linear-gradient(105deg, rgba(255, 252, 240, 0) 40%, rgba(255, 252, 240, .8) 50%, rgba(255, 252, 240, 0) 60%),
+      linear-gradient(135deg, #f8eed4 0%, #eedcac 52%, #f8eed4 100%);
+    background-size: 250% 100%, 100% 100%;
+    background-repeat: no-repeat;
+    background-position: 0% 0, 0 0;
+    border-color: transparent;   /* no stroke (the owner) */
+    animation: lm-shine 4s ease-in-out infinite;
+  }
+  html.pg3[lang="en"] .ob-card.pick, html.pg3[lang="en"] .ob-card.pick.on { animation-name: lm-shine-ltr; }
+}
+@keyframes lm-shine     { 0% { background-position: 0% 0, 0 0; }   60%, 100% { background-position: 100% 0, 0 0; } }
+@keyframes lm-shine-ltr { 0% { background-position: 100% 0, 0 0; } 60%, 100% { background-position: 0% 0, 0 0; } }
+@media (prefers-reduced-motion: reduce) {
+  html.pg3 .ob-card.pick, html.pg3 .ob-card.pick.on { animation: none; }
+}
+
+/* ---- v443: the countdown before the payment gateway (the owner's request) ----
+   Under ادفع الآن: the seconds left in a gold ring, and one line saying
+   the secure payment page is being prepared. */
+html.pg3 .pay-wait { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 11px 14px;
+  background: rgba(160, 129, 42, .1); color: var(--ink); font-size: 13px; line-height: 1.6; }
+html.pg3 .pay-wait[hidden] { display: none; }
+html.pg3 .pay-wait .pw-t { color: var(--lx-green); font-weight: 500; }   /* the message in green (the owner) */
+html.pg3 .pay-wait .pw-n { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--gold);
+  display: grid; place-items: center; font-weight: 700; font-size: 14px; color: var(--gold); font-variant-numeric: tabular-nums; }
+html.pg3 .pay-wait .pw-n { border-color: var(--lx-green); color: var(--lx-green); }   /* and the countdown (the owner) */
+
+/* ---- v445: the owner's adjustments ----
+   The large size's box, not picked: white, with no stroke (it was
+   see-through with a hairline). Picked, it is as before. */
+html.pg3 .tiers-list .tier:not(.on) { background: #fff; border-color: transparent; }
+/* Checkout: the rial line and the amount in the shopper's currency,
+   dark and bold (they were small grey print) */
+html.pg3 .sum-note, html.pg3 .sum-fx { color: var(--ink); font-weight: 700; }
+/* The small bundle's box on a desktop, not picked: the same white, no
+   stroke, as the large size's (phones keep their gold, v442) */
+@media (min-width: 768px) {
+  html.pg3 .ob-card.pick:not(.on) { background: #fff; border-color: transparent; }
+}

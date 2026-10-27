@@ -14,7 +14,7 @@ export const LIMITS = {
   loginGlobal: { max: 60, windowMs: 15 * 60e3 },
   ev: { max: 60, windowMs: 60e3 },
   log: { max: 30, windowMs: 60e3 },
-  beacon: { max: 120, windowMs: 60e3 },
+  beacon: { max: 60, windowMs: 60e3 },
   track: { max: 30, windowMs: 60e3 },
   resume: { max: 30, windowMs: 10 * 60e3 },
 } as const;

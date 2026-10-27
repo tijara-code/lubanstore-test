@@ -55,3 +55,11 @@ code reads a variable this file does not list. "Breaks" says what stops when it 
 | `SNAP_CAPI_TOKEN` | Snap Conversions API token | Server-side Snap events skipped |
 | `GA4_MEASUREMENT_ID` | `G-…` id; loads gtag on the page when set | GA4 off |
 | `GA4_API_SECRET` | Measurement Protocol secret; the server then reports the purchase | The page reports the purchase itself |
+
+## Build (read by `npm run build`, not by the server)
+
+| Variable | Purpose | Breaks when missing |
+|---|---|---|
+| `META_PIXEL_ID` / `SNAP_PIXEL_ID` | Also written into the pages' inline pixel snippets at build (validated: digits / uuid), so the browser pixel and the server relay report to the same dataset | The original store's ids are used |
+| `LM_BUILD_ID` | The page's `<meta name="build">` | `COMMIT_REF` (set by Netlify), else the git commit, else `local` |
+| `COMMIT_REF` | Set by Netlify: the deploy's commit, used as the build id | see above |

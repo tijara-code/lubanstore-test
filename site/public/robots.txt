@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /checkout.html
+Disallow: /en/checkout.html
+Disallow: /admin
+Disallow: /data/
+Disallow: /invoice/
+Disallow: /resume/
+
+Sitemap: https://lubanmusk.com/sitemap.xml

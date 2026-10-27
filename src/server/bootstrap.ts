@@ -32,7 +32,7 @@ async function build(source: Record<string, string | undefined>): Promise<{ deps
   if (env.DATABASE_URL) db = await connectPostgres(env.DATABASE_URL);
   else {
     if (env.production) throw new Error("DATABASE_URL is required in production");
-    db = await connectPglite(env.DATA_DIR || ".data/pglite");
+    db = await connectPglite(env.DATA_DIR === "memory" ? undefined : env.DATA_DIR || ".data/pglite");
   }
   const now = () => Date.now();
   const deps: Deps = {
@@ -40,7 +40,7 @@ async function build(source: Record<string, string | undefined>): Promise<{ deps
     env,
     fetch: fetchImpl,
     now,
-    log: createLogger(() => db),
+    log: createLogger(() => db, { now }),
     services: createServices({ env, fetch: fetchImpl, now }),
   };
   return { deps, world };

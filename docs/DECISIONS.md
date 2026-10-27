@@ -42,3 +42,26 @@ original store is `../luban-musk` (read-only reference, never modified).
 - Pricing: `tests/parity/pricing.parity.test.ts` prices 4,000 random baskets over random
   catalogue variants with both the original `price.js` and the new engine — identical answers,
   refusals included.
+
+## Rulings where the original's own suites disagreed
+
+The original's 162 suites were inventoried (7,076 checks). Where an older suite and a newer
+one disagree, the newer behaviour is built. Rulings that needed a choice because the
+deciding rule belonged to a dropped feature:
+
+- **Market routing default:** a market with no route goes to **Empower**. The only other
+  route is "manual" (shipped by hand, tracking number typed in the admin). The original
+  defaulted to the dropped couriers (Oman → local courier, others → SMSA); the live shop had
+  every market on Empower.
+- **Large-box offers (duo/trio):** kept, with admin controls (prices per market, window,
+  renew, markets). The original's last admin save forced them off when their card was
+  removed; that is not copied — the published catalogue decides.
+- **Sales-ledger cancel/restore:** dropped with the ledger. An admin can still move a
+  cancelled order back through the status flow (void → new/prep/ship/done), recorded in the
+  order's history; the "sales" actor no longer exists.
+- **WhatsApp Cloud API order confirmations:** dropped (a messaging integration, on neither
+  the keep list nor needed by a kept feature). The admin keeps the wa.me message buttons
+  (confirmation, payment reminder, win-back), which need no API.
+- **"15-day refund guarantee" on the product page vs the privacy page's narrower refund
+  policy:** the storefront is copied exactly, so both stay as they are. Flagged to the owner
+  as a copy/legal question.

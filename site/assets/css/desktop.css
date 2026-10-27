@@ -1,0 +1,328 @@
+/* ==========================================================
+   LUBAN&MUSK — the desktop store (v337; v400: from 768px)
+
+   Loaded with media="(min-width: 768px)" after style.css, so nothing
+   here can reach a phone: below 768px the browser never applies it, and
+   the mobile store is exactly what it was. From 768px — a half-screen
+   window, a tablet — the same layout at a tighter measure, so a window
+   made smaller never falls back to a phone column with empty sides;
+   the full measure from 1024px. The layout follows the Claude Design
+   canvas "Luban & Musk desktop storefront":
+
+     header   the black running band over a bar: home at the start
+              (right in Arabic), the name in the middle (a link home),
+              the country, the language and the basket at the end
+     product  the photos beside the name, rating, description, the three
+              facts and the six points; under them, centred, the sizes,
+              the offers, the set, the checkout button and the marks
+     then     the harvest painting as a full-width band, the comparison
+              and the ritual side by side, the questions, tracking, the
+              footer in one line
+     basket   the drawer as a 460px panel over the dimmed page
+     checkout the form beside the order summary
+
+   Every selector carries html.pg3 where style.css does, so the later
+   file wins at equal weight; no !important.
+   ========================================================== */
+
+/* ---------- the page is the window, not a phone column ---------- */
+body { max-width: none; padding-bottom: 0; }
+html.pg3 { --dk-max: 1280px; --dk-pad: 40px; }
+/* a half-screen window (v400): the same grid, less air */
+@media (max-width: 1023px) {
+  html.pg3 { --dk-pad: 24px; }
+}
+
+/* ---------- header ---------- */
+html.pg3 .hdr { padding-top: 38px; }
+html.pg3 .hdr::before { height: 38px; }
+html.pg3 .ship-bar,
+html.pg3 .hdr.alt .ship-bar { height: 38px; }
+/* v400: the band runs here as on a phone (header.js makes as many copies
+   as the width needs); a little larger, the dots gold */
+html.pg3 .hdr .ship-txt { font-size: 12.5px; letter-spacing: .04em; }
+html.pg3 .hdr .ship-seq > .ship-dot { padding: 0 32px; color: var(--gold); opacity: 1; }
+html.pg3 .hdr .ship-seq > .ship-dot { color: inherit; opacity: .6; }   /* (v406) no gold in the band */
+
+html.pg3 .hdr-bar {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center; gap: 24px;
+  max-width: var(--dk-max); height: 76px; margin: 0 auto; padding: 0 var(--dk-pad);
+}
+html.pg3 .hdr-stack { display: contents; }
+html.pg3 .hdr-in,
+html.pg3 .hdr.alt .hdr-in { position: static; grid-column: 2; grid-row: 1; transform: none; opacity: 1; }
+html.pg3 .logo { font-size: 26px; letter-spacing: .32em; }
+/* v400: home alone at the start; the country (moved here by main.js),
+   the language and the basket together at the end */
+html.pg3 .home { grid-column: 1; grid-row: 1; justify-self: start; width: 44px; height: 44px; }
+html.pg3 .hdr-end {
+  grid-column: 3; grid-row: 1; justify-self: end;
+  display: flex; align-items: center; gap: 22px;
+}
+/* before main.js has boxed them (and on checkout and the policy page,
+   which never do), the language and the basket share the end cell:
+   the language steps in by the basket's width so they never overlap */
+html.pg3 .lang { grid-column: 3; grid-row: 1; justify-self: end; margin: 0 0 0 0; margin-inline-end: 58px; }
+html.pg3 .cart { grid-column: 3; grid-row: 1; justify-self: end; width: 44px; height: 44px; }
+html.pg3 .hdr-end .lang, html.pg3 .hdr-end .cart { grid-column: auto; grid-row: auto; margin: 0; }
+html.pg3 .hdr-end .cart { margin-inline-start: -8px; }
+html.pg3 .lang a { height: 44px; font-size: 13px; font-weight: 500; }
+html.pg3 .cart svg, html.pg3 .cart.filled svg { width: 23px; height: 23px; }
+html.pg3 .hdr .cty { font-size: 14px; padding-bottom: 4px; min-width: 120px; }
+@media (max-width: 1023px) {
+  html.pg3 .hdr-bar { gap: 16px; }
+  html.pg3 .logo { font-size: 22px; letter-spacing: .24em; }
+  html.pg3 .hdr-end { gap: 14px; }
+  html.pg3 .hdr .cty { min-width: 104px; }
+}
+/* until main.js moves it to the header, the select would show as an
+   empty chevron beside the name */
+html.pg3 .title-row .cty { visibility: hidden; }
+
+/* ---------- the product: a grid the old column's pieces drop into ----------
+   .info and .desc2 step aside (display: contents), so the name, the
+   rating, the facts, the points, the sizes and the rest are all items
+   of this one grid and land where the design puts them. Columns, from
+   the start (right in Arabic): outer margin, the photos, the words,
+   outer margin. */
+html.pg3 .pdp {
+  display: grid;
+  grid-template-columns:
+    [full-start] minmax(var(--dk-pad), 1fr)
+    [gal-start] minmax(0, 660px) [gal-end]
+    56px
+    [info-start] minmax(0, 524px) [info-end]
+    minmax(var(--dk-pad), 1fr) [full-end];
+  grid-template-rows: auto auto auto auto auto 1fr;
+  padding: 40px 0 0;
+}
+html.pg3 .pdp > .info,
+html.pg3 .pdp .desc2 { display: contents; }
+@media (max-width: 1023px) {
+  html.pg3 .pdp { padding-top: 28px; }
+  html.pg3 .pdp { grid-template-columns:
+    [full-start] minmax(var(--dk-pad), 1fr)
+    [gal-start] minmax(0, 420px) [gal-end]
+    32px
+    [info-start] minmax(0, 400px) [info-end]
+    minmax(var(--dk-pad), 1fr) [full-end]; }
+  html.pg3 .gal { grid-template-columns: 64px minmax(0, 1fr); gap: 12px; }
+  html.pg3 .gal-thumbs button { flex-basis: 64px; width: 64px; height: 64px; }
+  html.pg3 h1, html.pg3[lang="en"] h1 { font-size: 32px; }
+  html.pg3 .desc-d { font-size: 14px; line-height: 1.85; margin-top: 12px; }
+  html.pg3 .facts2 { margin-top: 18px; }
+}
+
+html.pg3 .gal {
+  grid-column: gal; grid-row: 1 / 7; align-self: start;
+  display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 16px;
+  padding: 0;
+}
+html.pg3 .gal-thumbs {
+  grid-column: 1; grid-row: 1; order: 0;
+  flex-direction: column; justify-content: flex-start; gap: 12px; padding: 0;
+}
+html.pg3 .gal-thumbs button { flex: 0 0 88px; width: 88px; height: 88px; aspect-ratio: auto; }
+html.pg3 .gal-slides { grid-column: 2; grid-row: 1; aspect-ratio: 1 / 1; }
+
+html.pg3 .title-row { grid-column: info; grid-row: 1; margin: 0 0 8px; }
+html.pg3 h1 { font-size: 44px; line-height: 1.25; }
+html.pg3[lang="en"] h1 { font-size: 44px; }
+html.pg3 .rate2 { grid-column: info; grid-row: 2; font-size: 13px; }
+html.pg3 .rate2 .stars { font-size: 13px; }
+html.pg3 .desc-d {
+  display: block; grid-column: info; grid-row: 3;
+  margin: 18px 0 0; font-size: 16px; line-height: 1.95; font-weight: 300; color: var(--ink-soft);
+}
+html.pg3 .facts2 { grid-column: info; grid-row: 4; margin-top: 28px; }
+html.pg3 .facts2 li { font-size: 13px; }
+html.pg3 .facts2 svg { width: 22px; height: 22px; }
+html.pg3 .pts-top { grid-column: info; grid-row: 5; margin: 24px 0 0; }
+/* (v407) the six points stay on one line each (v310), but here they sit
+   in the info column, narrower than the screen their size is read from:
+   on a small computer window the English lines ran past the edge
+   (768–800px). Sized to the column instead: 11.5px at 768px, the full
+   13px from about 900px (no media query: test-v400). */
+html.pg3 .pts-top .sz-perks li { font-size: clamp(11.5px, 1.45vw, 13px); }
+html.pg3 .pts-top .sz-perks svg { width: clamp(14px, 1.78vw, 16px); height: clamp(14px, 1.78vw, 16px); }
+
+/* under the photos, centred: the sizes and everything that buys */
+html.pg3 .pdp .opt,
+html.pg3 .pdp .fs-bar,
+html.pg3 .pdp .btn-co,
+html.pg3 .pdp .pay-marks,
+html.pg3 .pdp .trust,
+html.pg3 .pdp .reel {
+  grid-column: full; justify-self: center;
+  width: min(720px, calc(100% - 2 * var(--dk-pad)));
+}
+html.pg3 .pdp .opt { grid-row: 7; margin: 56px 0 0; padding-top: 48px; border-top: 1px solid var(--line); }
+html.pg3 .opt .label { justify-content: center; font-size: 13px; margin-bottom: 18px; }
+html.pg3 .pdp .fs-bar { grid-row: 8; }
+html.pg3 .pdp .btn-co { grid-row: 9; margin-top: 28px; height: 54px; }
+html.pg3 .pdp .pay-marks { grid-row: 10; justify-content: center; }
+html.pg3 .pdp .trust { grid-row: 11; }
+html.pg3 .pdp .reel { grid-row: 12; margin: 52px auto 0; width: min(600px, calc(100% - 2 * var(--dk-pad))); }
+/* the reel's arrows: a mouse cannot swipe (main.js initReelArrows) */
+html.pg3 .reel-arrow,
+html.pg3 .reel-arrow[hidden] {
+  position: absolute; z-index: 5; top: calc(50% - 30px);
+  display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%;
+  background: var(--paper); border: 1px solid var(--ink); color: var(--ink);
+  font-size: 24px; line-height: 1;
+}
+html.pg3 .reel-arrow:hover { background: var(--ink); color: #fff; }
+html.pg3 .reel-arrow:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+html.pg3 .reel-arrow.prev { inset-inline-start: -64px; }
+html.pg3 .reel-arrow.next { inset-inline-end: -64px; }
+/* v400: a drawn chevron, pointing OUT of the strip on either side — a
+   text arrow (› ‹) is mirrored by Arabic's writing direction and both
+   pointed in; a border cannot be */
+html.pg3 .reel-arrow::before {
+  content: ""; width: 10px; height: 10px; box-sizing: border-box;
+  border: solid currentColor; border-width: 1.5px 1.5px 0 0;
+}
+html.pg3 .reel-arrow.prev::before { transform: translateX(-2px) rotate(-135deg); }   /* points left */
+html.pg3 .reel-arrow.next::before { transform: translateX(2px) rotate(45deg); }      /* points right */
+html.pg3[dir="rtl"] .reel-arrow.prev::before { transform: translateX(2px) rotate(45deg); }    /* at the right edge: points right */
+html.pg3[dir="rtl"] .reel-arrow.next::before { transform: translateX(-2px) rotate(-135deg); } /* at the left edge: points left */
+@media (max-width: 1023px) {
+  html.pg3 .pdp .reel { width: min(600px, calc(100% - 2 * var(--dk-pad) - 112px)); }
+}
+/* the line under the border: the borderline photo width the offers use */
+html.pg3 .sz-tiles { gap: 16px; }
+html.pg3 .s3 .size.tile .tile-name,
+html.pg3 .sz-tiles-still .tile-name { text-align: center; }
+
+/* the harvest painting: a band the width of the content (the picture is
+   736px wide; stretched to a 1920 window it went soft) */
+html.pg3 .tale {
+  grid-column: full; grid-row: 13; justify-self: center;
+  width: min(var(--dk-max), 100%);
+  margin: 72px 0 0; height: 440px;
+}
+html.pg3 .tale-art img { object-position: 30% 40%; }
+html.pg3 .tale-words {
+  width: auto; max-width: 560px;
+  inset-inline-start: var(--dk-pad);
+  padding: 0;
+}
+html.pg3 .tale-sign { font-size: 34px; margin-bottom: 16px; }
+html.pg3 .tale .lead { font-size: 17px; line-height: 1.9; }
+html.pg3[lang="en"] .tale .lead { font-size: 16px; line-height: 1.7; }
+@media (max-width: 1023px) {
+  html.pg3 .tale { height: 360px; margin-top: 56px; }
+  html.pg3 .tale-words { max-width: 440px; }
+  html.pg3 .tale-sign { font-size: 26px; }
+  html.pg3 .tale .lead, html.pg3[lang="en"] .tale .lead { font-size: 14.5px; line-height: 1.8; }
+}
+
+/* the comparison and the ritual, side by side */
+html.pg3 .pdp > .story {
+  grid-column: full; grid-row: 14; justify-self: center;
+  width: min(var(--dk-max), 100%); box-sizing: border-box;
+  margin-top: 80px; padding: 0 var(--dk-pad);
+  display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 72px; align-items: start;
+}
+html.pg3 .scard.steps { margin-top: 0; }
+html.pg3 .scard-txt h3 { font-size: 34px; }
+html.pg3 .duo thead th, html.pg3 .duo tbody td, html.pg3 .duo tbody tr:last-child td { font-size: 14px; }
+html.pg3 .duo-brand { font-size: 14px; }
+html.pg3 .step-txt { font-size: 14px; }
+html.pg3 .step-txt b { font-size: 16px; }
+/* a half-screen window: the comparison over the ritual, the questions in one column */
+@media (max-width: 1023px) {
+  html.pg3 .pdp > .story { grid-template-columns: minmax(0, 1fr); gap: 56px; margin-top: 64px; }
+  html.pg3 .scard-txt h3 { font-size: 28px; }
+  html.pg3 .pdp > .acc { grid-template-columns: minmax(0, 1fr); margin-top: 56px; }
+  html.pg3 .acc details + details { border-top: 0; }
+}
+
+/* the questions: two columns */
+html.pg3 .pdp > .acc {
+  grid-column: full; grid-row: 15; justify-self: center;
+  width: min(var(--dk-max), 100%); box-sizing: border-box;
+  margin-top: 72px; padding: 0 var(--dk-pad);
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 72px; align-items: start;
+}
+/* each question its own ruled row, side by side */
+html.pg3 .acc details,
+html.pg3 .acc details:first-of-type { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+html.pg3 .acc summary { font-size: 16px; }
+html.pg3 .acc .body { font-size: 14px; }
+
+/* tracking: the box at a readable width, centred */
+html.pg3 .track .wrap { max-width: 560px; padding-inline: var(--dk-pad); }
+html.pg3 .track .label { justify-content: center; font-size: 28px; }
+html.pg3 .track-hint { text-align: center; }
+
+/* the footer: one line */
+html.pg3 .ftr {
+  flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center;
+  gap: 18px 40px; padding: 40px var(--dk-pad);
+  /* clear of the WhatsApp button, which floats over this corner */
+  padding-inline-start: 120px;
+}
+html.pg3 .ftr { justify-content: flex-start; contain-intrinsic-size: auto 122px; }
+html.pg3 .ftr::before { font-size: 22px; letter-spacing: .32em; }
+/* the name at the start, the copyright at the end, the rest between
+   (the margins sit on the items: the ::before reads left to right) */
+html.pg3 .ftr-social,
+html.pg3 .ftr-copy { margin-inline-start: auto; }
+
+/* no thumb-bar on a desktop: the buy box is in view beside the photos */
+.sticky { display: none; }
+/* WhatsApp at the corner of the window, not of a phone column */
+.fabs { max-width: none; left: 0; transform: none; }
+.fab { right: 32px; bottom: 32px; width: 56px; height: 56px; }
+[dir="ltr"] .fab { right: auto; left: 32px; }
+@media (max-width: 1023px) {
+  .fab { right: 20px; bottom: 20px; }
+  [dir="ltr"] .fab { left: 20px; }
+  html.pg3 .ftr { padding-inline-start: 96px; }
+}
+
+/* ---------- the basket ---------- */
+.drawer { left: 0; right: 0; max-width: none; transform: none; }
+html.pg3 .drawer-veil { background: rgba(30,27,24,.48); }
+.drawer-panel { width: 460px; box-shadow: 12px 0 40px rgba(30,27,24,.18); }
+[dir="ltr"] .drawer-panel { box-shadow: -12px 0 40px rgba(30,27,24,.18); }
+.drawer-top { padding: 22px 28px; }
+.drawer-body { padding: 22px 28px; }
+.drawer-foot { padding: 20px 28px 26px; }
+
+/* ---------- the policy page: a readable column under the same header ---------- */
+html.pg3 .legal { max-width: 760px; margin-inline: auto; padding: 56px var(--dk-pad) 0; }
+
+/* ---------- checkout: the form beside the summary ---------- */
+html.pg3 main.wrap {
+  max-width: var(--dk-max); padding-inline: var(--dk-pad);
+  /* a short panel (done, empty) keeps the footer at the window's foot */
+  min-height: calc(100vh - 115px - 122px);
+}
+.co {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
+  grid-template-rows: auto auto auto 1fr;
+  column-gap: 72px; row-gap: 24px; align-items: start;
+  padding-top: 48px;
+}
+.co #form { grid-column: 1; grid-row: 1 / 5; }
+.co .sum { grid-column: 2; grid-row: 1; }
+.co .free-bar { grid-column: 2; grid-row: 2; margin: 0; }
+.co .samples { grid-column: 2; grid-row: 3; margin: 0; padding-inline: 0; }
+html.pg3 .co h2 { font-size: 30px; }
+.co .f-row { gap: 24px; }
+.co-msg { max-width: 560px; margin-inline: auto; }
+@media (max-width: 1023px) {
+  .co { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; row-gap: 20px; padding-top: 32px; max-width: 640px; margin-inline: auto; }
+  .co #form, .co .sum, .co .free-bar, .co .samples { grid-column: 1; grid-row: auto; }
+  .co .sum { order: -1; }
+  html.pg3 main.wrap { min-height: 0; }
+}
+
+/* v437: the amount-due row carries the currency difference here, so the summary does not repeat it */
+html.pg3 .sum-fx { display: none; }
+
+/* v440: on a phone الفرق واضح comes under the video (the markup's order);
+   a desktop keeps its own: the painting at row 13, the story at 14 */

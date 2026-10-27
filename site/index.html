@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<!-- class="pg2 pg3": the Maison page (once page style 3) is the ONLY
+     page since v200, and the classes that select its dress are baked in
+     here so the first paint is the right one, with nothing to wait for.
+     The old three-style build is kept in CLAUDE WEB/theme-backup. -->
+<html lang="ar" dir="rtl" class="pg2 pg3">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LUBAN &amp; MUSK · لبان صلالة معطر</title>
+<meta name="description" content="لبان صلالة معطر، ثلاث روائح: عود الافندر، ليمون مسك، عنبر توت. من 250 AED.">
+<!-- The delivery band's black: Android Chrome tints the address bar
+     with this, and the top of every page is the black band, so anything
+     lighter draws a seam across the top of the screen. -->
+<meta name="theme-color" content="#1b1a19">
+<!-- iOS only. Safari hunts for anything that looks like a phone number
+     and turns it into a blue tel: link on its own — order references,
+     a long price, the numbers in a size. Explicit tel: and wa.me links
+     are untouched by this; only the guessing stops. -->
+<meta name="format-detection" content="telephone=no">
+<!-- WHICH BUILD IS THIS? Open the live site, View Source, search for
+     "build". If the number here is not the one the repo has, the push
+     did not land — and every "that change did not reflect" is answered
+     in two seconds instead of being argued about. Kept equal to the
+     ?v= on every asset by tests/test-cache-bust.js. -->
+<meta name="build" content="__BUILD_ID__">
+<link rel="canonical" href="https://lubanmusk.com/">
+<!-- the same page in English, and which one a search engine should
+     send a shopper whose language it does not know -->
+<link rel="alternate" hreflang="ar" href="https://lubanmusk.com/">
+<link rel="alternate" hreflang="en" href="https://lubanmusk.com/en/">
+<link rel="alternate" hreflang="x-default" href="https://lubanmusk.com/">
+
+<meta property="og:type" content="product">
+<meta property="og:title" content="LUBAN & MUSK · لبان صلالة معطر">
+<meta property="og:url" content="https://lubanmusk.com/">
+<meta property="og:image" content="https://lubanmusk.com/assets/img/white-box-open.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta property="og:locale" content="ar_AE">
+
+<link rel="preconnect" href="https://sc-static.net">
+<!-- fonts load without blocking the first paint; display=swap shows text immediately.
+     Self-hosted (the same @font-face rules and unicode-ranges Google served), so two
+     third-party origins are off the critical path; the two faces the first paint
+     needs are preloaded (just after the catalogue). make-en drops the Arabic face on the English pages. -->
+<link rel="preload" as="style"
+      href="/assets/fonts/fonts.css?v=__ASSET_V__">
+<link rel="stylesheet" media="print" onload="this.media='all'"
+      href="/assets/fonts/fonts.css?v=__ASSET_V__">
+<noscript><link rel="stylesheet"
+      href="/assets/fonts/fonts.css?v=__ASSET_V__"></noscript>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!-- The catalogue is the one thing every price on the page waits for.
+     Asking for it here, while the HTML is still parsing, puts it on the
+     wire before any script has downloaded; store.js consumes this
+     preload instead of starting a fresh request. -->
+<link rel="preload" as="fetch" href="/api/settings" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/assets/fonts/ibmplexsansarabic-v15-Qw3CZRtWPQCuHme67tEYUIx3Kh0PHR9N6Ys43PWrfQ.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/assets/fonts/cormorantgaramond-v21-co3bmX5slCNuHLi8bLeY9MK7whWMhyjYqXtK.woff2" crossorigin>
+<!-- THE REMEMBERED LANGUAGE. The store is Arabic; English is the same
+     store at /en/ (generated from this page by scripts/make-en.js). A
+     shopper who chose English lands there on the next visit — decided
+     here, before anything paints or any pixel fires (and just after the
+     catalogue's preload, which must be the first thing on the wire), so there is no
+     Arabic flash and no page view counted twice. ?lang=ar is the way
+     back: it is what the English page's عربي link carries, and it
+     records the choice and then leaves the address bar clean. -->
+<script id="lang-remember">
+(function () {
+  try {
+    var q = location.search;
+    if (/[?&]lang=ar(&|$)/.test(q)) {
+      localStorage.setItem("lm_lang", "ar");
+      var rest = q.replace(/([?&])lang=ar(&|$)/, function (m, a, b) { return b ? a : ""; }).replace(/[?&]$/, "");
+      history.replaceState(null, "", location.pathname + rest + location.hash);
+      return;
+    }
+    if (localStorage.getItem("lm_lang") === "en") {
+      var p = location.pathname;
+      /* leaving: nothing on this page is counted or relayed (v209) */
+      window.__lmLeaving = 1;
+      location.replace("/en/" + (/checkout/.test(p) ? "checkout.html" : /privacy/.test(p) ? "privacy.html" : "") + q + location.hash);
+    }
+  } catch (e) {}
+})();
+</script>
+<!-- TWO THINGS STARTED BEFORE ANYTHING ELSE (v204).
+     The country: a first-time visitor's prices wait for /api/geo, and it
+     used to be asked only once store.js had run — after the stylesheet
+     and every script had arrived. It leaves now, while the HTML is still
+     parsing; store.js picks the answer up (window.__lmGeo). Only when it
+     will be used: never with ?country= or a country the shopper chose,
+     and not on a page that is about to move to /en/. The answer is kept
+     for the tab (sessionStorage lm_geo), so the next page does not ask
+     again — for the tab only, never as the shopper's choice.
+     The ad pixels: their libraries (Meta's alone is ~260 KB of script)
+     are fetched once the store has drawn itself — after its first
+     render, at the first quiet moment, or at the first tap or scroll,
+     whichever is first, and never later than 3.5s after the page is
+     parsed. Every event is queued by the stubs below as before, and
+     pixel.js relays the page view to the servers at once, so nothing is
+     lost; the page simply stops sharing its first seconds with them. -->
+<script id="early">
+(function () {
+  try {
+    if (/[?&]country=[A-Za-z]{2}/.test(location.search)) throw 0;
+    if (localStorage.getItem("lm_cty_v2")) throw 0;
+    if (document.documentElement.lang !== "en" && localStorage.getItem("lm_lang") === "en") throw 0;
+    var seen = sessionStorage.getItem("lm_geo");
+    window.__lmGeo = seen ? Promise.resolve(seen)
+      : fetch("/api/geo", { cache: "no-store" })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (j) { return (j && j.country) || null; })
+          .catch(function () { return null; });
+  } catch (e) {}
+
+  var q = [], fired = false;
+  function run() {
+    if (fired || window.__lmLeaving) return;
+    fired = true;
+    for (var i = 0; i < q.length; i++) { try { q[i](); } catch (e) {} }
+    q = null;
+  }
+  window.lmLater = function (f) { if (fired) f(); else q.push(f); };
+  function parsed() {
+    var idle = function () { (window.requestIdleCallback || function (f) { setTimeout(f, 1); })(run, { timeout: 1200 }); };
+    var r = window.LM && window.LM.ready;
+    if (r && r.then) r.then(idle, idle); else idle();
+    setTimeout(run, 3500);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", parsed);
+  else parsed();
+  ["pointerdown", "keydown", "scroll"].forEach(function (t) {
+    try { addEventListener(t, run, { once: true, passive: true }); } catch (e) {}
+  });
+})();
+</script>
+<link rel="stylesheet" href="assets/css/style.css" media="all">
+<!-- v337: the desktop store (v400: from 768px, a half-screen window too); never applied below, so the phone layout is untouched -->
+<link rel="stylesheet" href="assets/css/desktop.css" media="(min-width: 768px)">
+<link rel="preload" as="image" href="assets/img/white-box-open.avif?v=__ASSET_V__" type="image/avif" fetchpriority="high">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "لبان صلالة معطر",
+  "brand": { "@type": "Brand", "name": "Luban & Musk" },
+  "image": ["https://lubanmusk.com/assets/img/white-box-open.jpg"],
+  "offers": {
+    "@type": "AggregateOffer", "priceCurrency": "AED",
+    "lowPrice": "250", "highPrice": "499", "offerCount": "4",
+    "availability": "https://schema.org/InStock"
+  },
+  "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.78", "reviewCount": "210" }
+}
+</script>
+<!-- Snap Pixel Code -->
+<script type='text/javascript'>
+(function(e,t,n){if(e.snaptr)return;var a=e.snaptr=function()
+{a.handleRequest?a.handleRequest.apply(a,arguments):a.queue.push(arguments)};
+a.queue=[];lmLater(function(){var r=t.createElement('script');r.async=!0;
+r.src=n;var u=t.getElementsByTagName('script')[0];
+u.parentNode.insertBefore(r,u);});})(window,document,
+'https://sc-static.net/scevent.min.js');
+
+/* Advanced matching: a shopper who has ordered before has their SHA-256
+   phone hash stored locally, and passing it at INIT attaches it to every
+   event including this PAGE_VIEW. Passing it per-event would miss the
+   page view entirely, which is what the Snap audit flagged. Only the
+   hash is ever stored or sent — never the number. It is the hash of the
+   NORMALISED number (digits, country code, no '+'), the one both servers
+   send; lm_ph_v2, because the old key held one of the number as typed.
+   Also stash the ad click id so later events can be tied back to it. */
+(function () {
+  var u = {};
+  try {
+    var p = localStorage.getItem('lm_ph_v2');
+    if (p && /^[a-f0-9]{64}$/.test(p)) u.user_hashed_phone_number = p;
+  } catch (e) {}
+  try {
+    var c = new URLSearchParams(location.search).get('ScCid');
+    if (c) sessionStorage.setItem('lm_sccid', c.slice(0, 128));
+  } catch (e) {}
+  snaptr('init', '__SNAP_PIXEL_ID__', u);
+
+  /* One id shared by the pixel's PAGE_VIEW and the server relay that
+     pixel.js sends for it, so Snap counts the pair once. */
+  var id;
+  try { id = crypto.randomUUID(); }
+  catch (e) { id = 'pv-' + Date.now() + '-' + Math.random().toString(16).slice(2, 10); }
+  window.__lmPageView = id;
+  snaptr('track', 'PAGE_VIEW', { client_dedup_id: id });
+})();
+</script>
+<!-- End Snap Pixel Code -->
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];lmLater(function(){t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)});}(window,
+document,'script','https://connect.facebook.net/en_US/fbevents.js');
+
+/* The dataset (pixel) id, from Events Manager > Data Sources. It is
+   public: it appears in this page's source either way. Netlify must carry
+   the SAME value as META_PIXEL_ID, or the browser pixel and the server
+   relay will report to two different datasets and nothing will dedupe.
+   tests/test-meta.js fails if this is ever left as a placeholder. */
+(function () {
+  var PIXEL_ID = '__META_PIXEL_ID__';
+
+  /* Stash the click id on the landing page. The pixel only writes _fbc on
+     the page carrying ?fbclid=, so a shopper who navigates before it
+     loads would lose the attribution; pixel.js rebuilds the cookie from
+     this when _fbc is missing. */
+  try {
+    var fbclid = new URLSearchParams(location.search).get('fbclid');
+    if (fbclid && !sessionStorage.getItem('lm_fbclid')) {
+      /* whole: a clipped click id is a different id — see _meta.js clickId */
+      sessionStorage.setItem('lm_fbclid', fbclid + '|' + Date.now());
+    }
+  } catch (e) {}
+
+  /* Advanced matching, the same as Snap's above: the normalised-phone
+     hash of a shopper who has ordered before, as ph and as external_id —
+     the id the server sends with every event for this shopper. */
+  var am = {};
+  try {
+    var ph = localStorage.getItem('lm_ph_v2');
+    if (ph && /^[a-f0-9]{64}$/.test(ph)) { am.ph = ph; am.external_id = ph; }
+    /* v321: the rest of what a past order taught us — first name, last
+       name, city, email — kept as SHA-256 hashes only (pixel.js writes
+       them at Purchase, normalised as the server normalises them), so
+       nothing personal leaves the browser in the clear */
+    var kept = JSON.parse(localStorage.getItem('lm_am_v1') || '{}');
+    ['em', 'fn', 'ln', 'ct'].forEach(function (k) { if (/^[a-f0-9]{64}$/.test(kept[k] || '')) am[k] = kept[k]; });
+  } catch (e) {}
+  /* v321: the market — the address's country, else the shopper's kept
+     pick — in the two-letter form Meta matches on (the pixel hashes it) */
+  try {
+    var cm = /[?&]country=([A-Za-z]{2})(&|$)/.exec(location.search);
+    var cc = (cm ? cm[1] : (localStorage.getItem('lm_cty_v2') || '')).toLowerCase();
+    if (/^[a-z]{2}$/.test(cc)) am.country = cc;
+  } catch (e) {}
+  /* v315: a first-party visitor id (random, 64 hex — no personal data)
+     for a shopper not yet known by phone: the external_id the server
+     copies of every event carry too */
+  if (!am.external_id) {
+    try {
+      var vid = localStorage.getItem('lm_vid');
+      if (!/^[a-f0-9]{64}$/.test(vid || '')) {
+        var r = new Uint8Array(32); crypto.getRandomValues(r);
+        vid = Array.prototype.map.call(r, function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+        localStorage.setItem('lm_vid', vid);
+      }
+      am.external_id = vid;
+    } catch (e) {}
+  }
+  fbq('init', PIXEL_ID, am);
+
+  /* One id shared by this PageView and the server twin pixel.js relays
+     for it, so Meta counts the pair once. */
+  var id;
+  try { id = crypto.randomUUID(); }
+  catch (e) { id = 'fbpv-' + Date.now() + '-' + Math.random().toString(16).slice(2, 10); }
+  window.__lmFbPageView = id;
+  fbq('track', 'PageView', {}, { eventID: id });
+})();
+</script>
+<noscript><img height="1" width="1" style="display:none" alt=""
+src="https://www.facebook.com/tr?id=__META_PIXEL_ID__&ev=PageView&noscript=1"></noscript>
+<!-- End Meta Pixel Code -->
+<script type="module" src="/src/web/entries/home.ts"></script>
+</head>
+<body>
+
+<header class="hdr" id="hdr">
+  <div class="hdr-bar">
+    <a class="home" href="index.html" aria-label="الرئيسية">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path fill-rule="evenodd" d="M24 5.8 4.6 21.6a3 3 0 0 0-1.1 2.3v15.5a4.6 4.6 0 0 0 4.6 4.6h31.8a4.6 4.6 0 0 0 4.6-4.6V23.9a3 3 0 0 0-1.1-2.3L24 5.8Zm0 5.9 14.5 11.8v15.9c0 .6-.5 1.1-1.1 1.1H30V33.4a6 6 0 0 0-12 0V40.5h-7.4c-.6 0-1.1-.5-1.1-1.1V23.5L24 11.7Z"/><path d="M21.6 40.5v-7.1a2.4 2.4 0 0 1 4.8 0v7.1h-4.8Z"/></svg>
+    </a>
+    <div class="hdr-stack">
+      <div class="hdr-in">
+        <a class="logo" href="index.html">Luban <b>&amp;</b> Musk</a>
+      </div>
+      <div class="ship-bar" aria-live="polite">
+        <span class="ship-track">
+          <i id="shipFill"></i>
+          <span class="ship-txt" id="shipTxt"></span>
+        </span>
+      </div>
+    </div>
+    <!-- THE LANGUAGE SWITCH: EN / عربي, a round two-way control beside
+         the basket. The current language is lit; the other is a plain
+         link, so it works before — and without — any script. -->
+    <nav class="lang" aria-label="Language · اللغة">
+      <a href="en/" lang="en" hreflang="en" data-lang="en">EN</a>
+      <a href="./" lang="ar" hreflang="ar" data-lang="ar" aria-current="page">عربي</a>
+    </nav>
+    <a class="cart" href="checkout.html" aria-label="السلة">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M15.2 15.6a8.8 8.8 0 0 1 17.6 0h-3.7a5.1 5.1 0 0 0-10.2 0Z"/><path d="M11.6 17.8h24.8c2.3 0 4 2 3.7 4.3l-2 14.9c-.4 3.3-3.2 5.8-6.5 5.8H16.4c-3.3 0-6.1-2.5-6.5-5.8l-2-14.9c-.3-2.3 1.4-4.3 3.7-4.3Z"/></svg>
+      <b id="cartCount" hidden>0</b>
+    </a>
+  </div>
+</header>
+
+<main class="pdp">
+
+  <div class="gal">
+    <div class="gal-thumbs" id="thumbs"></div>
+    <div class="gal-slides" id="slides">
+      <div class="gal-slide">
+        <picture>
+          <source srcset="assets/img/white-box-open.avif?v=__ASSET_V__" type="image/avif">
+          <source srcset="assets/img/white-box-open.webp?v=__ASSET_V__" type="image/webp">
+          <img src="assets/img/white-box-open.jpg?v=__ASSET_V__" alt="لبان صلالة معطر" width="1080" height="1080" fetchpriority="high" decoding="async">
+        </picture>
+      </div>
+    </div>
+  </div>
+
+  <div class="info">
+    <div class="title-row">
+      <!-- Light tashkeel on the heading only. Diacritics disambiguate the
+           reading (lubaan, not laban - milk; muattar, not aatir), which is
+           worth having on the one line a shopper reads aloud. They are
+           deliberately NOT in <title>, og:title, the description, the
+           schema name or the stored order data: nobody types diacritics
+           into a search box, and pointed text there would stop matching
+           the query it should rank for. -->
+      <h1>لُبان صلالة مُعَطَّر</h1>
+      <select class="cty" id="cty" aria-label="الدولة"></select>
+    </div>
+
+    <!-- The description: the rating, one paragraph, and five facts —
+         three product facts, then shipping and returns. The fifth star
+         is half. -->
+    <div class="desc2">
+      <p class="rate2"><span class="stars" aria-hidden="true"><i>★</i><i>★</i><i>★</i><i>★</i><i class="half">★</i></span><b>4.78</b><span>· تقييم العملاء</span></p>
+      <!-- v440: on a phone, the owner's three lines (desc-l), each its own
+           line; a desktop keeps the paragraph (desc-o) and the blends.
+           <em>, so the blends' spans keep their places for their shapes -->
+      <!-- v337: the fuller description; v400: on a phone too, under the rating;
+           v409: shorter, with the three blends under it (spans, so the
+           paragraph stays one item of the desktop grid) -->
+      <p class="desc-d"><em class="desc-o">لبان حوجري من الدرجة الأولى من جبال ظفار، نعطّره يدويًا بزيوت عطرية فاخرة: تجربة مميزة تدمج بين أصالة لُبان صلالة وثراء العطور، بدخان طبيعي يبقى أثره ساعات بعد انطفاء الجمر.</em><em class="desc-l">🌿 لُبان مُسك - يجمع بين أصالة اللبان الحوجري العُماني من جبال ظفار ولمسة العطور الفاخرة، لتعيش تجربة عطرية تجمع بين التراث والفخامة.</em><em class="desc-l">✨ ٣ روائح حصرية - ثلاث روائح مميزة، لكل وحدة طابعها الخاص، عشان تختار العطر اللي يناسب ذوقك ويعكس أجواءك المفضلة.</em><em class="desc-l">🤍 جودة تدوم - لبان مختار بعناية ومعطّر بزيوت عطرية فاخرة، يفوح برائحة غنية تملأ البيت والمجلس وتستمر حتى بعد انطفاء الجمر.</em><span class="desc-k">متوفر عندنا 3 أنواع لتجربة عطرية مميزة:</span><span class="desc-i">لُبان الليمون مع مسك وورد</span><span class="desc-i">لُبان العود مع اللافندر وورد</span><span class="desc-i">لُبان العنبر مع التوت وورد</span></p>
+      <ul class="facts2">
+        <li class="fb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 21h15"/><path d="M12 21c-.3-1.6-.1-3 .6-4.3"/><path d="M12.6 16.7c-1.6-.6-2.9-1.7-3.7-3.2-.5-1-1.4-1.7-2.7-2"/><path d="M8.9 13.5c-.6-1.1-.6-2.3.1-3.5"/><path d="M6.2 11.5c-.6-.8-1.5-1.2-2.5-1.2"/><path d="M6.2 11.5c.1-1-.2-1.9-.8-2.7"/><path d="M12.6 16.7c1.5-1 2.4-2.4 3-4 .4-1.1 1.3-1.9 2.6-2.4"/><path d="M15.6 12.7c.8-.9 1.1-2 .9-3.2"/><path d="M18.2 10.3c.9-.3 1.6-1 2-1.9"/><path d="M18.2 10.3c-.2-1 .1-1.9.7-2.7"/><path d="M12.4 15.4c.5-2 .3-4-.6-5.8"/><path d="M11.8 9.6c-.8-.7-1.8-1-2.8-1"/><path d="M11.8 9.6c.4-1 1.1-1.8 2.1-2.3"/></svg><span>لبان ظفار الحوجري</span></li>
+        <li class="fb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.4V11.4"/><path d="M12 11.4c0-3.6 2.5-6.4 6.6-6.8.4 4.3-2.3 7.2-6.6 6.8Z"/><path d="M12 15.6c-3.5 0-6-2.3-6.2-5.8 3.5.2 5.8 2.3 6.2 5.8Z"/></svg><span>طبيعي <span dir="ltr">100%</span></span></li>
+        <li class="fb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 3.8C10.5 3.8 3.8 10.5 3.8 20.2c9.7 0 16.4-6.7 16.4-16.4Z"/><path d="M6.6 17.4c2.9-4.1 6.9-7.1 11.5-9"/></svg><span>زيوت عطرية أصلية</span></li>
+      </ul>
+    </div>
+
+
+
+
+
+    <!-- Size first. Picking one opens a panel directly beneath THAT row,
+         holding all three scents with a quantity each and one add button.
+         main.js builds both so the accordion can re-render in place. -->
+    <!-- v312: the six points sit here, above the sizes, while the page
+         shows everything at once (main.js, buildStacked) -->
+    <div class="pts-top" id="ptsTop" hidden></div>
+    <div class="opt">
+      <span class="label">الحجم والروائح</span>
+      <div class="sizes" id="sizes" role="radiogroup" aria-label="الحجم"></div>
+      <p id="addLive" class="sr-only" role="status"></p>
+    </div>
+
+    <!-- FREE DELIVERY, WHILE IT RUNS: the green strip. Shown only when
+         /admin has a free-delivery offer live in this shopper's market —
+         main.js fills it, keeps its day count current, and hides it the
+         moment the offer ends. It sits where the bundle offer starts:
+         the page's other time-limited deal, and the last thing read
+         before the basket goes to checkout. Stays put when the bundle is
+         off, so it still lands between the sizes and the checkout button. -->
+    <div class="fs-bar" id="fsBar" role="status" hidden>
+      <span class="fs-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M2.8 7.2c0-.8.6-1.4 1.4-1.4h8.6c.8 0 1.4.6 1.4 1.4v8.4H2.8Z"/><path d="M14.2 9.4h3.2c.4 0 .8.2 1.1.5l2 2.4c.2.3.3.6.3.9v2.4h-6.6"/><circle cx="7" cy="17.4" r="1.9"/><circle cx="17.2" cy="17.4" r="1.9"/></svg></span>
+      <span class="fs-txt" id="fsTxt"></span>
+      <span class="fs-dot" id="fsDot" aria-hidden="true" hidden>·</span>
+      <span class="fs-left" id="fsLeft" hidden></span>
+    </div>
+
+    <!-- v309: the three-scent bundle is drawn in the small size's card
+         (main.js, buildPhotoSizes) — the small size is sold only as it -->
+
+    <a class="btn btn-co" id="goCheckout" href="checkout.html" aria-disabled="true">إتمام الطلب</a>
+    <!-- (v206: no free-delivery line under the button any more — the
+         same threshold is the first point beside the sizes, and in the
+         الشحن panel below) -->
+    <div class="pay-marks" aria-label="طرق الدفع المقبولة"><svg class="brand" viewBox="0 0 38 24" role="img" aria-label="Visa"><rect width="38" height="24" rx="4" fill="#fff"/><path d="M9.22 8.31L10.87 8.31L11.62 13.01L14.24 8.31L15.89 8.31L12.26 14.68L10.3 14.68L9.22 8.31ZM16.73 8.31L18.37 8.31L17.1 14.68L15.46 14.68L16.73 8.31ZM24.37 8.52L24.1 9.86Q23.62 9.63 23.15 9.51Q22.67 9.39 22.23 9.39Q21.64 9.39 21.33 9.55Q21.01 9.71 20.95 10.05Q20.89 10.31 21.05 10.45Q21.22 10.59 21.69 10.7L22.36 10.84Q23.38 11.05 23.74 11.49Q24.11 11.92 23.94 12.72Q23.73 13.77 23.01 14.29Q22.28 14.8 21 14.8Q20.39 14.8 19.81 14.69Q19.22 14.57 18.65 14.34L18.93 12.96Q19.48 13.28 20.01 13.45Q20.55 13.61 21.08 13.61Q21.61 13.61 21.94 13.43Q22.26 13.25 22.32 12.92Q22.38 12.62 22.22 12.46Q22.06 12.3 21.51 12.17L20.9 12.03Q19.99 11.83 19.63 11.38Q19.28 10.93 19.43 10.17Q19.62 9.22 20.34 8.71Q21.06 8.2 22.21 8.2Q22.73 8.2 23.27 8.28Q23.81 8.36 24.37 8.52ZM29.09 13.52L26.52 13.52L25.88 14.68L24.23 14.68L27.86 8.31L29.82 8.31L30.9 14.68L29.26 14.68L29.09 13.52ZM27.17 12.34L28.91 12.34L28.55 9.81L27.17 12.34Z" fill="#1434CB"/></svg><svg class="brand" viewBox="0 0 38 24" role="img" aria-label="Mastercard"><rect width="38" height="24" rx="4" fill="#fff"/><circle cx="15.6" cy="12" r="6.2" fill="#EB001B"/><circle cx="22.4" cy="12" r="6.2" fill="#F79E1B"/><path d="M19 7.2a6.2 6.2 0 0 0 0 9.6 6.2 6.2 0 0 0 0-9.6Z" fill="#FF5F00"/></svg><svg class="brand" viewBox="0 0 38 24" role="img" aria-label="American Express"><rect width="38" height="24" rx="4" fill="#1F72CF"/><path d="M11.67 12.9L9.65 12.9L9.33 13.81L8.03 13.81L9.89 8.8L11.43 8.8L13.28 13.81L11.98 13.81L11.67 12.9ZM9.97 11.97L11.34 11.97L10.66 9.97L9.97 11.97ZM13.95 8.8L15.59 8.8L16.73 11.48L17.88 8.8L19.52 8.8L19.52 13.81L18.3 13.81L18.3 10.14L17.14 12.84L16.32 12.84L15.17 10.14L15.17 13.81L13.95 13.81L13.95 8.8ZM20.78 8.8L24.27 8.8L24.27 9.78L22.07 9.78L22.07 10.71L24.14 10.71L24.14 11.68L22.07 11.68L22.07 12.83L24.34 12.83L24.34 13.81L20.78 13.81L20.78 8.8ZM28.26 11.25L30 13.81L28.66 13.81L27.49 12.1L26.32 13.81L24.97 13.81L26.71 11.25L25.04 8.8L26.39 8.8L27.49 10.41L28.58 8.8L29.93 8.8L28.26 11.25Z" fill="#fff"/></svg><svg class="brand" viewBox="0 0 38 24" role="img" aria-label="Apple Pay"><rect width="38" height="24" rx="4" fill="#fff"/><g fill="#000"><path d="M12.9 8.55c-.33.4-.87.71-1.4.66-.07-.54.19-1.11.5-1.46.33-.4.91-.69 1.39-.71.06.56-.16 1.11-.49 1.51Z"/><path d="M13.39 9.31c-.77-.04-1.43.44-1.79.44-.37 0-.93-.42-1.53-.41-.79.01-1.52.46-1.92 1.17-.82 1.42-.21 3.52.59 4.67.39.57.86 1.2 1.48 1.18.59-.02.81-.38 1.52-.38.71 0 .91.38 1.53.37.63-.01 1.03-.57 1.42-1.14.45-.65.63-1.29.64-1.32-.01-.01-1.23-.48-1.24-1.88-.01-1.17.95-1.73 1-1.76-.55-.8-1.39-.89-1.7-.94Z"/><path d="M19.91 9.02L19.91 11.13L20.86 11.13Q21.39 11.13 21.68 10.85Q21.97 10.58 21.97 10.07Q21.97 9.57 21.68 9.3Q21.39 9.02 20.86 9.02L19.91 9.02ZM19.15 8.4L20.86 8.4Q21.81 8.4 22.29 8.83Q22.77 9.25 22.77 10.07Q22.77 10.9 22.29 11.33Q21.81 11.75 20.86 11.75L19.91 11.75L19.91 14L19.15 14L19.15 8.4ZM25.32 11.89Q24.49 11.89 24.16 12.08Q23.84 12.27 23.84 12.73Q23.84 13.1 24.08 13.32Q24.32 13.53 24.74 13.53Q25.31 13.53 25.66 13.13Q26.01 12.72 26.01 12.04L26.01 11.89L25.32 11.89ZM26.7 11.6L26.7 14L26.01 14L26.01 13.36Q25.77 13.75 25.42 13.93Q25.07 14.11 24.56 14.11Q23.91 14.11 23.53 13.75Q23.15 13.39 23.15 12.78Q23.15 12.07 23.62 11.71Q24.1 11.35 25.04 11.35L26.01 11.35L26.01 11.28Q26.01 10.8 25.7 10.54Q25.38 10.28 24.82 10.28Q24.46 10.28 24.11 10.37Q23.77 10.46 23.46 10.63L23.46 9.99Q23.84 9.84 24.19 9.77Q24.55 9.7 24.89 9.7Q25.8 9.7 26.25 10.17Q26.7 10.64 26.7 11.6ZM29.87 14.39Q29.58 15.14 29.3 15.37Q29.02 15.6 28.56 15.6L28 15.6L28 15.02L28.41 15.02Q28.69 15.02 28.85 14.89Q29.01 14.75 29.2 14.25L29.32 13.93L27.63 9.8L28.36 9.8L29.67 13.09L30.98 9.8L31.71 9.8L29.87 14.39Z"/></g></svg></div>
+
+    <!-- Two reassurances, side by side under the card marks (v414: the
+         one line each, without the PCI DSS sub-line) -->
+    <ul class="trust" aria-label="ضمانات">
+      <li class="safe">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8 4.8 5.6v6.1c0 4.4 3 8.2 7.2 9.5 4.2-1.3 7.2-5.1 7.2-9.5V5.6Z"/><path d="m9.1 12.2 2.1 2.1 4-4.2"/></svg>
+        <span><b>دفع آمن</b></span>
+      </li>
+      <li class="safe">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4.4c0 8-4.4 12.4-10.4 12.4A5.6 5.6 0 0 1 4 11.2C4 6.6 9.2 4.4 20 4.4Z"/><path d="M5.2 20c1.6-4.6 4.8-7.8 9.2-9.6"/></svg>
+        <span><b>صديق للبيئة</b></span>
+      </li>
+    </ul>
+
+    <!-- ==========================================================
+         The showcase reel: five clips as a row of cards, swiped
+         sideways — first card at the right, the strip pulls left.
+
+         Decoration, not a control: no sound, no controls, no download
+         menu, out of the tab order and out of the accessibility tree.
+         pointer-events are off so a clip cannot be selected, paused or
+         long-pressed — a video a shopper can accidentally stop is a
+         still image with extra steps. The strip itself still scrolls:
+         the gesture lands on the track, not the video.
+
+         Loading, in three steps so the strip is ready BEFORE it is
+         reached: a screen ahead, every poster is fetched and the first
+         two clips start downloading; on arrival the cards in view play
+         and their neighbours are warmed; the rest cost nothing until
+         swiped to. See initClip() in assets/js/main.js.
+
+         THE SLIDES BETWEEN THE reel-slides MARKERS ARE WRITTEN BY
+         make-showcase.cmd — one per clip it encodes, in filename order
+         — and it rewrites them every time it runs. Edit the clips by
+         re-running it, not by editing here. Until it has been run the
+         two clips the shop already had stand in, so the strip is never
+         a row of files that do not exist.
+         ========================================================== -->
+    <div class="reel" id="reel" aria-hidden="true">
+      <div class="reel-track" id="reelTrack" tabindex="-1">
+        <!-- reel-slides -->
+        <figure class="reel-slide">
+          <video class="clip-v"
+                 data-src="assets/media/show-1.mp4?v=__ASSET_V__"
+                 data-poster="assets/media/show-1-poster.jpg?v=__ASSET_V__"
+                 muted loop playsinline preload="none" tabindex="-1"
+                 disablepictureinpicture controlslist="nodownload noplaybackrate noremoteplayback"></video>
+        </figure>
+        <figure class="reel-slide" data-first>
+          <video class="clip-v"
+                 data-src="assets/media/show-2.mp4?v=__ASSET_V__"
+                 data-poster="assets/media/show-2-poster.jpg?v=__ASSET_V__"
+                 muted loop playsinline preload="none" tabindex="-1"
+                 disablepictureinpicture controlslist="nodownload noplaybackrate noremoteplayback"></video>
+        </figure>
+        <figure class="reel-slide">
+          <video class="clip-v"
+                 data-src="assets/media/show-3.mp4?v=__ASSET_V__"
+                 data-poster="assets/media/show-3-poster.jpg?v=__ASSET_V__"
+                 muted loop playsinline preload="none" tabindex="-1"
+                 disablepictureinpicture controlslist="nodownload noplaybackrate noremoteplayback"></video>
+        </figure>
+        <!-- /reel-slides -->
+      </div>
+      <!-- one dot per clip, the current one gold; nudges sideways until
+           the first swipe. Built by initClip from the clips it finds. -->
+      <div class="reel-dots" id="reelDots"></div>
+      <!-- v337: a mouse cannot swipe; on a desktop two arrows step the
+           strip a card (desktop.css shows them, main.js moves it) -->
+      <button type="button" class="reel-arrow prev" id="reelPrev" tabindex="-1" aria-hidden="true" aria-label="السابق" hidden></button>
+      <button type="button" class="reel-arrow next" id="reelNext" tabindex="-1" aria-hidden="true" aria-label="التالي" hidden></button>
+    </div>
+  </div>
+
+  <!-- (v440) الفرق واضح and the ritual right under the video, the painting after them (the owner's request) -->
+  <section class="story" aria-label="عن اللبان">
+
+    <!-- A real <table> rather than two side-by-side lists: cells in one
+         row are the same height by definition, so the hairlines stay
+         level even when one column wraps and the other does not. Two
+         independent lists would drift apart the moment a font fallback
+         changed a line break. -->
+    <article class="scard compare">
+      <div class="scard-txt">
+        <h3>الفرق واضح</h3>
+      </div>
+      <table class="duo">
+        <caption>مقارنة بين لبان ومسك وبين الدخون</caption>
+        <thead>
+          <tr>
+            <th scope="col" class="us"><span class="duo-brand">LUBAN &amp; MUSK</span></th>
+            <th scope="col">دخون</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- (v442) the first row: what sets the scents apart (the owner's wording) -->
+          <tr>
+            <td class="us"><span class="duo-in">روائح مميزة تدمج بين اللبان والعطور</span></td>
+            <td><span class="duo-in">روائح مكررة ومتشابهة</span></td>
+          </tr>
+          <tr>
+            <td class="us"><span class="duo-in">معطر بزيوت عطرية أصلية</span></td>
+            <td><span class="duo-in">غير معطر أو رائحة خفيفة</span></td>
+          </tr>
+          <tr>
+            <td class="us"><span class="duo-in">فواح ويجدد رائحة المكان</span></td>
+            <td><span class="duo-in">تأثير خفيف ولا يدوم</span></td>
+          </tr>
+          <tr>
+            <td class="us"><span class="duo-in">حبة أو حبتان تكفيان للمنزل</span></td>
+            <td><span class="duo-in">يحتاج كمية أكبر</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </article>
+
+    <article class="scard steps">
+      <div class="scard-txt">
+        <h3>خطوات التحضير</h3>
+      </div>
+      <ol class="step-list">
+        <li>
+          <span class="step-art"><svg viewBox="0 0 120 120" fill="none" stroke="#b8974f" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M26 66h68"/><path d="M33 66l4 20a9 9 0 0 0 9 7h28a9 9 0 0 0 9-7l4-20"/><path d="M45 93v9M75 93v9"/><path d="M48 78h24" stroke="#8f7238" stroke-width="5" opacity=".55" stroke-linecap="round"/><path d="M50 54c0-5 4-6 4-11M60 50c0-6 4-7 4-12M70 54c0-5-4-6-4-11" opacity=".85"/></svg></span>
+          <span class="step-txt"><b>سخن المبخرة</b>ضع الفحم واتركه حتى يهدأ الجمر.</span>
+        </li>
+        <li>
+          <span class="step-art"><svg viewBox="0 0 120 120" fill="none" stroke="#b8974f" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M60 30 88 44 60 58 32 44Z"/><path d="M32 44v28l28 14V58Z"/><path d="M88 44v28L60 86V58Z"/><path d="M88 44v28L60 86V58Z" fill="#8f7238" stroke="none" opacity=".16"/><path d="M44 44 60 51l16-7" opacity=".5"/></svg></span>
+          <span class="step-txt"><b>ضع حبة لبان</b>حبة أو حبتان تكفيان للمنزل كامل.</span>
+        </li>
+        <li>
+          <span class="step-art"><svg viewBox="0 0 120 120" fill="none" stroke="#b8974f" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M38 100h44" stroke="#8f7238" stroke-width="2" opacity=".4"/><path d="M48 96c0-9 6-11 6-19s-6-10-6-18 5-10 5-16"/><path d="M60 96c0-11 7-14 7-23s-7-12-7-21 6-12 6-18" opacity=".9"/><path d="M72 96c0-9-5-11-5-19s5-10 5-17" opacity=".7"/></svg></span>
+          <span class="step-txt"><b>اترك العطر ينتشر</b>يدوم الأثر ساعات بعد انطفاء الجمر.</span>
+        </li>
+      </ol>
+    </article>
+
+  </section>
+
+  <!-- THE PAINTING (v301; v400: after the reel, as on a desktop) — the
+       harvester at the tree, cropped from the left, melting into the page
+       under the three lines. The picture decorates; the words carry the
+       meaning, so the picture has an empty alt. -->
+  <div class="tale">
+    <picture class="tale-art">
+      <source srcset="assets/img/harvest-art.avif?v=__ASSET_V__" type="image/avif">
+      <source srcset="assets/img/harvest-art.webp?v=__ASSET_V__" type="image/webp">
+      <img src="assets/img/harvest-art.jpg?v=__ASSET_V__" alt="" width="736" height="547" loading="lazy" decoding="async">
+    </picture>
+    <div class="tale-words">
+      <p class="tale-sign">من أشجار ظفار</p>
+      <p class="lead">لبان حوجري أصيل من أشجار ظفار</p>
+      <p class="lead">ننتقي حبّاته بعناية، ونثريها بزيوت عطرية أصلية لتفوح منها رائحة دافئة وأخاذة تملأ البيت والمجلس، وتدوم طويلًا.</p>
+      <p class="lead">أصالة اللبان العُماني، بلمسة عصرية أنيقة… لأجواء تليق بك وبضيوفك.</p>
+    </div>
+  </div>
+
+
+  <!-- The FAQ closes the page rather than interrupting it: a shopper
+       reading about shipping has already decided to look, and the
+       comparison and ritual cards are what earn that decision. It sits
+       inside <main> and carries its own side padding, because it used
+       to borrow it from .info. -->
+    <div class="acc">
+      <details>
+        <summary>من نحن</summary>
+        <div class="body">
+          براند من ظفار، أرض اللبان. نختار الحوجري درجة أولى من مزارعي الجبل في موسم الحصاد،
+          ونعطره يدويا بزيوت عطرية فاخرة قبل أن يصلك في علبة جاهزة للإهداء.
+        </div>
+      </details>
+      <details>
+        <summary>الشحن</summary>
+        <div class="body">
+          <ul>
+            <!-- the delivery time: 72 hours, 3-5 days in Saudi Arabia
+                 (main.js, shipEta — v198), as is the .ship-eta pill
+                 above -->
+            <li class="ship-eta-faq">توصيل خلال 72 ساعة لجميع دول الخليج</li>
+            <!-- rewritten per country by main.js: every market has its
+                 own free-shipping threshold and its own currency, and a
+                 single hard-coded figure was wrong in five of six -->
+            <li class="ship-free">توصيل مجاني للطلبات الكبيرة</li>
+            <li class="ship-cost"></li>
+            <!-- hidden by main.js where the market takes no cash (v202) -->
+            <li class="cod-faq">الدفع عند الاستلام متاح</li>
+            <li>استبدال الطلب التالف أو الخاطئ عند إبلاغنا خلال 48 ساعة</li>
+          </ul>
+        </div>
+      </details>
+    </div>
+</main>
+
+<!-- ============ ORDER TRACKING ============
+     Takes an LM- number and shows the courier stage. The endpoint
+     returns a stage and nothing else — no address, no AWB, no name. -->
+<section class="track" aria-label="تتبع الطلب">
+  <div class="wrap">
+    <span class="label">تتبع طلبك</span>
+    <form class="track-box" id="trackForm">
+      <input id="trackId" type="text" inputmode="text" dir="ltr" autocomplete="off"
+             spellcheck="false" maxlength="15" placeholder="LM-123456"
+             aria-label="رقم الطلب">
+      <button class="btn" type="submit">تتبع</button>
+    </form>
+    <p class="track-hint">رقم الطلب تجده في رسالة التأكيد، ويبدأ بـ LM</p>
+    <div class="track-out" id="trackOut" hidden aria-live="polite"></div>
+  </div>
+</section>
+
+<footer class="ftr">
+  <div class="ftr-social">
+    <a href="https://wa.me/96876655565" target="_blank" rel="noopener" aria-label="واتساب"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.4a9.6 9.6 0 0 0-8.2 14.6L2.5 21.5l4.6-1.2A9.6 9.6 0 1 0 12 2.4Z"/><path d="M9 8.3c.2-.5.4-.5.7-.5h.6c.2 0 .4 0 .6.5l.8 1.9c.1.2 0 .4-.1.6l-.5.6c-.2.2-.2.4-.1.6a6.8 6.8 0 0 0 3 2.6c.2.1.4.1.6-.1l.6-.6c.2-.2.4-.2.6-.1l1.8.9c.3.1.4.3.4.5v.7c0 .4-.2.8-.6 1-.5.4-1.1.5-1.8.4-1.5-.2-3.3-1.2-4.8-2.7S8.5 11.5 8.3 10c-.1-.6.1-1.3.5-1.7Z"/></svg></a>
+    <a href="https://www.instagram.com/lubanandmusk/" target="_blank" rel="noopener" aria-label="إنستغرام"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.2" y="3.2" width="17.6" height="17.6" rx="5.2"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.1" cy="6.9" r="1.15" fill="currentColor" stroke="none"/></svg></a>
+  </div>
+  <a class="ftr-num" href="tel:+96876655565" dir="ltr">+968 7665 5565</a>
+  <a class="ftr-link" href="privacy.html">الخصوصية والاسترجاع</a>
+  <div class="ftr-pay" aria-label="طرق الدفع المقبولة"><svg class="brand" viewBox="0 0 38 24" role="img" aria-label="Visa"><rect width="38" height="24" rx="4" fill="#fff"/><path d="M9.22 8.31L10.87 8.31L11.62 13.01L14.24 8.31L15.89 8.31L12.26 14.68L10.3 14.68L9.22 8.31ZM16.73 8.31L18.37 8.31L17.1 14.68L15.46 14.68L16.73 8.31ZM24.37 8.52L24.1 9.86Q23.62 9.63 23.15 9.51Q22.67 9.39 22.23 9.39Q21.64 9.39 21.33 9.55Q21.01 9.71 20.95 10.05Q20.89 10.31 21.05 10.45Q21.22 10.59 21.69 10.7L22.36 10.84Q23.38 11.05 23.74 11.49Q24.11 11.92 23.94 12.72Q23.73 13.77 23.01 14.29Q22.28 14.8 21 14.8Q20.39 14.8 19.81 14.69Q19.22 14.57 18.65 14.34L18.93 12.96Q19.48 13.28 20.01 13.45Q20.55 13.61 21.08 13.61Q21.61 13.61 21.94 13.43Q22.26 13.25 22.32 12.92Q22.38 12.62 22.22 12.46Q22.06 12.3 21.51 12.17L20.9 12.03Q19.99 11.83 19.63 11.38Q19.28 10.93 19.43 10.17Q19.62 9.22 20.34 8.71Q21.06 8.2 22.21 8.2Q22.73 8.2 23.27 8.28Q23.81 8.36 24.37 8.52ZM29.09 13.52L26.52 13.52L25.88 14.68L24.23 14.68L27.86 8.31L29.82 8.31L30.9 14.68L29.26 14.68L29.09 13.52ZM27.17 12.34L28.91 12.34L28.55 9.81L27.17 12.34Z" fill="#1434CB"/></svg><svg class="brand" viewBox="0 0 38 24" role="img" aria-label="Mastercard"><rect width="38" height="24" rx="4" fill="#fff"/><circle cx="15.6" cy="12" r="6.2" fill="#EB001B"/><circle cx="22.4" cy="12" r="6.2" fill="#F79E1B"/><path d="M19 7.2a6.2 6.2 0 0 0 0 9.6 6.2 6.2 0 0 0 0-9.6Z" fill="#FF5F00"/></svg><svg class="brand" viewBox="0 0 38 24" role="img" aria-label="American Express"><rect width="38" height="24" rx="4" fill="#1F72CF"/><path d="M11.67 12.9L9.65 12.9L9.33 13.81L8.03 13.81L9.89 8.8L11.43 8.8L13.28 13.81L11.98 13.81L11.67 12.9ZM9.97 11.97L11.34 11.97L10.66 9.97L9.97 11.97ZM13.95 8.8L15.59 8.8L16.73 11.48L17.88 8.8L19.52 8.8L19.52 13.81L18.3 13.81L18.3 10.14L17.14 12.84L16.32 12.84L15.17 10.14L15.17 13.81L13.95 13.81L13.95 8.8ZM20.78 8.8L24.27 8.8L24.27 9.78L22.07 9.78L22.07 10.71L24.14 10.71L24.14 11.68L22.07 11.68L22.07 12.83L24.34 12.83L24.34 13.81L20.78 13.81L20.78 8.8ZM28.26 11.25L30 13.81L28.66 13.81L27.49 12.1L26.32 13.81L24.97 13.81L26.71 11.25L25.04 8.8L26.39 8.8L27.49 10.41L28.58 8.8L29.93 8.8L28.26 11.25Z" fill="#fff"/></svg><svg class="brand" viewBox="0 0 38 24" role="img" aria-label="Apple Pay"><rect width="38" height="24" rx="4" fill="#fff"/><g fill="#000"><path d="M12.9 8.55c-.33.4-.87.71-1.4.66-.07-.54.19-1.11.5-1.46.33-.4.91-.69 1.39-.71.06.56-.16 1.11-.49 1.51Z"/><path d="M13.39 9.31c-.77-.04-1.43.44-1.79.44-.37 0-.93-.42-1.53-.41-.79.01-1.52.46-1.92 1.17-.82 1.42-.21 3.52.59 4.67.39.57.86 1.2 1.48 1.18.59-.02.81-.38 1.52-.38.71 0 .91.38 1.53.37.63-.01 1.03-.57 1.42-1.14.45-.65.63-1.29.64-1.32-.01-.01-1.23-.48-1.24-1.88-.01-1.17.95-1.73 1-1.76-.55-.8-1.39-.89-1.7-.94Z"/><path d="M19.91 9.02L19.91 11.13L20.86 11.13Q21.39 11.13 21.68 10.85Q21.97 10.58 21.97 10.07Q21.97 9.57 21.68 9.3Q21.39 9.02 20.86 9.02L19.91 9.02ZM19.15 8.4L20.86 8.4Q21.81 8.4 22.29 8.83Q22.77 9.25 22.77 10.07Q22.77 10.9 22.29 11.33Q21.81 11.75 20.86 11.75L19.91 11.75L19.91 14L19.15 14L19.15 8.4ZM25.32 11.89Q24.49 11.89 24.16 12.08Q23.84 12.27 23.84 12.73Q23.84 13.1 24.08 13.32Q24.32 13.53 24.74 13.53Q25.31 13.53 25.66 13.13Q26.01 12.72 26.01 12.04L26.01 11.89L25.32 11.89ZM26.7 11.6L26.7 14L26.01 14L26.01 13.36Q25.77 13.75 25.42 13.93Q25.07 14.11 24.56 14.11Q23.91 14.11 23.53 13.75Q23.15 13.39 23.15 12.78Q23.15 12.07 23.62 11.71Q24.1 11.35 25.04 11.35L26.01 11.35L26.01 11.28Q26.01 10.8 25.7 10.54Q25.38 10.28 24.82 10.28Q24.46 10.28 24.11 10.37Q23.77 10.46 23.46 10.63L23.46 9.99Q23.84 9.84 24.19 9.77Q24.55 9.7 24.89 9.7Q25.8 9.7 26.25 10.17Q26.7 10.64 26.7 11.6ZM29.87 14.39Q29.58 15.14 29.3 15.37Q29.02 15.6 28.56 15.6L28 15.6L28 15.02L28.41 15.02Q28.69 15.02 28.85 14.89Q29.01 14.75 29.2 14.25L29.32 13.93L27.63 9.8L28.36 9.8L29.67 13.09L30.98 9.8L31.71 9.8L29.87 14.39Z"/></g></svg></div>
+  <span class="ftr-copy">© <span id="year">2026</span> LUBAN &amp; MUSK</span>
+</footer>
+
+<div class="sticky" id="sticky">
+  <span class="s-price" id="sPrice">250 AED</span>
+  <!-- adding now happens inside the size panel, so this scrolls there -->
+  <button class="btn" id="stickyAdd">اختر عرضك</button>
+</div>
+
+<div class="fabs">
+  <a class="fab" href="https://wa.me/96876655565" target="_blank" rel="noopener" aria-label="تواصل عبر واتساب"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.4a9.6 9.6 0 0 0-8.2 14.6L2.5 21.5l4.6-1.2A9.6 9.6 0 1 0 12 2.4Z"/><path d="M9 8.3c.2-.5.4-.5.7-.5h.6c.2 0 .4 0 .6.5l.8 1.9c.1.2 0 .4-.1.6l-.5.6c-.2.2-.2.4-.1.6a6.8 6.8 0 0 0 3 2.6c.2.1.4.1.6-.1l.6-.6c.2-.2.4-.2.6-.1l1.8.9c.3.1.4.3.4.5v.7c0 .4-.2.8-.6 1-.5.4-1.1.5-1.8.4-1.5-.2-3.3-1.2-4.8-2.7S8.5 11.5 8.3 10c-.1-.6.1-1.3.5-1.7Z"/></svg></a>
+</div>
+
+</body>
+</html>

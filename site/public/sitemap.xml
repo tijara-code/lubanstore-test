@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The two languages of the one product page, each naming the other,
+     so a search engine shows Arabic readers the Arabic page and English
+     readers the English one. Checkout is left out on purpose (robots.txt
+     disallows it). -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://lubanmusk.com/</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://lubanmusk.com/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lubanmusk.com/en/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lubanmusk.com/"/>
+  </url>
+  <url>
+    <loc>https://lubanmusk.com/en/</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://lubanmusk.com/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lubanmusk.com/en/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lubanmusk.com/"/>
+  </url>
+  <url>
+    <loc>https://lubanmusk.com/privacy.html</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://lubanmusk.com/privacy.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lubanmusk.com/en/privacy.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lubanmusk.com/privacy.html"/>
+  </url>
+  <url>
+    <loc>https://lubanmusk.com/en/privacy.html</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://lubanmusk.com/privacy.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lubanmusk.com/en/privacy.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lubanmusk.com/privacy.html"/>
+  </url>
+</urlset>
