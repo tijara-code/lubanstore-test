@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Luban & Musk \u2014 single-product Arabic/English frankincense store: storefront, API, admin.",
+  "description": "Luban & Musk — single-product Arabic/English frankincense store: storefront, API, admin.",
   "engines": {
     "node": ">=22"
   },
@@ -29,6 +29,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@netlify/functions": "6.0.3",
     "@preact/preset-vite": "2.10.6",
     "@types/node": "22.20.5",
     "drizzle-kit": "0.31.11",
