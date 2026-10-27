@@ -247,6 +247,9 @@ function normalise(s: string): string {
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/\?v=[\w.-]+/g, "?v=V")
     .replace(/\/assets\/([\w.-]+?)-[\w-]{8}\.(js|css)/g, "/assets/$1.$2")
+    /* the running band's measured width: read once, when the message is first written, so it
+       depends on whether the web font had arrived by then — a race in the original too */
+    .replace(/animation-duration: [\d.]+s; --ship-w: -?[\d.]+px;/g, "animation-duration: Ws; --ship-w: Wpx;")
     .replace(/\s+/g, " ")
     .replace(/> </g, "><")
     .trim();
@@ -337,6 +340,7 @@ async function both(name: string, journey: Journey): Promise<void> {
     results.push({ journey: name, step: "data:" + k, domEqual: same, pixels: 0, note: same ? undefined : JSON.stringify({ ref: got.ref.data[k], new: got.new.data[k] }) });
     if (!same) failures.push("data " + k + " differs:\n  ref: " + JSON.stringify(got.ref.data[k]) + "\n  new: " + JSON.stringify(got.new.data[k]));
   }
+  if (failures.length) writeFileSync(path.join(OUT, name.replace(/[^\w.-]+/g, "_") + "-failures.txt"), failures.join("\n\n"));
   expect(failures, failures.join("\n")).toEqual([]);
 }
 
