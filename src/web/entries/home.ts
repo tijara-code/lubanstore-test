@@ -4,3 +4,8 @@
  * header, cart, main — the original's script order) are added below by their ports.
  */
 import "../core";
+import "../tracking/stats";
+import "../tracking/pixel";
+import "../header";
+import "../cart";
+import "../product";

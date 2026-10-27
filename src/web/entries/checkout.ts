@@ -4,6 +4,12 @@
  * modules (stats, pixel, header, cart, checkout) are added below by their ports.
  */
 import "../core";
+import "../tracking/stats";
+import "../tracking/pixel";
+import "../header";
+import "../cart";
 import { LM_CITIES } from "../core/cities";
+/* checkout.js came last; it reads the city lists by import (an import runs before the assignment below) */
+import "../checkout";
 
 window.LM_CITIES = LM_CITIES;

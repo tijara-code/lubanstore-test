@@ -19,10 +19,19 @@ declare global {
     __lmPageView?: string;
     __lmFbPageView?: string;
     lmLater?: (f: () => void) => void;
-    /** stats.js's beacon (another module) — optional */
-    LMBeacon?: { queue?: (kind: string, body: unknown) => void; flush?: () => void; [k: string]: unknown };
-    /** pixel.js's api (another module) — optional */
-    LMPX?: { purchase?: (o: unknown, j: unknown) => void; [k: string]: unknown };
+    /** stats.js's beacon (src/web/tracking/beacon.ts) — absent on a page without it */
+    LMBeacon?: import("../tracking/types").Beacon;
+    /** stats.js's first-party events (src/web/tracking/stats.ts) */
+    LMEV?: import("../tracking/types").Lmev;
+    /** stats.js's landing of this tab */
+    LMLanding?: () => import("../../shared/attribution").Landing;
+    /** pixel.js's api (src/web/tracking/pixel.ts) — home and checkout only */
+    LMPX?: import("../tracking/types").Lmpx;
+    /** the ad platforms' stubs (the head snippets) and GA4's queue */
+    snaptr?: import("../tracking/types").SnapFn;
+    fbq?: import("../tracking/types").FbqFn;
+    gtag?: import("../tracking/types").GtagFn;
+    dataLayer?: unknown[];
     [k: string]: unknown;
   }
 }

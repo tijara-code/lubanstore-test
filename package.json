@@ -18,7 +18,9 @@
     "check": "npm run typecheck && npm run test && npm run build",
     "db:generate": "rm -rf db/migrations && drizzle-kit generate --name init",
     "db:migrate": "node --env-file-if-exists=.env --import tsx scripts/migrate.ts",
-    "make-en": "node --import tsx scripts/make-en.ts"
+    "make-en": "node --import tsx scripts/make-en.ts",
+    "admin:hash": "node --import tsx scripts/admin-hash.ts",
+    "seed": "node --env-file-if-exists=.env --import tsx scripts/seed.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.12",

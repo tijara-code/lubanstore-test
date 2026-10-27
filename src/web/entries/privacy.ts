@@ -3,4 +3,4 @@
  * stats.js here — NOT store.js — so this entry does not import the core either: the page
  * asks for no catalogue and no geo. The stats module is added here by its port.
  */
-export {};
+import "../tracking/stats";

@@ -131,6 +131,9 @@ export async function compareScreens(args: Args): Promise<Array<{ page: string; 
           reducedMotion: "reduce" as const,
           javaScriptEnabled: args.js,
           ignoreHTTPSErrors: true,
+          /* the same edge country on both sides: ref-server.js answers every request as from
+             Oman (x-country: OM); the new server reads the same header when no edge geo is set */
+          extraHTTPHeaders: { "x-country": "OM" },
         };
         let r: { ratio: number; size: string; diff: Buffer };
         const base = slug(p) + "-" + w;

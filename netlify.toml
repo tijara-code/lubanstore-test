@@ -1,0 +1,19 @@
+# Luban & Musk on Netlify.
+# The site is dist/ (npm run build). Every endpoint is one function (netlify/functions/api.mts,
+# a Hono app); scheduled jobs are netlify/functions/job-*.mts. Headers for static files come
+# from dist/_headers, written by the build from src/server/site-headers.ts.
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # Public by design (they are in the page source); exempt from the secrets scanner. Nothing else.
+  SECRETS_SCAN_OMIT_KEYS = "META_PIXEL_ID,SNAP_PIXEL_ID"
+
+[functions]
+  node_bundler = "esbuild"
+  # PGlite is the local/test database; production uses DATABASE_URL. Never bundled.
+  external_node_modules = ["@electric-sql/pglite"]
+  included_files = ["db/migrations/**"]

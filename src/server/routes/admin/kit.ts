@@ -17,7 +17,7 @@ import { getCookie } from "hono/cookie";
 import type { z } from "zod";
 import { SESSION_COOKIE } from "../../../shared/admin/api";
 import type { AppEnv, Deps } from "../../core/deps";
-import { fail, readJson } from "../../core/http";
+import { fail, rawBody, readJson } from "../../core/http";
 import { authConfigured, readSession, sessionsSince } from "../../domain/admin/auth";
 import { idsOf, recordAudit, summaryOf } from "../../domain/admin/audit";
 
@@ -92,8 +92,7 @@ export function issuesOf(error: z.ZodError, prefix: string[] = []) {
 
 /** The JSON body, validated: 400 bad_json / bad_input (with the issues). */
 export async function body<S extends z.ZodType>(c: Ctx, schema: S): Promise<z.infer<S>> {
-  const text = await c.req.raw.clone().text().catch(() => "");
-  if (text.length > MAX_BODY) throw fail("too_large", 413);
+  if ((await rawBody(c)).length > MAX_BODY) throw fail("too_large", 413);
   const raw = await readJson(c);
   const r = schema.safeParse(raw);
   if (!r.success) throw fail("bad_input", 400, { issues: issuesOf(r.error) });
