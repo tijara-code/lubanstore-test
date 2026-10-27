@@ -1,0 +1,44 @@
+{
+  "name": "luban-musk",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Luban & Musk \u2014 single-product Arabic/English frankincense store: storefront, API, admin.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env --import tsx scripts/dev.ts",
+    "build": "node --import tsx scripts/build.ts",
+    "start": "node --env-file-if-exists=.env --import tsx src/server/node.ts",
+    "typecheck": "tsc -p tsconfig.server.json && tsc -p tsconfig.web.json && tsc -p tsconfig.admin.json && tsc -p tsconfig.tests.json",
+    "test": "vitest run",
+    "test:unit": "vitest run --project unit --project server --project web",
+    "test:e2e": "vitest run --project e2e",
+    "check": "npm run typecheck && npm run test && npm run build",
+    "db:generate": "rm -rf db/migrations && drizzle-kit generate --name init",
+    "db:migrate": "node --env-file-if-exists=.env --import tsx scripts/migrate.ts",
+    "make-en": "node --import tsx scripts/make-en.ts"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.12",
+    "@hono/node-server": "1.19.17",
+    "drizzle-orm": "0.45.4",
+    "hono": "4.13.14",
+    "postgres": "3.4.9",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "2.10.6",
+    "@types/node": "22.20.5",
+    "drizzle-kit": "0.31.11",
+    "esbuild": "0.28.2",
+    "happy-dom": "21.0.4",
+    "playwright": "1.63.0",
+    "preact": "11.1.0",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  }
+}

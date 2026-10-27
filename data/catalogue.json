@@ -1,0 +1,346 @@
+{
+  "version": 7,
+  "countries": [
+    {
+      "code": "AE",
+      "flag": "🇦🇪",
+      "dial": "971",
+      "name": "الإمارات",
+      "name_en": "UAE",
+      "cur": "AED",
+      "dec": 0,
+      "toOmr": 0.1047,
+      "ship": 30,
+      "freeOver": 300,
+      "cod": 10,
+      "prices": {
+        "small": {
+          "now": 120,
+          "was": 160
+        },
+        "large": {
+          "now": 250,
+          "was": 320
+        },
+        "bundle": {
+          "now": 299,
+          "was": 360
+        },
+        "burner": {
+          "now": 60,
+          "was": 0
+        },
+        "samples": {
+          "now": 10,
+          "was": 0
+        },
+        "duo": {
+          "now": 419,
+          "was": 0
+        },
+        "trio": {
+          "now": 499,
+          "was": 0
+        }
+      }
+    },
+    {
+      "code": "SA",
+      "flag": "🇸🇦",
+      "dial": "966",
+      "name": "السعودية",
+      "name_en": "Saudi Arabia",
+      "cur": "SAR",
+      "dec": 0,
+      "toOmr": 0.1025,
+      "ship": 30,
+      "freeOver": 300,
+      "cod": 10,
+      "prices": {
+        "small": {
+          "now": 120,
+          "was": 160
+        },
+        "large": {
+          "now": 250,
+          "was": 320
+        },
+        "bundle": {
+          "now": 299,
+          "was": 360
+        },
+        "burner": {
+          "now": 60,
+          "was": 0
+        },
+        "samples": {
+          "now": 10,
+          "was": 0
+        }
+      }
+    },
+    {
+      "code": "QA",
+      "flag": "🇶🇦",
+      "dial": "974",
+      "name": "قطر",
+      "name_en": "Qatar",
+      "cur": "QAR",
+      "dec": 0,
+      "toOmr": 0.1056,
+      "ship": 30,
+      "freeOver": 300,
+      "cod": 10,
+      "prices": {
+        "small": {
+          "now": 120,
+          "was": 160
+        },
+        "large": {
+          "now": 250,
+          "was": 320
+        },
+        "bundle": {
+          "now": 299,
+          "was": 360
+        },
+        "burner": {
+          "now": 60,
+          "was": 0
+        },
+        "samples": {
+          "now": 10,
+          "was": 0
+        },
+        "duo": {
+          "now": 419,
+          "was": 0
+        },
+        "trio": {
+          "now": 499,
+          "was": 0
+        }
+      }
+    },
+    {
+      "code": "OM",
+      "flag": "🇴🇲",
+      "dial": "968",
+      "name": "عمان",
+      "name_en": "Oman",
+      "cur": "OMR",
+      "dec": 3,
+      "toOmr": 1,
+      "ship": 3,
+      "freeOver": 30,
+      "cod": 1,
+      "prices": {
+        "small": {
+          "now": 12,
+          "was": 16
+        },
+        "large": {
+          "now": 25,
+          "was": 32
+        },
+        "bundle": {
+          "now": 29,
+          "was": 36
+        },
+        "burner": {
+          "now": 6,
+          "was": 0
+        },
+        "samples": {
+          "now": 1,
+          "was": 0
+        },
+        "duo": {
+          "now": 29.9,
+          "was": 0
+        },
+        "trio": {
+          "now": 35.9,
+          "was": 0
+        }
+      }
+    },
+    {
+      "code": "BH",
+      "flag": "🇧🇭",
+      "dial": "973",
+      "name": "البحرين",
+      "name_en": "Bahrain",
+      "cur": "BHD",
+      "dec": 3,
+      "toOmr": 1.0226,
+      "ship": 3,
+      "freeOver": 30,
+      "cod": 1,
+      "prices": {
+        "small": {
+          "now": 12,
+          "was": 16
+        },
+        "large": {
+          "now": 25,
+          "was": 32
+        },
+        "bundle": {
+          "now": 29,
+          "was": 36
+        },
+        "burner": {
+          "now": 6,
+          "was": 0
+        },
+        "samples": {
+          "now": 1,
+          "was": 0
+        }
+      }
+    },
+    {
+      "code": "KW",
+      "flag": "🇰🇼",
+      "dial": "965",
+      "name": "الكويت",
+      "name_en": "Kuwait",
+      "cur": "KWD",
+      "dec": 3,
+      "toOmr": 1.25,
+      "ship": 3,
+      "freeOver": 30,
+      "cod": 1,
+      "prices": {
+        "small": {
+          "now": 10,
+          "was": 13
+        },
+        "large": {
+          "now": 20,
+          "was": 26
+        },
+        "bundle": {
+          "now": 24,
+          "was": 30
+        },
+        "burner": {
+          "now": 5,
+          "was": 0
+        },
+        "samples": {
+          "now": 1,
+          "was": 0
+        }
+      }
+    }
+  ],
+  "extras": [
+    {
+      "id": "burner",
+      "name": "مبخرة",
+      "name_en": "Incense burner",
+      "note": "مبخرة معدنية بقاعدة خشبية وملقط",
+      "note_en": "Metal burner with a wooden base and tongs",
+      "img": "burner",
+      "art": "burner",
+      "once": true,
+      "active": true
+    },
+    {
+      "id": "samples",
+      "name": "عينات",
+      "name_en": "Samples",
+      "note": "ثلاث عينات صغيرة من كل رائحة",
+      "note_en": "Three small samples, one of each scent",
+      "img": "",
+      "art": "scents",
+      "countsFree": false,
+      "once": true,
+      "active": true
+    }
+  ],
+  "sizes": [
+    {
+      "id": "large",
+      "name": "كبير",
+      "name_en": "Large",
+      "weight": "300 جم",
+      "weight_en": "300 g",
+      "tag": "الأكثر مبيعا",
+      "tag_en": "Best seller"
+    },
+    {
+      "id": "small",
+      "name": "صغير",
+      "name_en": "Small",
+      "weight": "100 جم",
+      "weight_en": "100 g",
+      "tag": "",
+      "tag_en": ""
+    }
+  ],
+  "scents": [
+    {
+      "id": "oud",
+      "name": "عود الافندر",
+      "name_en": "Oud Lavender",
+      "notes": "عود عربي · لافندر · مسك",
+      "notes_en": "Arabian oud · Lavender · Musk",
+      "accent": "#6A5CA8",
+      "art": "lavender",
+      "active": true
+    },
+    {
+      "id": "lemon",
+      "name": "ليمون مسك",
+      "name_en": "Lemon Musk",
+      "notes": "ليمون · مسك",
+      "notes_en": "Lemon · Musk",
+      "accent": "#A0812A",
+      "art": "lemon",
+      "active": true
+    },
+    {
+      "id": "amber",
+      "name": "عنبر توت",
+      "name_en": "Amber Berry",
+      "notes": "عنبر · توت · مسك",
+      "notes_en": "Amber · Berry · Musk",
+      "accent": "#9C464C",
+      "art": "amber",
+      "active": true
+    }
+  ],
+  "offer": {
+    "id": "bundle",
+    "active": true,
+    "badge": "الأكثر مبيعا",
+    "badge_en": "Best seller",
+    "term": "عرض محدود",
+    "term_en": "Limited offer",
+    "name": "باقة الروائح الثلاث",
+    "name_en": "The Three-Scent Set",
+    "note": "3 عبوات 100 جم، واحدة من كل رائحة",
+    "note_en": "3 × 100 g boxes, one of each scent",
+    "hours": 72,
+    "unit": "hours",
+    "renew": "auto",
+    "sizeId": "small",
+    "countries": []
+  },
+  "tiers": {
+    "active": true,
+    "sizeId": "large",
+    "hours": 72,
+    "unit": "hours",
+    "renew": "once",
+    "countries": []
+  },
+  "ledger": {
+    "rates": {
+      "AED": 0.1
+    }
+  }
+}
