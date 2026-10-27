@@ -36,3 +36,30 @@ export async function moveOrder(
   void deps; void id; void to; void by; void opts;
   return { changed: false, refusal: "not_found" };
 }
+
+/**
+ * Write a new order once and never over another: the same submission arriving twice
+ * (same dedupe id) is answered as already written; a taken id gets a fresh one.
+ * → { id, fresh } (fresh: false = this submission was already written).
+ */
+export async function writeOrder(deps: Deps, row: import("../db/schema").NewOrderRow): Promise<{ id: string; fresh: boolean; order: OrderRow }> {
+  void deps; void row;
+  throw new Error("not implemented");
+}
+
+/** The columns every new order carries, from the intake and the quote (the tills add the payment fields). */
+export function baseOrderRow(
+  deps: Deps,
+  id: string,
+  intake: import("./intake").Intake,
+  quote: import("../../shared/pricing/price").Quote,
+): Omit<import("../db/schema").NewOrderRow, "pay" | "status" | "paymentStatus" | "invoiceKey"> {
+  void deps; void id; void intake; void quote;
+  throw new Error("not implemented");
+}
+
+/** The browser's proposed id when it is one, else a new LM- id. */
+export function orderIdFrom(proposed: string | null, now: number): string {
+  void proposed; void now;
+  return "LM-0000000000";
+}
