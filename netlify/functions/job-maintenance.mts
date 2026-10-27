@@ -1,11 +1,7 @@
-/**
- * Scheduled: the hourly purges — logs, webhook deliveries, once-only claims, spent rate-limit
- * counters (src/server/jobs/orders.ts `maintenance`). Hourly at minute 23.
- */
+/** Scheduled job `maintenance` (47 * * * *, UTC): Logs, webhook records, claims and rate-limit rows past their keep are purged. See src/server/jobs. */
 import type { Config } from "@netlify/functions";
 import { run } from "../../src/server/jobs/netlify";
-import "../../src/server/jobs/registry";
 
 export default async (): Promise<Response> => run("maintenance");
 
-export const config: Config = { schedule: "23 * * * *" };
+export const config: Config = { schedule: "47 * * * *" };

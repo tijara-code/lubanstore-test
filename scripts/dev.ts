@@ -32,12 +32,15 @@ async function main(): Promise<void> {
   };
   en();
 
+  /* LM_DIST: build somewhere else than dist/ (two dev servers side by side) */
+  const DIST = path.resolve(REPO, process.env.LM_DIST || "dist");
+
   /* the first build, then watch */
   let first: () => void = () => {};
   const ready = new Promise<void>((r) => (first = r));
   const watcher = (await viteBuild({
     configFile: path.join(REPO, "vite.config.ts"),
-    build: { watch: { exclude: ["**/node_modules/**", "**/dist/**", "**/.data/**"] } },
+    build: { outDir: DIST, emptyOutDir: true, watch: { exclude: ["**/node_modules/**", "**/dist/**", "**/dist-*/**", "**/.data/**"] } },
   })) as unknown as Watcher;
   watcher.on("event", (e) => {
     if (e.code === "BUNDLE_END" && e.result) e.result.close();
@@ -63,7 +66,7 @@ async function main(): Promise<void> {
   /* PGlite makes its own folder but not its parent */
   if (!env.DATABASE_URL) mkdirSync(path.dirname(path.resolve(REPO, env.DATA_DIR || ".data/pglite")), { recursive: true });
   const { startServer } = await import("../src/server/node");
-  const { port, deps } = await startServer({ port: Number(process.env.PORT || 8888), distDir: path.join(REPO, "dist"), env });
+  const { port, deps } = await startServer({ port: Number(process.env.PORT || 8888), distDir: DIST, env });
   console.log(`Luban & Musk on http://localhost:${port}  (services: ${deps.env.servicesMode}; English at /en/, admin at /admin/)`);
 }
 

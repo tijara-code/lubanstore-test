@@ -18,6 +18,9 @@ import type { AppEnv } from "../core/deps";
 import { esc, NO_STORE, pageHtml } from "../core/http";
 import { call } from "../core/outbound";
 import { handleWebhook } from "../domain/payments/webhook";
+import { forgetCatalogue, publishCatalogue } from "../domain/catalogue";
+import { settings } from "../db/schema";
+import type { Catalogue } from "../../shared/catalogue/types";
 import { HOSTS, type ThawaniPayment, type ThawaniSession } from "../services/thawani";
 import { completedEvent, paymentEvent, signDelivery } from "../services/thawani/fake";
 
@@ -42,6 +45,26 @@ const STYLE =
   ".pay{background:#0f766e;color:#fff}.cancel{background:#e5e7eb;color:#111}</style>";
 
 export function registerDevRoutes(app: Hono<AppEnv>): void {
+  /*
+   * Test and development helpers (fake mode only): publish a catalogue as it stands, or
+   * reset to the bundled one — the parity scripts drive catalogue variants through this.
+   *   PUT    /__fake/catalogue   { data }  → the row is replaced (code-owned fields stripped)
+   *   DELETE /__fake/catalogue            → nothing published (the bundled catalogue serves)
+   */
+  app.put("/__fake/catalogue", async (c) => {
+    const deps = c.get("deps");
+    const body = (await c.req.json().catch(() => null)) as { data?: Catalogue } | null;
+    if (!body || !body.data || !Array.isArray(body.data.countries)) return c.json({ ok: false, error: "bad_input" }, 400);
+    const saved = await publishCatalogue(deps, () => body.data!, "dev");
+    return c.json({ ok: true, version: saved?.version ?? null });
+  });
+  app.delete("/__fake/catalogue", async (c) => {
+    const deps = c.get("deps");
+    await deps.db.delete(settings);
+    forgetCatalogue(deps.db as unknown as object);
+    return c.json({ ok: true });
+  });
+
   app.get("/__fake/thawani/pay/:sessionId", async (c) => {
     const r = await control<{ session: ThawaniSession; hosted: string; expired: boolean }>(c, "");
     if (!r.ok) return c.body(pageHtml("Fake Thawani", STYLE, '<div class="card"><h1>No such session</h1></div>', "en"), 404, { "Content-Type": "text/html; charset=utf-8", ...NO_STORE });
