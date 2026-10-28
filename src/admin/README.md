@@ -3,7 +3,10 @@
 A Preact + TypeScript single-page app, bundled by Vite from `site/admin/index.html` →
 `src/admin/main.tsx`. English, LTR; customer names and places stay as stored (Arabic). It talks
 only to `/api/admin` (the route table: `docs/notes/admin-api.md`; request schemas and answer
-types: `src/shared/admin/{schemas,api}.ts` — import them, never redeclare them).
+types: `src/shared/admin/{schemas,api}.ts` — import them, never redeclare them). Import TYPES
+from `shared/admin/api` (`import type`) and VALUES (`API`, `ADMIN_PAGES`, …) from
+`shared/admin/constants`: `api.ts` re-exports the zod schemas, and a value import from it puts
+zod in the panel's bundle.
 
 ```
 src/admin/
@@ -21,19 +24,27 @@ src/admin/
   data/               the data layer
     api.ts            get / send / urlOf, ApiError, onUnauthorised
     endpoints.ts      one typed function per route
+    insights.ts       the same for Payments, Customers and Analytics (+ their answer types)
     query.ts          the query cache: useQuery, invalidate, refreshActive, setQueryData
     hooks.ts          shared reads: useOverview, useCatalogue, useItemOptions, useNewOrders,
                       afterOrderWrite(), marketOf()
     store.ts          createStore / useStore (small global state)
   kit/                the component kit (import from "../kit")
   lib/                pure helpers: format (money, dates), words (vocabulary, refusals in
-                      English), order (links, WhatsApp texts, tracking), cities
+                      English), order (links, WhatsApp texts, tracking), cities, csv (a CSV
+                      made in the browser and downloaded)
   tabs/
     overview/         Overview
     orders/           Orders (list, row, detail, editors, status flow, Empower, history,
                       the typed-in WhatsApp order form, filters, open rows)
+    payments/         Payments (card orders and the gateway: tiles, list, detail, refund,
+                      mark paid by hand)
+    customers/        Customers (the CRM: list, bands, a customer's orders, note and tags)
+    analytics/        Analytics (Live now, figures, busy hours, source/medium, ad links,
+                      the change log, tracking health, errors)
     Placeholder.tsx   the stub a phase-2 tab replaces
-  styles/             plain CSS, imported by main.tsx: tokens, base, shell, kit, orders
+  styles/             plain CSS, imported by main.tsx: tokens, base, shell, kit, orders,
+                      insights (Payments, Customers, Analytics), …
 ```
 
 ## Adding a tab

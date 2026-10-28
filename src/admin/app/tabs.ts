@@ -19,7 +19,6 @@ import { Customers } from "../tabs/customers/Customers";
 import { Orders } from "../tabs/orders/Orders";
 import { Overview } from "../tabs/overview/Overview";
 import { Payments } from "../tabs/payments/Payments";
-import { placeholder } from "../tabs/Placeholder";
 
 export interface TabDef {
   id: string;

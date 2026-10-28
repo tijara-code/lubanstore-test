@@ -23,7 +23,12 @@ async function openTab() {
   await page.waitForSelector(".cty-card[data-code=AE]");
 }
 /** the control under a caption, inside a scope */
-const field = (scope: string, caption: string) => page.locator(`${scope} .field-b:has(> .cap:text-is("${caption}")) >> input, ${scope} .field-b:has(> .cap:text-is("${caption}")) >> select`).first();
+const field = (scope: string, caption: string) =>
+  page
+    .locator(scope + " .field-b")
+    .filter({ has: page.locator(".cap", { hasText: new RegExp("^" + caption.replace(/[()]/g, "\\$&") + "$") }) })
+    .locator("input, select")
+    .first();
 
 beforeAll(async () => {
   s = await openBrowser({ ip: "198.51.100.61" });
@@ -46,7 +51,8 @@ describe("publishing", () => {
     await expect.poll(() => page.textContent(".card.dock .stamp")).toMatch(/Unsaved changes/);
     await page.click("button:has-text('Save & publish')");
     await toast(/Published/);
-    await expect.poll(() => page.textContent(".pub-changes")).toMatch(/AE/);
+    // the first publish of a shop reads "catalogue published for the first time"; later ones name the change
+    await expect.poll(() => page.textContent(".pub-changes")).toMatch(/What changed on the store:.*(AE|first time)/);
     const r = await read();
     expect(r.data.countries.find((c) => c.code === "AE")!.ship).toBe(25);
     expect(JSON.stringify(r.stored)).not.toMatch(/"toOmr"|"art":|"countsFree"/);

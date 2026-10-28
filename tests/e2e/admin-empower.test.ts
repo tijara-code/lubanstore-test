@@ -27,6 +27,9 @@ beforeAll(async () => {
   s = await openBrowser({ ip: "198.51.100.62" });
   page = s.page;
   await signIn(page);
+  // a route is set on a published market: publish the served catalogue if nothing is yet
+  const cat = await adminGet<{ version: number; editTag: string; data: unknown }>(page, "/catalogue");
+  if (!cat.version) await adminPost(page, "POST", "/catalogue/publish", { data: cat.data, version: 0, editTag: cat.editTag });
   await adminPost(page, "PUT", "/empower/skus", { skus: { "oud-large": "LM3001", "amber-large": "LM3002", "lemon-large": "LM3003", bundle: "LM5001" } });
   ids = await seedOrders(page, [
     { name: tag + " One", phone: "+968 91234567", city: "مسقط", region: "الخوير", items: LINE, sub: 25, ship: 3, codFee: 1, total: 29, omr: 29 },
@@ -77,10 +80,11 @@ describe("waiting to be pushed", () => {
     await page.click("button:has-text('Push all')");
     await expect.poll(() => page.textContent("[role=dialog]")).toMatch(/Push all \d+ waiting orders? to Omniful\?/);
     await page.click("[role=dialog] button:has-text('Push all')");
-    await toast(/\d+ pushed · nothing waiting/);
+    // (other suites' orders share this server: some may be refused; ours all go)
+    await toast(/\d+ pushed(, \d+ refused: .*)? · (nothing waiting|\d+ still waiting)/);
+    const w = await adminGet<{ orders: Array<{ id: string }> }>(page, "/empower/waiting");
+    expect(w.orders.map((o) => o.id).filter((id) => ids.indexOf(id) > -1)).toEqual([]);
     expect(await row(ids[1]!).count()).toBe(0);
-    const w = await adminGet<{ orders: unknown[] }>(page, "/empower/waiting");
-    expect(w.orders).toHaveLength(0);
   });
 
   it("Auto push asks before it goes on, and says what it does", async () => {
@@ -147,6 +151,6 @@ describe("the page", () => {
       expect(pw.scroll, "empower at " + w).toBeLessThanOrEqual(pw.client);
     }
     await page.setViewportSize({ width: 1366, height: 900 });
-    expect(s.errors).toEqual([]);
+    expect(s.errors, s.errors.join("\n")).toEqual([]);
   });
 });
