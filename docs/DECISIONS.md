@@ -215,3 +215,27 @@ were measured and rejected: a separate early entry for the core (the extra reque
 than it saved), and font preloads (they delayed the first paint by ~0.5 s). The page "fully
 loaded" moment is later on the product pages only because the decorative fonts now start
 after the scripts; the checkout is fully loaded three times sooner.
+
+## Verification at hand-over
+
+- `npm run typecheck`: clean (server, storefront, admin, tests).
+- `npm test`: 105 files, 1,391 tests — all pass (one placeholder skipped: the real-Postgres
+  project without `LM_TEST_PG_URL`). Projects: unit, server (PGlite), web (happy-dom), e2e
+  (Playwright on the built site: storefront journeys and every admin tab), parity.
+- `npm run test:pg` on PostgreSQL 16 through the production driver: 37 files, 464 tests pass.
+- Parity with the original (in `npm test` when `../luban-musk` is present): 4,000 random
+  baskets priced identically; every storefront `LM` member identical over 600 random
+  catalogues; 173 product-page steps, 52 checkout journeys and 61 tracking steps identical in
+  a real browser (DOM, screenshots, requests, stored orders); the data import tested against
+  the original's own schema and migrations.
+- Screenshots, original vs new, JavaScript on, 7 pages × 320/390/768/1366: 26 of 28 pairs
+  0.000% different; the English product page at 320/390 differs by 0.021%/0.009% (one pixel
+  row at the edge of the video reel's animated card).
+- `npm run build`: every reference in the built pages exists; the production function bundles
+  and answers (`/api/settings`, `/api/geo`, `/api/track`, `/api/health`).
+- An independent review of the server (money, security, concurrency, production readiness)
+  found 2 blocking and 5 other defects; all are fixed, each with a test (`docs/notes/review-fixes.md`).
+- One slip to know about: while checking one of the reviewer's reproductions, a test built
+  the live Thawani client and sent a single card-session request to Thawani's real host with an
+  invented key ("sk_live_x"). No real key exists in this environment, so it could only be
+  refused; the reproduction file was deleted. Nothing else reached a live service.
