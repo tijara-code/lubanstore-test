@@ -34,6 +34,7 @@ npm run typecheck    tsc over server, web, admin and tests
 npm run check        typecheck + test + build
 npm run db:generate  regenerate db/migrations from schema.ts
 npm run db:migrate   apply migrations to DATABASE_URL (run by hand, never by a deploy)
+npm run db:setup     first-run setup of DATABASE_URL from here (migrations + the copy from the original), then preflight
 npm run preflight    read-only switch-over checks against DATABASE_URL and the environment (docs/CUTOVER.md)
 ```
 

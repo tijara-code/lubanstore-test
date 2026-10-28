@@ -19,4 +19,4 @@
   node_bundler = "esbuild"
   # PGlite is the local/test database; production uses DATABASE_URL. Never bundled.
   external_node_modules = ["@electric-sql/pglite"]
-  included_files = ["db/migrations/**"]
+  included_files = ["db/migrations/**", "db/import-from-v1.sql"]

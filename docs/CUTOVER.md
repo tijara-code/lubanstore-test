@@ -39,30 +39,32 @@ The new store does not use the service key at all, but the database password sit
 Push `luban-new` to a new repository (or a new branch of `luban-store`). It has its own git
 history. **Gate:** `git status` clean, the push visible on GitHub.
 
-### 1b. The new tables
+### 1b. The database address
 
-Supabase → Project settings → Database → Connection string → **Transaction pooler**
-(port 6543, `…pooler.supabase.com`). Put it in `.env` as `DATABASE_URL`, then:
+Supabase → **Connect** (button at the top of the dashboard) → **Transaction pooler**. The
+string looks like `postgresql://postgres.<ref>:<password>@aws-….pooler.supabase.com:6543/postgres`.
+The password is the **database** password (Project settings → Database → "Reset database
+password" if you do not have it), not an API key. Put it in `.env` as `DATABASE_URL`.
 
-```
-npm run db:migrate
-```
+### 1c. The new tables and the first copy of the data
 
-It prints `Migrations applied. Schema "store" has 14 tables.` Nothing in `public` changes.
-**Gate:** that line.
+Either of these; both do the same thing and are safe to repeat:
 
-### 1c. First copy of the data
+- **By itself:** the first time the new site starts with `DATABASE_URL` set (step 1d), the server
+  creates schema `store` and, finding it empty, copies the original's data from `public` —
+  orders, parcels, the catalogue, Empower records, notes, analytics. The Netlify function log
+  shows `[setup] done: migrated, imported, N orders`. Nothing in `public` changes.
+- **From your computer:** `npm run db:setup` (migrations, the copy, then the preflight).
 
-Supabase → SQL editor → paste the whole of `db/import-from-v1.sql` → Run. It prints a table of
-counts (orders, Empower parcels, events, notes, …). It leaves Empower auto push **off** in the
-new store on purpose. Safe to run again at any time; it only adds rows it has not copied yet.
+Then:
 
 ```
 npm run preflight
 ```
 
 **Gate:** `READY` (warnings about "not in the new tables yet" are fine on day 1; `FAIL` lines
-are not). Fix anything it names and run it again.
+are not). Fix anything it names and run it again. To bring over what changed on the old site
+later, run `db/import-from-v1.sql` in Supabase → SQL editor (section 2 says when).
 
 ### 1d. Netlify, on a preview first
 
@@ -74,9 +76,9 @@ site). Build settings come from `netlify.toml`. Add the environment variables (s
 |---|---|---|
 | `DATABASE_URL` | the pooler string from 1b | new; TLS is used automatically for any remote host |
 | `SITE_URL` | `https://lubanmusk.com` | new; on the preview, the preview's own URL |
-| `SESSION_SECRET` | 32+ random characters | new; changing it later signs every admin out |
+| `SESSION_SECRET` | 32+ random characters | new; without it a key is derived from the admin password (as the original did) and the Overview warns; changing it later signs every admin out |
 | `ADMIN_USER` | as today | |
-| `ADMIN_PASSWORD_HASH` | `printf '%s' 'the password' \| npm run -s admin:hash` | new; replaces `ADMIN_PASSWORD` |
+| `ADMIN_PASSWORD_HASH` | `printf '%s' 'the password' \| npm run -s admin:hash` | new; replaces `ADMIN_PASSWORD` (which still works as before) |
 | `THAWANI_MODE` | `uat` on the preview, `live` in production | the original's `test` is accepted as `uat` |
 | `THAWANI_SECRET_KEY`, `THAWANI_PUBLISHABLE_KEY`, `THAWANI_WEBHOOK_SECRET` | as today (test keys on the preview) | |
 | `OMNIFUL_API_TOKEN`, `OMNIFUL_HUB_CODE`, `OMNIFUL_HOOK_SECRET`, `OMNIFUL_ENV`, and the rest of `OMNIFUL_*` you use | as today | `OMNIFUL_SELLER_ID` is not read any more |

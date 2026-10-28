@@ -69,6 +69,11 @@ skip themselves when the original is not there. Playwright needs a Chromium:
 
 ## Going live (by hand)
 
+The short version: deploy this repository on Netlify with the **same variables as the original
+site plus `DATABASE_URL`** (Supabase → Connect → Transaction pooler). On its first start the
+server creates its tables and copies the current store's data, so the admin opens on the
+orders, customers and catalogue you have today. Payments use the same `THAWANI_*` variables.
+
 `docs/CUTOVER.md` is the runbook: prepare on a preview, switch at a quiet hour, verify, roll
 back if needed. `npm run preflight` (read-only) checks your `.env` and the database before and
 after; `db/import-from-v1.sql` copies the original's data; `db/reconcile-v1.sql` carries over

@@ -224,6 +224,27 @@ the findings are summarised here) led to these changes:
   `booked_at`; the analytics country can be set by an `x-country` header (noise only, no
   pricing effect).
 
+## Starting where the original left off (v2.0.2)
+
+The owner deployed the new build to a test Netlify site with the original's variables and
+got "DATABASE_URL is not set". Two changes so that the original's variable set plus
+`DATABASE_URL` is enough:
+
+- **First-run setup at start** (`src/server/db/setup.ts`): with `DATABASE_URL` set and schema
+  `store` missing, the server applies the migrations; with `store.orders` empty and the
+  original's `public.orders` in the same database, it runs `db/import-from-v1.sql` (bundled
+  with the function). Transactional and idempotent; two cold starts at once are handled by
+  letting the loser wait for the winner's commit (tested on real PostgreSQL). No session
+  advisory lock, because through the transaction pooler one could be left on a pooled
+  connection. `LM_AUTO_SETUP=off` disables it; `npm run db:setup` is the same from a computer.
+  This reverses the earlier "migrations by hand, never by a deploy" for the first run only:
+  later schema changes still ship as migrations the owner applies on purpose.
+- **SESSION_SECRET falls back to a key derived from the admin password**, as the original did,
+  with a health warning to set a real one. Before, a moved-over site with the old variables
+  answered "sign-in is not set up".
+- The sign-in gate now distinguishes "DATABASE_URL not set" (with where to get it),
+  "database unreachable" (wrong password/host/paused project) and "first-run setup failed".
+
 ## Open questions for the owner
 
 - The product page promises "15 يومًا ضمان استرداد الأموال" and "تعديل أو إلغاء خلال 24

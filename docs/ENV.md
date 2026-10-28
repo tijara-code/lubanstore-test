@@ -14,7 +14,8 @@ code reads a variable this file does not list. "Breaks" says what stops when it 
 | `NODE_ENV` | `production` also means production (see `SITE_ID`). | — |
 | `CONTEXT` | Netlify's deploy context (`production`, `deploy-preview`, …). A **build** variable: functions do not reliably see it at runtime, so production is not decided by it alone (see `SITE_ID`). | — |
 | `SITE_URL` | Public origin, e.g. `https://lubanmusk.com` (return URLs, own-host attribution). `URL` (set by Netlify) is the fallback. | Falls back to the request's host |
-| `DATABASE_URL` | PostgreSQL connection string (Supabase → Project settings → Database → Connection string, **transaction pooler**, port 6543). | Production refuses to start; locally PGlite is used |
+| `DATABASE_URL` | PostgreSQL connection string: Supabase → **Connect** (top of the dashboard) → Transaction pooler, `postgresql://postgres.<ref>:<db password>@aws-…pooler.supabase.com:6543/postgres`. The password is the **database** password (Project settings → Database → Reset database password if unknown), not an API key. TLS is used automatically. On the first start with it set, the server creates schema `store` and copies the original's data (see `LM_AUTO_SETUP`). | Production refuses to start; locally PGlite is used |
+| `LM_AUTO_SETUP` | `off` skips the first-run setup at start (migrations, then the copy from the original's `public` tables when `store.orders` is empty). Default on. | — |
 | `DATA_DIR` | Local PGlite folder (default `.data/pglite`). Development only. | — |
 
 ## Admin
@@ -24,7 +25,7 @@ code reads a variable this file does not list. "Breaks" says what stops when it 
 | `ADMIN_USER` | Admin login name | No one can sign in |
 | `ADMIN_PASSWORD_HASH` | scrypt hash of the admin password (`npm run admin:hash`) — preferred | — |
 | `ADMIN_PASSWORD` | The plain password (development; used only when no hash is set) | No one can sign in when neither is set |
-| `SESSION_SECRET` | Signs admin session cookies (≥ 32 random characters). Changing it signs everyone out. | No one can sign in |
+| `SESSION_SECRET` | Signs admin session cookies (≥ 32 random characters). Changing it signs everyone out. When missing or short, a key is derived from the admin password (as the original did) and the Overview shows a warning — set a real one. | Falls back to a key from the admin password |
 
 ## Card payments (Thawani)
 

@@ -123,8 +123,8 @@ describe("signing in", () => {
 });
 
 describe("not configured", () => {
-  it("no SESSION_SECRET (or user, or password): no login, no session", async () => {
-    const envs: Array<Record<string, string>> = [{ SESSION_SECRET: "" }, { ADMIN_USER: "" }, { ADMIN_PASSWORD: "" }, { SESSION_SECRET: "too-short" }];
+  it("no user, or no password: no login, no session (no SESSION_SECRET alone is covered: a key is derived from the password, as the original did)", async () => {
+    const envs: Array<Record<string, string>> = [{ ADMIN_USER: "" }, { ADMIN_PASSWORD: "" }, { ADMIN_PASSWORD: "", SESSION_SECRET: "" }];
     for (const env of envs) {
       const h = await createHarness({ env });
       const r = await signIn(h);

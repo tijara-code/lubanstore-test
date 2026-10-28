@@ -124,7 +124,11 @@ describe("the sign-in gate", () => {
       return t;
     };
     stubFetch(routes({ "GET /session": () => [503, { ok: false, error: "server_unavailable", reason: "database_url_missing" }] }));
-    expect(await gate()).toMatch(/DATABASE_URL is not set.*Environment variables.*\.env file is not read there/);
+    expect(await gate()).toMatch(/DATABASE_URL is not set.*Supabase › Connect.*Environment variables.*copies the current store's data by itself/);
+    stubFetch(routes({ "GET /session": () => [503, { ok: false, error: "server_unavailable", reason: "database_unreachable" }] }));
+    expect(await gate()).toMatch(/could not reach the database.*wrong password, wrong host/);
+    stubFetch(routes({ "GET /session": () => [503, { ok: false, error: "server_unavailable", reason: "setup_failed" }] }));
+    expect(await gate()).toMatch(/first-run setup.*nothing half-done/);
     stubFetch(routes({ "GET /session": () => [503, { ok: false, error: "server_unavailable", reason: "config_refused", vars: ["THAWANI_MODE"] }] }));
     expect(await gate()).toMatch(/a setting was refused \(THAWANI_MODE\)/);
     stubFetch(routes({ "GET /session": () => [503, { ok: false, error: "server_unavailable", reason: "start_failed" }] }));

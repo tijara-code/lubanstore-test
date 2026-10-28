@@ -188,7 +188,11 @@ const SAY: Record<string, string> = {
 
 const START: Record<string, string> = {
   database_url_missing:
-    "The server could not start: DATABASE_URL is not set. On Netlify add it (with the other variables) under Site configuration › Environment variables — a .env file is not read there — then redeploy.",
+    "The server could not start: DATABASE_URL is not set. Get it from Supabase › Connect › Transaction pooler (it needs the database password, not an API key), add it on Netlify under Site configuration › Environment variables, then redeploy. The first start then creates the tables and copies the current store's data by itself.",
+  database_unreachable:
+    "The server could not reach the database: DATABASE_URL is set but the connection was refused (wrong password, wrong host, or the project is paused). Check it in Supabase › Connect › Transaction pooler, then redeploy.",
+  setup_failed:
+    "The server could not finish its first-run setup (creating the tables and copying the current store's data). The reason is in Netlify › Logs › Functions › api; nothing half-done was left behind, and the next request tries again.",
   fake_in_production: "The server could not start: SERVICES_MODE=fake is not allowed on the live site. Remove it, then redeploy.",
 };
 

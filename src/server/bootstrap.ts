@@ -64,6 +64,8 @@ export function bootReason(e: unknown): { reason: string; vars?: string[] } {
   const m = String((e as Error)?.message || "");
   if (/SERVICES_MODE=fake is refused/.test(m)) return { reason: "fake_in_production" };
   if (/DATABASE_URL is required/.test(m)) return { reason: "database_url_missing" };
+  if ((e as Error)?.name === "SetupError") return { reason: "setup_failed" };
+  if (/ENOTFOUND|ECONNREFUSED|ETIMEDOUT|CONNECT_TIMEOUT|password authentication|SASL|Tenant or user not found/i.test(m)) return { reason: "database_unreachable" };
   return { reason: "start_failed" };
 }
 
@@ -122,8 +124,10 @@ async function build(source: Record<string, string | undefined>): Promise<{ deps
     env = loadEnv({ ...FAKE_ENV, ...stripEmpty(source), SERVICES_MODE: "fake" });
   }
   let db: Db;
-  if (env.DATABASE_URL) db = await connectPostgres(env.DATABASE_URL);
-  else {
+  if (env.DATABASE_URL) {
+    if (env.autoSetup) await firstRunSetup(env.DATABASE_URL);
+    db = await connectPostgres(env.DATABASE_URL);
+  } else {
     if (env.production) throw new Error("DATABASE_URL is required in production");
     db = await connectPglite(env.DATA_DIR === "memory" ? undefined : env.DATA_DIR || ".data/pglite");
   }
@@ -137,6 +141,33 @@ async function build(source: Record<string, string | undefined>): Promise<{ deps
     services: createServices({ env, fetch: fetchImpl, now }),
   };
   return { deps, world };
+}
+
+/**
+ * The first start against a real database makes the tables and copies the original's data
+ * (src/server/db/setup.ts). A failure here is a start failure (503 JSON, retried next request)
+ * with reason `setup_failed`, logged in full; it never leaves half a schema behind.
+ */
+async function firstRunSetup(url: string): Promise<void> {
+  const { default: postgres } = await import("postgres");
+  const { setupDatabase } = await import("./db/setup");
+  const { needsTls } = await import("./db/client");
+  const client = postgres(url, { prepare: false, max: 1, connect_timeout: 8, onnotice: () => {}, ...(needsTls(url) ? { ssl: "require" as const } : {}) });
+  try {
+    const r = await setupDatabase(client, (line) => console.log(line));
+    if (r.migrated || r.imported) console.log("[setup] " + JSON.stringify(r));
+  } catch (e) {
+    throw new SetupError("the first-run database setup failed: " + errorText(e));
+  } finally {
+    await client.end({ timeout: 2 }).catch(() => {});
+  }
+}
+
+export class SetupError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SetupError";
+  }
 }
 
 function stripEmpty(src: Record<string, string | undefined>): Record<string, string> {

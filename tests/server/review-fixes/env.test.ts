@@ -97,7 +97,8 @@ describe("a cold start that fails", () => {
     const miss = bootFailure(new Error("DATABASE_URL is required in production"));
     expect(await miss.json()).toEqual({ ok: false, error: "server_unavailable", reason: "database_url_missing" });
     const other = await bootFailure(new Error("getaddrinfo ENOTFOUND db.secret-host.supabase.co")).text();
-    expect(JSON.parse(other)).toEqual({ ok: false, error: "server_unavailable", reason: "start_failed" });
+    expect(JSON.parse(other)).toEqual({ ok: false, error: "server_unavailable", reason: "database_unreachable" });
+    expect(JSON.parse(await bootFailure(new Error("something else entirely")).text()).reason).toBe("start_failed");
     expect(other).not.toMatch(/secret-host/);
   });
 
@@ -168,5 +169,27 @@ describe("the database connection on Netlify", () => {
     expect(needsTls("postgres://u:p@localhost/lm")).toBe(false);
     expect(needsTls("postgres://u:p@db.example.com/lm?sslmode=disable")).toBe(false);
     expect(needsTls("not a url")).toBe(false);
+  });
+});
+
+describe("moved over with the original's variables only", () => {
+  it("signs sessions with a key derived from the admin password when SESSION_SECRET is absent (as the original did), and says so", async () => {
+    const e = loadEnv({ ADMIN_USER: "yahya", ADMIN_PASSWORD: "old-site-password" });
+    expect(e.sessionSecretDerived).toBe(true);
+    expect(String(e.SESSION_SECRET).length).toBeGreaterThanOrEqual(32);
+    const { authConfigured } = await import("../../../src/server/domain/admin/auth");
+    expect(authConfigured(e)).toBe(true);
+    const { warnings } = await import("../../../src/server/domain/health");
+    expect(warnings(e)).toContain("session_secret_derived");
+    // a real secret wins, and no password means no derived secret
+    expect(loadEnv({ ADMIN_PASSWORD: "p", SESSION_SECRET: "s".repeat(40) }).sessionSecretDerived).toBe(false);
+    expect(loadEnv({ ADMIN_USER: "yahya" }).SESSION_SECRET).toBeUndefined();
+    // the derived key changes with the password: a new password signs everyone out, as before
+    expect(loadEnv({ ADMIN_PASSWORD: "a" }).SESSION_SECRET).not.toBe(loadEnv({ ADMIN_PASSWORD: "b" }).SESSION_SECRET);
+  });
+
+  it("LM_AUTO_SETUP=off switches the first-run setup off", () => {
+    expect(loadEnv({}).autoSetup).toBe(true);
+    expect(loadEnv({ LM_AUTO_SETUP: "off" }).autoSetup).toBe(false);
   });
 });

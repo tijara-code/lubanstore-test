@@ -33,6 +33,7 @@ const WARN: Record<string, string> = {
   admin_password_missing: "ADMIN_PASSWORD (or ADMIN_PASSWORD_HASH) is not set.",
   admin_user_missing: "ADMIN_USER is not set.",
   session_secret_missing: "SESSION_SECRET is missing or shorter than 32 characters.",
+  session_secret_derived: "SESSION_SECRET is not set: sessions are signed with a key made from the admin password. Set SESSION_SECRET (32+ random characters); everyone signs in again once.",
   site_url_missing: "SITE_URL is not set: links in messages may point to the wrong site.",
   fake_services_in_production: "SERVICES_MODE=fake on production: payments and fulfilment are not real.",
 };

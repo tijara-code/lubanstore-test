@@ -54,6 +54,7 @@ export function warnings(env: Deps["env"]): string[] {
   if (!has(env.ADMIN_PASSWORD) && !has(env.ADMIN_PASSWORD_HASH)) out.push("admin_password_missing");
   if (!has(env.ADMIN_USER)) out.push("admin_user_missing");
   if (String(env.SESSION_SECRET || "").length < 32) out.push("session_secret_missing");
+  else if (env.sessionSecretDerived) out.push("session_secret_derived");
   if (env.production && !env.siteUrl) out.push("site_url_missing");
   if (env.production && env.servicesMode !== "live") out.push("fake_services_in_production");
   for (const name of env.ignored || []) out.push("env_value_ignored:" + name);

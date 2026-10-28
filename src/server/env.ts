@@ -3,6 +3,7 @@
  * .env.example and docs/ENV.md (a test fails if code reads one that is not documented).
  * Nothing here is ever sent to a browser except the public pixel ids and the GA4 id.
  */
+import { createHash } from "node:crypto";
 import { z } from "zod";
 
 const opt = z.string().trim().optional().transform((v) => (v ? v : undefined));
@@ -47,8 +48,10 @@ export const EnvSchema = z.object({
   ADMIN_PASSWORD_HASH: opt,
   /** … or the plain password (development) */
   ADMIN_PASSWORD: opt,
-  /** signs admin session cookies; at least 32 characters */
+  /** signs admin session cookies; at least 32 characters (derived from the admin password when absent) */
   SESSION_SECRET: opt,
+  /** "off" skips the first-run database setup at start (see db/setup.ts) */
+  LM_AUTO_SETUP: opt,
 
   /** uat | live. The original's value "test" (its .env.example) is accepted as uat. */
   THAWANI_MODE: z.preprocess((v) => (typeof v === "string" && v.trim().toLowerCase() === "test" ? "uat" : v), oneOf(["uat", "live"] as const, "THAWANI_MODE")),
@@ -83,6 +86,10 @@ export interface Env extends EnvVars {
   siteUrl: string;
   /** variables whose value was none of the allowed choices and so was treated as unset */
   ignored: string[];
+  /** SESSION_SECRET was missing or short and was derived from the admin password (as the original did) */
+  sessionSecretDerived: boolean;
+  /** first-run setup at start (migrations, then the copy from the original's tables): off with LM_AUTO_SETUP=off */
+  autoSetup: boolean;
 }
 
 /**
@@ -111,11 +118,26 @@ export function loadEnv(source: Record<string, string | undefined> = process.env
   const production = isProduction(source);
   const servicesMode = v.SERVICES_MODE || "live";
   if (servicesMode === "fake" && production) throw new EnvError("SERVICES_MODE=fake is refused in production (SITE_ID, NODE_ENV=production or CONTEXT=production is set)");
+  /*
+   * The original signed its sessions with ADMIN_PASSWORD when SESSION_SECRET was not set. A site
+   * moved over with the same variables must keep signing in, so the same fallback: a secret
+   * derived (one-way) from the password or its hash. The health check says to set a real one.
+   */
+  let sessionSecret = String(v.SESSION_SECRET || "");
+  let sessionSecretDerived = false;
+  const cred = String(v.ADMIN_PASSWORD_HASH || "").trim() || String(v.ADMIN_PASSWORD || "");
+  if (sessionSecret.length < 32 && cred) {
+    sessionSecret = createHash("sha256").update("lm-session-from-admin-password:" + cred).digest("hex");
+    sessionSecretDerived = true;
+  }
   return {
     ...v,
+    SESSION_SECRET: sessionSecret || undefined,
     servicesMode,
     production,
     siteUrl: String(v.SITE_URL || v.URL || "").replace(/\/+$/, ""),
     ignored,
+    sessionSecretDerived,
+    autoSetup: String(v.LM_AUTO_SETUP || "").trim().toLowerCase() !== "off",
   };
 }
