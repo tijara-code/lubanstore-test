@@ -13,6 +13,7 @@
  * Content-hashed names (assets/<name>-<hash>.js|css) replace the original's ?v=N on code;
  * images, clips and the fonts' CSS keep ?v=<hash of the files> (scripts/site-meta.ts).
  */
+import { fileURLToPath } from "node:url";
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { transform } from "esbuild";
@@ -143,7 +144,7 @@ export async function buildSite(opts: { log?: (s: string) => void; outDir?: stri
   log(`build: dist/ ready — ${files} files, ${pages} pages, every reference present; css ${Math.round(before / 1024)} KB → ${Math.round(after / 1024)} KB`);
 }
 
-const isMain = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname);
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   buildSite().catch((e) => {
     console.error((e as Error).message);

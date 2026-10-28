@@ -3,6 +3,7 @@
  * harness clones it — a fresh database per test file, per harness), every database of the run
  * dropped at the end.
  */
+import { fileURLToPath } from "node:url";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
@@ -23,7 +24,7 @@ export default async function setup(project: TestProject) {
   await admin.unsafe(`create database "${template}"`);
   const m = postgres(withDatabase(url, template), { max: 1, prepare: false, onnotice: () => {} });
   try {
-    await migrate(drizzle(m), { migrationsFolder: new URL("../../db/migrations", import.meta.url).pathname });
+    await migrate(drizzle(m), { migrationsFolder: fileURLToPath(new URL("../../db/migrations", import.meta.url)) });
   } finally {
     await m.end();
   }

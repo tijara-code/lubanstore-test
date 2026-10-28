@@ -86,7 +86,7 @@ export default defineConfig((): UserConfig => {
     appType: "mpa",
     plugins: [preact(), lmPages(values), lowPriorityScripts()],
     resolve: {
-      alias: [{ find: /^\/src\//, replacement: path.join(REPO, "src") + "/" }],
+      alias: [{ find: /^\/src\//, replacement: path.join(REPO, "src").split(path.sep).join("/") + "/" }],
     },
     define: {
       /* LM.v — the images' version, appended by the page scripts to every image URL */

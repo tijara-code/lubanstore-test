@@ -3,6 +3,7 @@
  * (`npm start`, `npm run dev`) and the end-to-end tests run this; production runs the same
  * app inside Netlify Functions.
  */
+import { fileURLToPath } from "node:url";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { serve } from "@hono/node-server";
@@ -48,7 +49,7 @@ export async function startServer(opts: { port?: number; distDir?: string; env?:
   return { server, port, deps, world };
 }
 
-const isMain = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname);
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   // `npm start` is a local run: the fakes unless SERVICES_MODE says otherwise (the server's own
   // default is live, and fake is refused wherever SITE_ID / NODE_ENV=production says production)

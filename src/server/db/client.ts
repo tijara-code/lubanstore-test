@@ -3,6 +3,7 @@
  * transaction pooler. Local development and tests: PGlite (Postgres compiled to WASM,
  * in-process) with the same schema — no server to install.
  */
+import { fileURLToPath } from "node:url";
 import type { SQL } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import * as schema from "./schema";
@@ -87,7 +88,7 @@ export async function connectPglite(dataDir?: string): Promise<Db> {
   const { PGlite } = await import("@electric-sql/pglite");
   const { drizzle } = await import("drizzle-orm/pglite");
   const { migrate } = await import("drizzle-orm/pglite/migrator");
-  const migrationsFolder = new URL("../../../db/migrations", import.meta.url).pathname;
+  const migrationsFolder = fileURLToPath(new URL("../../../db/migrations", import.meta.url));
   if (dataDir) {
     const { mkdirSync } = await import("node:fs");
     const path = await import("node:path");

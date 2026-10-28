@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 /*
@@ -7,7 +8,7 @@ import { defineConfig } from "vitest/config";
  * harness, cloned from a template migrated once per run (tests/helpers/pg-global-setup.ts).
  */
 const PG_URL = process.env.LM_TEST_PG_URL || "";
-const pgHarness = new URL("./tests/helpers/harness-pg.ts", import.meta.url).pathname;
+const pgHarness = fileURLToPath(new URL("./tests/helpers/harness-pg.ts", import.meta.url));
 
 export default defineConfig({
   test: {

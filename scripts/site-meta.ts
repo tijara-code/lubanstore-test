@@ -14,12 +14,13 @@
  *                    at build time so the page and the server relay report to the SAME
  *                    dataset; the original store's ids are the defaults.
  */
+import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { execSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
-export const REPO = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+export const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const SITE = path.join(REPO, "site");
 export const PUBLIC = path.join(SITE, "public");
 

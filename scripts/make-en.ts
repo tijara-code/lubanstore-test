@@ -19,10 +19,11 @@
  * English boxes in /admin > Catalogue. site/en/ is build output (git-ignored); scripts/build.ts
  * and scripts/dev.ts run this first.
  */
+import { fileURLToPath } from "node:url";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const SITE_DIR = path.join(ROOT, "site");
 const SITE = "https://lubanmusk.com";
 
@@ -340,7 +341,7 @@ export function makeEn(opts: { check?: boolean; siteDir?: string; log?: (s: stri
   return stale;
 }
 
-const isMain = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname);
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   const check = process.argv.includes("--check");
   try {

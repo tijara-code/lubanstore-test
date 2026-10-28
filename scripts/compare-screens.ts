@@ -16,6 +16,7 @@
  * Two pages of different heights are compared over the taller one (the missing rows all differ).
  * The comparison runs in a browser canvas, so it needs nothing beyond Playwright.
  */
+import { fileURLToPath } from "node:url";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
@@ -164,7 +165,7 @@ export async function compareScreens(args: Args): Promise<Array<{ page: string; 
   return rows;
 }
 
-const isMain = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname);
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   const args = parseArgs(process.argv.slice(2));
   compareScreens(args).catch((e) => {
