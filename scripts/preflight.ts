@@ -20,7 +20,7 @@
  *             db/reconcile-v1.sql lists them)
  *   pages     dist/ built with the same pixel ids the environment names (when dist/ exists)
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import postgres from "postgres";
@@ -220,11 +220,35 @@ function checkPages(): void {
      ADMIN_USER is the one that bites (the original hit it with "admin"): check it against the pages. */
   const user = String(process.env.ADMIN_USER || "").trim();
   if (user.length >= 3) {
-    const pages = ["index.html", "checkout.html", "privacy.html", "admin/index.html", "robots.txt", "sitemap.xml", "en/index.html"];
-    const hit = pages.find((f) => existsSync(path.join(REPO, "dist", f)) && readFileSync(path.join(REPO, "dist", f), "utf8").toLowerCase().includes(user.toLowerCase()));
-    if (hit) say("FAIL", "pages", "the value of ADMIN_USER appears in dist/" + hit + " — Netlify's secrets scanner will fail the build; choose a user name that is not a word in the site");
-    else say("PASS", "pages", "ADMIN_USER does not appear in the pages");
+    // the scanner reads the whole repository (source, tests, docs) as well as dist/
+    const hit = findWord(user.toLowerCase());
+    if (hit) say("FAIL", "pages", "the value of ADMIN_USER appears in " + hit + " — Netlify's secrets scanner fails the build when a variable's value is in the repository or the site; choose a user name that is not a word in either");
+    else say("PASS", "pages", "ADMIN_USER appears nowhere in the repository or the pages");
   }
+}
+
+/** The first text file under the repository (not node_modules/.git/.data) that contains `word`, case-insensitively. */
+function findWord(word: string): string | null {
+  const skip = new Set(["node_modules", ".git", ".data", "coverage"]);
+  const text = /\.(ts|tsx|mts|js|mjs|cjs|json|md|html|css|sql|toml|txt|xml|svg|yml|yaml|cmd|example)$/i;
+  const walk = (dir: string): string | null => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      if (skip.has(e.name)) continue;
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) {
+        const r = walk(p);
+        if (r) return r;
+      } else if (text.test(e.name) || e.name.startsWith(".env")) {
+        try {
+          if (readFileSync(p, "utf8").toLowerCase().includes(word)) return path.relative(REPO, p);
+        } catch {
+          /* unreadable: skip */
+        }
+      }
+    }
+    return null;
+  };
+  return walk(REPO);
 }
 
 /* ------------------------------------------------------------------ */
