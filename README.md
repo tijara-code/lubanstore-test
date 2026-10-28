@@ -27,6 +27,22 @@ PGlite (PostgreSQL in WASM) in `.data/`. Admin sign-in locally: `admin` / `luban
 (printed by `npm run dev`), unless `.env` names its own (`ADMIN_USER`, `ADMIN_PASSWORD`,
 `SESSION_SECRET` — see `.env.example`).
 
+## When the admin sign-in says the server is unreachable
+
+The sign-in screen names the cause:
+
+- **"The admin API did not answer at this address"**: the page was opened without the server
+  behind it (the HTML file itself, VS Code Live Server, `vite preview`, or a Netlify upload of
+  files with no functions). Open it from `npm run dev` (http://localhost:8888/admin/) or
+  from the Netlify site built from Git.
+- **"The server could not start: …"**: the server is running but refused its settings. A
+  `.env` file is read **only** by `npm run dev`, `npm start` and `npm run seed` on your own
+  machine. **Netlify ignores it**, so every variable must also be added under Site
+  configuration › Environment variables (and the site redeployed). On Netlify,
+  `DATABASE_URL` is required. The full reason is in Netlify › Logs › Functions › `api`.
+- **"Could not reach the server. Check the connection"**: no answer at all (offline, or the
+  dev server is not running).
+
 ## Check it
 
 ```

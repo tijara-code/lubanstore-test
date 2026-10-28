@@ -3,6 +3,7 @@
  * session is an HttpOnly cookie). Errors are said as what they are, in a role="alert" line:
  * 401 wrong password (the field is cleared and focused), 429 locked out ("Too many attempts.
  * Try again in 15 minutes." — the server's own minutes when it sends them), 503 not set up,
+ * no server behind the page / a server that could not start in words that say which (serverProblem),
  * anything else "Could not reach the server".
  */
 import { useEffect, useRef, useState } from "preact/hooks";
@@ -10,6 +11,7 @@ import { isApiError } from "../data/api";
 import { login } from "../data/endpoints";
 import { session, signedIn } from "./session";
 import { useStore } from "../data/store";
+import { serverProblem } from "../lib/words";
 
 const NOT_SET = "Sign-in is not set up on the server (ADMIN_USER, ADMIN_PASSWORD and SESSION_SECRET).";
 
@@ -20,7 +22,7 @@ export function loginError(e: unknown): string {
   }
   if (isApiError(e, "bad_credentials") || isApiError(e, "bad_input")) return "Wrong username or password";
   if (isApiError(e, "not_configured")) return NOT_SET;
-  return "Could not reach the server";
+  return serverProblem(e) || "Could not reach the server";
 }
 
 export function Login() {

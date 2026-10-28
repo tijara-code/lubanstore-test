@@ -110,8 +110,27 @@ describe("the sign-in gate", () => {
     await type(m2.$("#p"), "x");
     await click(m2.$("button[type=submit]"));
     await settle();
-    expect(m2.$("#loginErr")!.textContent).toBe("Could not reach the server");
+    expect(m2.$("#loginErr")!.textContent).toBe("Could not reach the server. Check the connection and try again.");
     m2.unmount();
+  });
+
+  it("a server that could not start, or no API behind the page, says which — on the gate, before anyone types", async () => {
+    const gate = async () => {
+      session.set({ state: "checking" });
+      const m = mount(h(App, null));
+      await settle();
+      const t = m.$("#loginErr")!.textContent;
+      m.unmount();
+      return t;
+    };
+    stubFetch(routes({ "GET /session": () => [503, { ok: false, error: "server_unavailable", reason: "database_url_missing" }] }));
+    expect(await gate()).toMatch(/DATABASE_URL is not set.*Environment variables.*\.env file is not read there/);
+    stubFetch(routes({ "GET /session": () => [503, { ok: false, error: "server_unavailable", reason: "config_refused", vars: ["THAWANI_MODE"] }] }));
+    expect(await gate()).toMatch(/a setting was refused \(THAWANI_MODE\)/);
+    stubFetch(routes({ "GET /session": () => [503, { ok: false, error: "server_unavailable", reason: "start_failed" }] }));
+    expect(await gate()).toMatch(/could not start.*Logs › Functions › api/);
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("<!doctype html><title>404</title>", { status: 404, headers: { "Content-Type": "text/html" } })));
+    expect(await gate()).toMatch(/admin API did not answer at this address \(HTTP 404\).*npm run dev/);
   });
 });
 

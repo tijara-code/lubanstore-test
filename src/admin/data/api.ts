@@ -9,7 +9,8 @@
  * the credential). Every non-GET carries `X-LM-Admin: 1`. An answer that is not `{ ok: true }`
  * becomes an ApiError with the server's code (`bad_credentials`, `stale`, `moving_back`, …),
  * its HTTP status and the rest of the refusal (`ids`, `detail`, `retryAfter`, …). A network
- * failure is `network`. A 401 on any path but /login tells every `onUnauthorised` listener (the
+ * failure is `network`; an answer that is not JSON (the API is not behind this address) is
+ * `not_api`. A 401 on any path but /login tells every `onUnauthorised` listener (the
  * app shows the sign-in gate again).
  */
 // the constants module, not ./api: that one re-exports the zod schemas (server-only)
@@ -86,6 +87,8 @@ export async function request<T>(method: Method, path: string, opts: { query?: Q
     void _ok;
     const retry = res.headers.get("Retry-After");
     if (retry && extra.retryAfter === undefined) extra.retryAfter = Number(retry);
+    /* not JSON at all (an HTML 404, a static server's page): the admin API is not behind this address */
+    if (!json) throw new ApiError("not_api", res.status, extra);
     throw new ApiError(String(error || (res.status ? "http_" + res.status : "network")), res.status, extra);
   }
   return json as T;

@@ -4,7 +4,7 @@
  * the toasts never call one thing two names.
  */
 import type { OrderListRow, ShipmentSummary } from "../../shared/admin/api";
-import { ApiError } from "../data/api";
+import { ApiError, isApiError } from "../data/api";
 
 export const STATUS: Record<string, string> = {
   pending: "Awaiting payment",
@@ -186,8 +186,39 @@ const SAY: Record<string, string> = {
   bad_credentials: "Wrong username or password",
 };
 
+const START: Record<string, string> = {
+  database_url_missing:
+    "The server could not start: DATABASE_URL is not set. On Netlify add it (with the other variables) under Site configuration › Environment variables — a .env file is not read there — then redeploy.",
+  fake_in_production: "The server could not start: SERVICES_MODE=fake is not allowed on the live site. Remove it, then redeploy.",
+};
+
+/**
+ * When the panel cannot talk to the server at all, WHY, in a sentence — or null for any other
+ * refusal. Said on the sign-in gate, so the owner sees the cause rather than a bare "could not
+ * reach": no connection, no API behind this address, or a server that could not start.
+ */
+export function serverProblem(e: unknown): string | null {
+  if (!isApiError(e)) return null;
+  const x = e.extra;
+  if (e.code === "network") return SAY.network!;
+  if (e.code === "not_api")
+    return (
+      "The admin API did not answer at this address (HTTP " + e.status + "). Open the panel through the running site — npm run dev, then http://localhost:8888/admin/ — or your Netlify site's /admin/. Opening the HTML file, or another static server, has no API behind it."
+    );
+  if (e.code === "server_unavailable") {
+    const why = START[String(x.reason)];
+    if (why) return why;
+    if (x.reason === "config_refused" && Array.isArray(x.vars) && x.vars.length)
+      return "The server could not start: a setting was refused (" + x.vars.join(", ") + "). Check its value against docs/ENV.md, then restart or redeploy.";
+    return "The server could not start. The reason is in the server's log (Netlify › Logs › Functions › api, or the npm run dev window).";
+  }
+  return null;
+}
+
 /** A refusal in a sentence: the table above, plus the server's own detail where it has one. */
 export function explain(e: unknown, fallback = "Something went wrong"): string {
+  const down = serverProblem(e);
+  if (down) return down;
   if (e instanceof ApiError) {
     let s = SAY[e.code];
     const x = e.extra;

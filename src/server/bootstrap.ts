@@ -48,10 +48,23 @@ export function bootFailure(e: unknown): Response {
     lastBootError = why;
     console.error("[boot] the server could not start: " + why);
   }
-  return new Response(JSON.stringify({ ok: false, error: "server_unavailable" }), {
+  return new Response(JSON.stringify({ ok: false, error: "server_unavailable", ...bootReason(e) }), {
     status: 503,
     headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "retry-after": "5" },
   });
+}
+
+/**
+ * WHY, in a code the admin panel can put in words: which kind of start failure, and for a refused
+ * setting the variable NAMES. Never a value and never the error text (a database error can name
+ * a host); the full reason is in the function log.
+ */
+export function bootReason(e: unknown): { reason: string; vars?: string[] } {
+  if ((e as Error)?.name === "ZodError") return { reason: "config_refused", vars: zodPaths(e).split(", ") };
+  const m = String((e as Error)?.message || "");
+  if (/SERVICES_MODE=fake is refused/.test(m)) return { reason: "fake_in_production" };
+  if (/DATABASE_URL is required/.test(m)) return { reason: "database_url_missing" };
+  return { reason: "start_failed" };
 }
 
 /** which variables zod refused (names only — never their values) */

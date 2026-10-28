@@ -68,15 +68,28 @@ describe("a cold start that fails", () => {
     const r = bootFailure(new EnvError("SERVICES_MODE=fake is refused in production"));
     expect(r.status).toBe(503);
     expect(r.headers.get("content-type")).toMatch(/application\/json/);
-    expect(await r.json()).toEqual({ ok: false, error: "server_unavailable" });
+    expect(await r.json()).toEqual({ ok: false, error: "server_unavailable", reason: "fake_in_production" });
     bootFailure(new EnvError("SERVICES_MODE=fake is refused in production"));
     expect(err).toHaveBeenCalledTimes(1);
     // a zod refusal names the variable, never its value
     let zerr: unknown;
     try { loadEnv({ THAWANI_MODE: "sk_live_secret" }); } catch (e) { zerr = e; }
-    bootFailure(zerr);
+    const z = bootFailure(zerr);
+    const zj = await z.text();
+    expect(JSON.parse(zj)).toEqual({ ok: false, error: "server_unavailable", reason: "config_refused", vars: ["THAWANI_MODE"] });
+    expect(zj).not.toMatch(/sk_live_secret/);
     expect(String(err.mock.calls.at(-1)![0])).toMatch(/THAWANI_MODE/);
     expect(String(err.mock.calls.at(-1)![0])).not.toMatch(/sk_live_secret/);
+  });
+
+  it("says which kind of start failed, in a code the panel words (no error text: a database error can name its host)", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await expect(getDeps({ SITE_ID: NETLIFY.SITE_ID, DATABASE_URL: "" })).rejects.toThrow(/DATABASE_URL is required/);
+    const miss = bootFailure(new Error("DATABASE_URL is required in production"));
+    expect(await miss.json()).toEqual({ ok: false, error: "server_unavailable", reason: "database_url_missing" });
+    const other = await bootFailure(new Error("getaddrinfo ENOTFOUND db.secret-host.supabase.co")).text();
+    expect(JSON.parse(other)).toEqual({ ok: false, error: "server_unavailable", reason: "start_failed" });
+    expect(other).not.toMatch(/secret-host/);
   });
 
   it("the function handler: 503 while the configuration is refused, the app once it is fixed", async () => {
@@ -86,7 +99,7 @@ describe("a cold start that fails", () => {
       Object.assign(process.env, { SITE_ID: NETLIFY.SITE_ID, SERVICES_MODE: "fake", DATA_DIR: "memory", DATABASE_URL: "" });
       const handle = netlifyHandler();
       const a = await handle(new Request("https://lubanmusk.com/api/settings"));
-      expect([a.status, await a.json()]).toEqual([503, { ok: false, error: "server_unavailable" }]);
+      expect([a.status, await a.json()]).toEqual([503, { ok: false, error: "server_unavailable", reason: "fake_in_production" }]);
       delete process.env.SITE_ID;
       const b = await handle(new Request("https://lubanmusk.com/api/settings"));
       expect(b.status).toBe(200);

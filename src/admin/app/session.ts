@@ -7,6 +7,7 @@ import { onUnauthorised } from "../data/api";
 import { getSession, logout } from "../data/endpoints";
 import { clearQueries } from "../data/query";
 import { createStore } from "../data/store";
+import { serverProblem } from "../lib/words";
 
 export interface Session {
   state: "checking" | "out" | "in";
@@ -23,8 +24,8 @@ export async function checkSession(): Promise<void> {
   try {
     const s = await getSession();
     session.set(s.signedIn ? { state: "in", user: s.user, configured: true } : { state: "out", configured: s.configured });
-  } catch {
-    session.set({ state: "out", note: "Could not reach the server" });
+  } catch (e) {
+    session.set({ state: "out", note: serverProblem(e) || "Could not reach the server" });
   }
 }
 
