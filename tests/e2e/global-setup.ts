@@ -21,7 +21,7 @@ export default async function setup(project: TestProject) {
   }
   process.env.PLAYWRIGHT_BROWSERS_PATH ||= "/opt/pw-browsers";
   const { startServer } = await import("../../src/server/node");
-  const { server, port } = await startServer({
+  const { server, port, deps } = await startServer({
     port: 0,
     distDir: dist,
     env: {
@@ -43,5 +43,7 @@ export default async function setup(project: TestProject) {
       // keep-alive sockets (a browser's, an API client's) would hold the close open
       (server as { closeAllConnections?: () => void }).closeAllConnections?.();
     });
+    // the in-memory database holds the process open until it is closed
+    await (deps.db as unknown as { $client?: { close?: () => Promise<void> } }).$client?.close?.();
   };
 }
