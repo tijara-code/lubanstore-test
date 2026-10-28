@@ -180,6 +180,11 @@ const SERIALISE = `(function (sel) {
   Array.prototype.forEach.call(c.querySelectorAll("script, noscript, iframe, link, style"), function (x) { x.remove(); });
   /* the header band's run (header.js's port): copies cloned to fill a measured width */
   Array.prototype.forEach.call(c.querySelectorAll(".ship-run"), function (x) { x.innerHTML = ""; });
+  /* the reel's centred card: placed by an IntersectionObserver as the strip scrolls into
+     view, so which card is in front depends on scroll timing, on either site (seen in about
+     one run in twenty on both). The slides themselves are still compared. */
+  Array.prototype.forEach.call(c.querySelectorAll(".reel-slide"), function (x) { x.classList.remove("front", "far"); x.style.removeProperty("--d"); });
+  Array.prototype.forEach.call(c.querySelectorAll("#reel .on, .reel-dots .on"), function (x) { x.classList.remove("on"); });
   return c.outerHTML;
 })`;
 

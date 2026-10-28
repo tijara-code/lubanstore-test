@@ -135,3 +135,83 @@ Per-tab detail: `docs/notes/admin-ui.md`, `admin-catalogue-empower.md`, `admin-i
 - **Analytics follows the original's latest layout** (v446 removed the Funnel and "Orders by
   source" cards at the owner's request; the server still computes both).
 - **No demo mode**: `npm run seed` builds a realistic invented shop for local use.
+
+## Steps for the owner (by hand, in this order)
+
+Nothing here was done for you: no deploy, no database change, no live service was used.
+
+1. **Put the code on GitHub.** `luban-new` is a git repository with its own history (no
+   remote). Push it to a new repository, or a new branch of `luban-store`.
+2. **Create the new tables** in the same Supabase project. Supabase → Project settings →
+   Database → connection string, **transaction pooler** (port 6543). On your computer:
+   `DATABASE_URL="<that string>" npm run db:migrate`. This adds a schema `store`; the original
+   store's tables in `public` are not touched.
+3. **Copy the data.** Supabase → SQL editor → paste `db/import-from-v1.sql` → Run. Read the
+   counts it prints (orders, Empower parcels, events, notes). Safe to run again.
+4. **Netlify**: point a site (a new one first, or a deploy preview of the existing one) at the
+   new repository. Build settings come from `netlify.toml`. Environment variables (scope:
+   Functions; names and meanings in `docs/ENV.md`):
+   - new: `DATABASE_URL` (step 2), `SITE_URL=https://lubanmusk.com`, `SESSION_SECRET` (≥ 32
+     random characters), `ADMIN_PASSWORD_HASH` (`npm run admin:hash`, then paste) — or keep
+     `ADMIN_PASSWORD`;
+   - unchanged names: `ADMIN_USER`, `THAWANI_MODE` (`live` in production), `THAWANI_SECRET_KEY`,
+     `THAWANI_PUBLISHABLE_KEY`, `THAWANI_WEBHOOK_SECRET`, the `OMNIFUL_*` set,
+     `META_PIXEL_ID`, `META_CAPI_TOKEN`, `SNAP_PIXEL_ID`, `SNAP_CAPI_TOKEN`,
+     `GA4_MEASUREMENT_ID`, `GA4_API_SECRET`;
+   - no longer read (remove after the switch): `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`,
+     `SMSA_*`, `WA_*`.
+   - The original README listed secrets that were exposed and had to be rotated
+     (`SUPABASE_SERVICE_KEY`, `ADMIN_PASSWORD`, `META_CAPI_TOKEN`, `SMSA_API_KEY`). If any was
+     not rotated yet, do it now — the new store uses a database connection string instead of
+     the service key; rotate the database password if the old key leaked with it.
+5. **Try it on the preview** with `THAWANI_MODE=uat`: place a cash order and a card order (test
+   card 4242 4242 4242 4242, OTP 1234), open them in `/admin/`, check `/api/health`.
+6. **Webhooks**: Thawani's portal can keep its current URL
+   (`/.netlify/functions/thawani-webhook` is still answered) or move to `/api/pay/webhook`.
+   Omniful's hook stays `/api/omniful/hook?k=<OMNIFUL_HOOK_SECRET>`.
+7. **Switch over**: in the ORIGINAL admin turn Empower auto push **off**; run
+   `db/import-from-v1.sql` once more (it copies orders placed since step 3); publish the new
+   site to production with `THAWANI_MODE=live`; in the NEW admin turn Empower auto push **on**
+   (the import leaves it off so the two stores never push the same order twice).
+8. **On your computer, once**: `npx playwright install chromium` (for the end-to-end tests).
+
+Rollback: redeploy the original site. Its tables were never changed; orders placed on the new
+store in between are in `store.orders` (copy them back by hand if needed).
+
+## Open questions for the owner
+
+- The product page promises "15 يومًا ضمان استرداد الأموال" and "تعديل أو إلغاء خلال 24
+  ساعة", while the privacy page allows refunds only for non-delivery within 7 days; the
+  privacy page also says customer data is used only for delivery, while hashed details go to
+  Meta and Snap. Kept exactly as they were; a copy/legal decision.
+- WhatsApp order confirmations through the Cloud API were dropped (see Scope). They can be
+  added back as one module if wanted.
+- Empower auto push runs every minute (as before): about 43,000 function calls a month. Every
+  2–5 minutes would cut that if the Netlify plan's limit matters.
+
+## Speed (measured)
+
+Both stores built and served the same way — HTTP/2 + TLS + brotli in front of each (as
+Netlify's CDN serves them), a 390 px phone, slow 4G (1.6 Mbit/s, 150 ms) and 4× CPU
+throttling, third-party pixels blocked on both, median of 9 cold loads, averaged over 3
+rounds (`/home/claude/tools/perf.js` in the build session; ms unless noted):
+
+| Page | First paint | Largest paint | DOM ready | Prices on screen | Fully loaded | Bytes |
+|---|---|---|---|---|---|---|
+| Arabic product page | 948 → **913** | 1117 → **1108** | 1227 → **1152** | 1435 → 1476 | 4618 → 4851 | 773 → **757 KB** |
+| Checkout | 704 → 741 | 783 → 813 | 970 → **959** | 734 → 764 | 2890 → **967** | 435 → **425 KB** |
+| English product page | 881 → **840** | 980 → 1013 | 1144 → **1138** | 1265 → 1336 | 1359 → 1574 | 273 → **266 KB** |
+
+What changed for speed: self-hosted fonts loading after the page scripts (two third-party
+origins gone, and the fonts no longer take the slow line from the scripts), no font preloads
+competing with the stylesheet, the page scripts at low priority (as the original's `defer`),
+content-hashed immutable bundles (no revalidation round trips), 17% less JavaScript on the
+product page (35 KB vs 42 KB brotli).
+
+Where it is still slower: the prices appear 30–70 ms later (3–5%). The original's store.js
+was a classic deferred script and settled the catalogue while the page scripts were still
+arriving; an ES module graph runs only once all of its modules are in. Two ways to close it
+were measured and rejected: a separate early entry for the core (the extra request cost more
+than it saved), and font preloads (they delayed the first paint by ~0.5 s). The page "fully
+loaded" moment is later on the product pages only because the decorative fonts now start
+after the scripts; the checkout is fully loaded three times sooner.

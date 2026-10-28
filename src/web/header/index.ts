@@ -489,7 +489,20 @@ function paintFree(FREE_MIN: number, cart: number, total: number): void {
 /* THE RUNNING LINE (v309): the delivery message and the shop's two lines, each its own item
    with a dot between, scrolling right to left. Two copies end to end: the track slides one
    copy's width and starts again. Written again only when the message changes. */
+let remeasureArmed = false;
+function remeasureOnFonts(): void {
+  if (remeasureArmed) return;
+  remeasureArmed = true;
+  const fonts = (document as Document & { fonts?: { ready?: Promise<unknown> } }).fonts;
+  if (!fonts || !fonts.ready) return;
+  fonts.ready.then(() => {
+    const t = document.getElementById("shipTxt");
+    if (t && t.getAttribute("data-run") && t.firstChild) measure(t);
+  }, () => {});
+}
+
 function run(txt: HTMLElement, msg: string): void {
+  remeasureOnFonts();
   const dot = '<span class="ship-dot" aria-hidden="true">·</span>';
   /* each in its own <span>: the copy is a flex box, and loose text beside the currency mark
      would lose the spaces either side of it */
@@ -502,8 +515,16 @@ function run(txt: HTMLElement, msg: string): void {
   txt.innerHTML =
     '<span class="ship-run"><span class="ship-seq">' + seq + "</span>" +
     '<span class="ship-seq" aria-hidden="true">' + seq + "</span></span>";
-  /* THE PACE, NOT THE CLOCK (v311): one copy's width at 60 px a second */
+  measure(txt);
+}
+
+/* THE PACE, NOT THE CLOCK (v311): one copy's width at 60 px a second. Measured when the line
+   is written and again once the page's fonts have arrived (they load after the page scripts,
+   so the first measure is the fallback face's width; the original kept that one and its loop
+   jumped by the difference each cycle). */
+function measure(txt: HTMLElement): void {
   const r = txt.firstChild as HTMLElement | null;
+  if (r) while (r.childNodes.length > 2) r.removeChild(r.lastChild!);
   const w = r && r.firstChild ? (r.firstChild as HTMLElement).getBoundingClientRect().width : 0;
   if (!r || !(w > 0)) return;
   r.style.animationDuration = Math.max(6, Math.round((w / 60) * 10) / 10) + "s";

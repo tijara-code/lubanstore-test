@@ -14,7 +14,7 @@
 <!-- fonts load without blocking the first paint; display=swap shows text immediately -->
 <link rel="preload" as="style"
       href="/assets/fonts/fonts.css?v=__ASSET_V__">
-<link rel="stylesheet" media="print" onload="this.media='all'"
+<link rel="stylesheet" media="print" onload="var l=this;function on(){l.media='all'}document.readyState==='loading'?document.addEventListener('DOMContentLoaded',on):on()"
       href="/assets/fonts/fonts.css?v=__ASSET_V__">
 <noscript><link rel="stylesheet"
       href="/assets/fonts/fonts.css?v=__ASSET_V__"></noscript>

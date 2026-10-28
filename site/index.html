@@ -45,7 +45,7 @@
      preload competes with the stylesheet for the first paint on a slow line (measured). make-en drops the Arabic face on the English pages. -->
 <link rel="preload" as="style"
       href="/assets/fonts/fonts.css?v=__ASSET_V__">
-<link rel="stylesheet" media="print" onload="this.media='all'"
+<link rel="stylesheet" media="print" onload="var l=this;function on(){l.media='all'}document.readyState==='loading'?document.addEventListener('DOMContentLoaded',on):on()"
       href="/assets/fonts/fonts.css?v=__ASSET_V__">
 <noscript><link rel="stylesheet"
       href="/assets/fonts/fonts.css?v=__ASSET_V__"></noscript>
