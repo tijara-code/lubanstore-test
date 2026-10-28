@@ -22,6 +22,8 @@ import { forgetCatalogue, publishCatalogue } from "../domain/catalogue";
 import { orderEvents, orders, settings, shipments, type NewOrderRow } from "../db/schema";
 import { newInvoiceKey, newOrderId } from "../domain/orders";
 import type { Catalogue } from "../../shared/catalogue/types";
+import { SESSION_COOKIE } from "../../shared/admin/api";
+import { authConfigured, cookieHeader, issueSession, SESSION_MS } from "../domain/admin/auth";
 import { HOSTS, type ThawaniPayment, type ThawaniSession } from "../services/thawani";
 import { completedEvent, paymentEvent, signDelivery } from "../services/thawani/fake";
 
@@ -45,7 +47,35 @@ const STYLE =
   ".row{display:flex;gap:10px;margin-top:18px}button{flex:1;padding:12px;border-radius:10px;border:0;font:inherit;cursor:pointer}" +
   ".pay{background:#0f766e;color:#fff}.cancel{background:#e5e7eb;color:#111}</style>";
 
+/** this machine only: the browser's address and the connection both say localhost */
+function onThisMachine(c: Context<AppEnv>): boolean {
+  const local = /^(localhost|127\.0\.0\.1|\[::1\])$/;
+  let host = "";
+  try {
+    host = new URL(c.req.url).hostname;
+  } catch {
+    return false;
+  }
+  const fwd = c.req.header("x-forwarded-for");
+  return local.test(host) && !fwd;
+}
+
 export function registerDevRoutes(app: Hono<AppEnv>): void {
+  /*
+   * GET /__fake/admin/enter — the admin panel WITHOUT typing a user or password, for looking
+   * around locally (`npm run admin:local`, or open-admin.cmd). Signs this browser in as the dev
+   * admin and goes to /admin/. Fake mode only (this whole file is; fake is refused in
+   * production) AND only on this machine (http://localhost, nothing forwarded).
+   */
+  app.get("/__fake/admin/enter", (c) => {
+    const deps = c.get("deps");
+    if (!onThisMachine(c)) return c.text("Only on this machine (http://localhost).", 403, NO_STORE);
+    if (!authConfigured(deps.env)) return c.text("No admin is set up (ADMIN_USER, ADMIN_PASSWORD, SESSION_SECRET).", 503, NO_STORE);
+    const { token } = issueSession(deps.env, deps.now());
+    c.header("Set-Cookie", cookieHeader(SESSION_COOKIE, token, { maxAge: SESSION_MS / 1000, secure: false }));
+    return c.redirect("/admin/", 302);
+  });
+
   /*
    * Test and development helpers (fake mode only): publish a catalogue as it stands, or
    * reset to the bundled one — the parity scripts drive catalogue variants through this.

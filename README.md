@@ -27,6 +27,16 @@ PGlite (PostgreSQL in WASM) in `.data/`. Admin sign-in locally: `admin` / `luban
 (printed by `npm run dev`), unless `.env` names its own (`ADMIN_USER`, `ADMIN_PASSWORD`,
 `SESSION_SECRET` — see `.env.example`).
 
+### The admin panel without a user or password
+
+Double-click **`open-admin.cmd`** (Windows), or run `npm run admin:local`. It installs the
+packages the first time, fills `.data/` with an invented shop, starts the site on this computer
+and opens http://localhost:8888/admin/ already signed in. The data is made-up and every
+outside service is faked; close the window to stop it. (Opening `admin/index.html` as a file
+cannot work: the panel needs the server behind it.) To start again from a fresh invented shop,
+delete the `.data` folder. It ignores `.env`, so it never touches a real database or real
+keys kept there.
+
 ## When the admin sign-in says the server is unreachable
 
 The sign-in screen names the cause:

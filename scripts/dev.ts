@@ -7,16 +7,35 @@
  *   3. src/server/node.ts on PORT (default 8888): dist/ plus the API, with the fake services
  *      (SERVICES_MODE=fake — no real Thawani, Omniful, Meta, Snap or GA4) and PGlite in .data/
  *
+ * `npm run admin:local` (or double-click open-admin.cmd) is the same, plus: an invented shop is
+ * seeded on the first run, and the admin panel opens in the browser already signed in — no
+ * user or password to type (GET /__fake/admin/enter: fake mode, this machine only). It does NOT
+ * read .env (the script has no --env-file), so a real DATABASE_URL or live keys kept there are
+ * never touched: always the fakes and the local .data/ database.
+ *
  * The site is served built, exactly as in production (hashed files, the English pages, the
  * headers), rather than through Vite's dev server: what you click through is what ships.
  */
-import { mkdirSync, watch } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, watch } from "node:fs";
 import path from "node:path";
 import { build as viteBuild } from "vite";
 import { makeEn, SITE_DIR } from "./make-en";
 import { REPO } from "./site-meta";
 
 type Watcher = { on(ev: "event", cb: (e: { code: string; error?: Error; result?: { close(): void } }) => void): void; close(): Promise<void> };
+
+const ADMIN = process.argv.includes("--admin");
+
+function openBrowser(url: string): void {
+  try {
+    const [cmd, args] =
+      process.platform === "win32" ? ["cmd", ["/c", "start", "", url]] : process.platform === "darwin" ? ["open", [url]] : ["xdg-open", [url]];
+    spawn(cmd as string, args as string[], { stdio: "ignore", detached: true }).on("error", () => {}).unref();
+  } catch {
+    /* no browser to open: the address is printed above */
+  }
+}
 
 async function main(): Promise<void> {
   process.env.VITE_CONFIG_NATIVE_IGNORE_WARNING = "true";
@@ -72,11 +91,24 @@ async function main(): Promise<void> {
 
   await ready;
   /* PGlite makes its own folder but not its parent */
-  if (!env.DATABASE_URL) mkdirSync(path.dirname(path.resolve(REPO, env.DATA_DIR || ".data/pglite")), { recursive: true });
+  const dataDir = path.resolve(REPO, env.DATA_DIR || ".data/pglite");
+  if (!env.DATABASE_URL) mkdirSync(path.dirname(dataDir), { recursive: true });
+  if (ADMIN && env.SERVICES_MODE === "fake" && !env.DATABASE_URL && env.DATA_DIR !== "memory" && !existsSync(dataDir)) {
+    console.log("dev: first run — seeding an invented shop into " + path.relative(REPO, dataDir));
+    spawnSync(process.execPath, ["--import", "tsx", path.join(REPO, "scripts/seed.ts")], { cwd: REPO, stdio: "inherit", env: { ...env, DATA_DIR: dataDir } });
+  }
   const { startServer } = await import("../src/server/node");
   const { port, deps } = await startServer({ port: Number(process.env.PORT || 8888), distDir: DIST, env });
   console.log(`Luban & Musk on http://localhost:${port}  (services: ${deps.env.servicesMode}; English at /en/, admin at /admin/)`);
   if (devLogin) console.log(devLogin);
+  if (ADMIN) {
+    if (env.SERVICES_MODE !== "fake") console.warn("dev: the signed-in shortcut is for fake mode only — sign in at http://localhost:" + port + "/admin/");
+    else {
+      const url = "http://localhost:" + port + "/__fake/admin/enter";
+      console.log("admin panel (already signed in): " + url);
+      openBrowser(url);
+    }
+  }
 }
 
 main().catch((e) => {

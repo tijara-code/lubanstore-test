@@ -134,7 +134,14 @@ Per-tab detail: `docs/notes/admin-ui.md`, `admin-catalogue-empower.md`, `admin-i
   routes save on their own, never publishing half-made edits.
 - **Analytics follows the original's latest layout** (v446 removed the Funnel and "Orders by
   source" cards at the owner's request; the server still computes both).
-- **No demo mode**: `npm run seed` builds a realistic invented shop for local use.
+- **No in-page demo mode; a local signed-in shortcut instead.** The original's `admin/index.html#demo`
+  (made-up data inside the page, no server) is not rebuilt: the panel is ES modules, which
+  browsers will not run from a `file://` page, and a second fake data layer inside the panel would
+  drift from the real API. Instead `open-admin.cmd` (double-click) / `npm run admin:local` runs the
+  real server on this computer with the fake services, seeds an invented shop on the first run
+  (`npm run seed`), and opens the panel already signed in through `GET /__fake/admin/enter`. That
+  route exists only in fake mode (refused in production) and answers only `http://localhost` with
+  nothing forwarded.
 
 ## Steps for the owner (by hand, in this order)
 
