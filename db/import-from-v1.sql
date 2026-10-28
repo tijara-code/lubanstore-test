@@ -6,11 +6,15 @@
 -- What:   reads the original tables in schema `public`, writes the new ones in schema
 --         `store`. Never changes or deletes anything in `public`: the original store keeps
 --         running until you switch over, and switching back is just redeploying it.
--- Again:  safe to run more than once. Orders, shipments, customers' notes and settings
---         skip rows already copied; the history tables (events, logs, webhook records,
---         audit, change log) are copied only while their new table is still empty.
---         To bring over orders placed since an earlier run, run it again just before
---         you switch.
+-- Again:  safe to run more than once, and MEANT to be run again just before and just after
+--         the switch. Orders already copied are left alone (what changed on the old site
+--         after the first copy — paid, shipped, cancelled — is carried over by
+--         db/reconcile-v1.sql). Empower parcels, the catalogue (while nobody has published
+--         in the new admin), the Empower records and customers' notes follow the old
+--         site's newer row. New analytics events are added each run; the KPI hours, logs,
+--         webhook records, audit and change log are copied once, while their new table is
+--         still empty. (public.orders has no updated_at column: the import takes
+--         created_at for it.)
 -- Leaves: Empower auto push OFF in the new store (both stores pushing would send parcels
 --         twice). Switch it on in the new admin once the new store is live.
 -- Drops:  SMSA and local-courier parcels (their waybill is kept on the order as the
@@ -210,7 +214,25 @@ select s.awb,
        nullif(to_jsonb(s) ->> 'last_error', '')
 from public.shipments s
 where s.awb like 'omf-%'
-on conflict (id) do nothing;
+on conflict (id) do update set
+  status = excluded.status,
+  awb = coalesce(excluded.awb, store.shipments.awb),
+  picked_up_at = coalesce(excluded.picked_up_at, store.shipments.picked_up_at),
+  delivered_at = coalesce(excluded.delivered_at, store.shipments.delivered_at),
+  synced_at = coalesce(excluded.synced_at, store.shipments.synced_at),
+  last_error = excluded.last_error,
+  updated_at = excluded.updated_at
+where excluded.updated_at > store.shipments.updated_at;
+
+-- a parcel that moved on the old site moves its order too, unless the new store handled the order
+update store.orders o set
+  shipped_at = coalesce(o.shipped_at, s.picked_up_at),
+  delivered_at = coalesce(o.delivered_at, s.delivered_at)
+from store.shipments s
+where s.order_id = o.id and s.carrier = 'empower'
+  and (s.picked_up_at is not null or s.delivered_at is not null)
+  and (o.shipped_at is distinct from coalesce(o.shipped_at, s.picked_up_at) or o.delivered_at is distinct from coalesce(o.delivered_at, s.delivered_at))
+  and not exists (select 1 from store.order_events e where e.order_id = o.id and e.kind <> 'imported');
 
 -- ---------- the published catalogue ----------
 insert into store.settings (id, data, version, updated_at, updated_by)
@@ -219,12 +241,19 @@ from public.settings s
 where s.id = 1
 on conflict (id) do nothing;
 
+-- a catalogue published on the OLD admin after the first copy wins, as long as nobody has
+-- published in the NEW admin yet (updated_by is then no longer 'import')
+update store.settings n set data = s.data, updated_at = s.updated_at, version = n.version + 1
+from public.settings s
+where s.id = 1 and n.id = 1 and n.updated_by = 'import' and s.updated_at > n.updated_at;
+
 -- ---------- Empower and panel records (same keys and shapes) ----------
 insert into store.ops (key, data, updated_at)
 select o.key, o.data, coalesce(o.updated_at, now())
 from public.ops o
 where o.key in ('omniful_skus', 'omniful_retired', 'omniful_unsure', 'omniful_unrecorded', 'omniful_auth', 'admin_ui')
-on conflict (key) do nothing;
+on conflict (key) do update set data = excluded.data, updated_at = excluded.updated_at
+where excluded.updated_at > store.ops.updated_at;
 
 insert into store.ops (key, data, updated_at)
 values ('omniful_auto', jsonb_build_object('on', false, 'at', now(), 'by', 'import'), now())
@@ -243,20 +272,26 @@ cross join lateral (
   ) as phone_key
 ) k
 where k.phone_key is not null
-on conflict (phone_key) do nothing;
+on conflict (phone_key) do update set note = excluded.note, tags = excluded.tags, updated_at = excluded.updated_at
+where excluded.updated_at > store.crm.updated_at;
 
--- ---------- history tables: copied once, while the new one is empty ----------
+-- ---------- analytics: new raw events every run; the rolled-up hours once ----------
+-- (the raw events copied on the first run already hold everything the old site's purge rolls
+-- into stats_hours later, so copying the hours again would count those days twice)
 insert into store.events (at, name, item, sid, country, city, lat, lng)
 select e.at, e.name, e.item, e.sid, e.country,
        to_jsonb(e) ->> 'city', store.v1_num(to_jsonb(e) ->> 'lat')::real, store.v1_num(to_jsonb(e) ->> 'lng')::real
 from public.events e
-where not exists (select 1 from store.events)
+where e.at > coalesce((select max(at) from store.events), '-infinity'::timestamptz)
 order by e.id;
 
 insert into store.event_hours (hour, sid, country, name, item, n)
 select h.hour, h.sid, h.country, h.name, h.item, h.n
 from public.stats_hours h
+where not exists (select 1 from store.event_hours)
 on conflict do nothing;
+
+-- ---------- history tables: copied once, while the new one is empty ----------
 
 insert into store.logs (at, level, side, source, message, order_id, path, detail)
 select l.at, 'error',

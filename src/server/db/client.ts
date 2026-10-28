@@ -46,11 +46,25 @@ export function dateParam(v: unknown): unknown {
  * Dates as they are. The serializers are put back here, once, so a Date works in raw SQL on
  * both drivers.
  */
+/** TLS unless the URL says otherwise or the host is local (a test database on this machine). */
+export function needsTls(url: string): boolean {
+  try {
+    const u = new URL(url);
+    if (u.searchParams.has("sslmode") || u.searchParams.has("ssl")) return false;
+    return !/^(localhost|127\.0\.0\.1|\[::1\]|host\.docker\.internal)$/.test(u.hostname);
+  } catch {
+    return false;
+  }
+}
+
 export async function connectPostgres(url: string, opts: PostgresOptions = {}): Promise<Db> {
   const { default: postgres } = await import("postgres");
   const { drizzle } = await import("drizzle-orm/postgres-js");
   const client = postgres(url, {
     prepare: false,
+    // TLS to any host that is not this machine (Supabase requires it; postgres-js does not
+    // negotiate it unless asked). A sslmode in the URL still wins.
+    ...(needsTls(url) ? { ssl: "require" as const } : {}),
     max: opts.max ?? 3,
     idle_timeout: opts.idleTimeout ?? 20,
     connect_timeout: 8,

@@ -41,6 +41,8 @@ export function warningText(w: Pick<Warning, "kind" | "what">): string {
   if (w.kind === "stale") return "Scheduled job not running on time: " + w.what + " (check its schedule and last run).";
   const px = /^pixel_failures:(\w+)$/.exec(w.what);
   if (px) return "Events to " + px[1] + " are failing (see Analytics › Tracking health).";
+  const ig = /^env_value_ignored:(\w+)$/.exec(w.what);
+  if (ig) return ig[1] + " has a value the server does not know, so it is treated as not set. Check it against docs/ENV.md.";
   return WARN[w.what] || w.what.replace(/_/g, " ");
 }
 

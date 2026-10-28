@@ -15,7 +15,7 @@ import { registerEmpowerRoutes } from "./routes/empower";
 import { registerAdminRoutes } from "./routes/admin";
 import { registerDevRoutes } from "./routes/dev";
 
-export const RELEASE = "2.0.0";
+export const RELEASE = "2.0.1";
 
 export function createApp(deps: Deps): Hono<AppEnv> {
   const app = new Hono<AppEnv>();

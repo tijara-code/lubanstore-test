@@ -88,6 +88,61 @@ d("importing the original store's data", () => {
     // the original's tables are untouched and the helpers are gone
     expect((await db.query<any>("select count(*)::int as n from public.orders")).rows[0].n).toBe(3);
     expect((await db.query<any>("select count(*)::int as n from pg_proc where proname like 'v1_%'")).rows[0].n).toBe(0);
+
+    // ---- a second run follows what moved on the OLD site: parcel, catalogue, records, notes, events ----
+    await db.exec(`
+      update public.shipments set status = 'delivered', delivered_at = '2026-08-21T00:00:00Z', updated_at = now() + interval '1 minute' where awb = 'omf-LM-482914-2';
+      update public.settings set data = '{"countries":[{"code":"OM","name":"عمان","cur":"OMR","dial":"968","prices":{"x":1}}],"sizes":[],"scents":[]}', updated_at = now() + interval '1 minute' where id = 1;
+      update public.ops set data = '{"oud-large":"LM3002"}', updated_at = now() + interval '1 minute' where key = 'omniful_skus';
+      update public.crm set note = 'VIP+', updated_at = now() + interval '1 minute' where phone = '76655565';
+      insert into public.events (name, item, sid, country, at) values ('page_view', 'home', 's2', 'AE', now() + interval '1 minute');
+      insert into public.stats_hours (hour, sid, country, name, item, n) values ('2026-05-01T10:00:00Z', 'h1', 'OM', 'page_view', 'home', 7);
+    `);
+    await db.exec(sql);
+    expect((await db.query<any>("select status, delivered_at from store.shipments")).rows[0]).toMatchObject({ status: "delivered" });
+    expect((await db.query<any>("select delivered_at from store.orders where id = 'LM-482914'")).rows[0].delivered_at).not.toBeNull();
+    expect((await db.query<any>("select data -> 'countries' -> 0 -> 'prices' as p, version, updated_by from store.settings")).rows[0]).toMatchObject({ p: { x: 1 }, version: 2, updated_by: "import" });
+    expect((await db.query<any>("select data from store.ops where key = 'omniful_skus'")).rows[0].data).toEqual({ "oud-large": "LM3002" });
+    expect((await db.query<any>("select note from store.crm")).rows[0].note).toBe("VIP+");
+    expect((await db.query<any>("select count(*)::int as n from store.events")).rows[0].n).toBe(3);
+    expect((await db.query<any>("select count(*)::int as n from store.event_hours")).rows[0].n).toBe(1); // hours: copied while the new table is empty…
+    await db.exec(`insert into public.stats_hours (hour, sid, country, name, item, n) values ('2026-05-02T10:00:00Z', 'h2', 'OM', 'page_view', 'home', 3);`);
+    await db.exec(sql);
+    expect((await db.query<any>("select count(*)::int as n from store.event_hours")).rows[0].n).toBe(1); // …and never again (the raw events already hold those days)
+    // the NEW admin published: the old catalogue no longer wins
+    await db.exec(`update store.settings set updated_by = 'keeper'; update public.settings set data = '{"countries":[],"sizes":[],"scents":[]}', updated_at = now() + interval '2 minutes' where id = 1;`);
+    await db.exec(sql);
+    expect((await db.query<any>("select data -> 'countries' -> 0 -> 'prices' as p from store.settings")).rows[0].p).toEqual({ x: 1 });
+
+    // ---- what changed on the OLD site after the import: db/reconcile-v1.sql ----
+    // LM-482914 was paid and shipped on the old site; LM-482913 was cancelled there, but the NEW
+    // store has already touched it (a status line after the import) — that one is kept.
+    await db.exec(`
+      update public.orders set status = 'ship', payment_status = 'paid', payment_id = 'pay_1', paid_at = '2026-08-18T12:00:00Z', tracking = '4410001' where id = 'LM-482914';
+      update public.orders set status = 'void' where id = 'LM-482913';
+      insert into store.order_events (order_id, at, kind, "from", "to", by) values ('LM-482913', now(), 'status', 'done', 'done', 'keeper');
+    `);
+    await db.exec(sql); // the import itself changes nothing for them
+    expect((await db.query<any>("select status from store.orders where id = 'LM-482914'")).rows[0].status).toBe("pending");
+    const reconcile = readFileSync(path.resolve("db/reconcile-v1.sql"), "utf8");
+    // the editor shows the last statement's rows; here: run it, then the report query on its own
+    const run = async () => {
+      await db.exec(reconcile);
+      return (await db.query<any>(reconcile.slice(reconcile.lastIndexOf("select id,")))).rows;
+    };
+    const report = await run();
+    expect(report.map((r: any) => [r.id, r.outcome.split(" ")[0], r.was, r.now_status])).toEqual([
+      ["LM-482914", "applied", "pending", "ship"],
+      ["LM-482913", "kept", "done", "void"],
+    ]);
+    const b2 = (await db.query<any>("select * from store.orders where id = 'LM-482914'")).rows[0];
+    expect(b2).toMatchObject({ status: "ship", payment_status: "paid", payment_id: "pay_1", tracking: "4410001" });
+    expect(b2.paid_at).not.toBeNull();
+    expect((await db.query<any>("select status from store.orders where id = 'LM-482913'")).rows[0].status).toBe("done");
+    expect((await db.query<any>("select \"from\", \"to\" from store.order_events where order_id = 'LM-482914' and kind = 'status'")).rows).toEqual([{ from: "pending", to: "ship" }]);
+    // a second run finds nothing left to apply (the kept one is still reported)
+    const again = await run();
+    expect(again.map((r: any) => r.id)).toEqual(["LM-482913"]);
   }, 120_000);
 
   it("makes the same customer key as the storefront and the server", async () => {

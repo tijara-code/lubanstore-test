@@ -52,7 +52,15 @@ describe("which services, and is it production", () => {
     expect(loadEnv({ THAWANI_MODE: " UAT" }).THAWANI_MODE).toBe("uat");
     expect(loadEnv({ OMNIFUL_ENV: "staging\n" }).OMNIFUL_ENV).toBe("staging");
     expect(loadEnv({ THAWANI_MODE: "" }).THAWANI_MODE).toBe(undefined);
-    expect(() => loadEnv({ THAWANI_MODE: "sandbox" })).toThrow();
+  });
+
+  it("a value that is none of the choices is treated as unset and named, never refused (a typo must not 503 the API)", async () => {
+    const e = loadEnv({ THAWANI_MODE: "sandbox", OMNIFUL_ENV: "prod", SERVICES_MODE: "fakes" });
+    expect([e.THAWANI_MODE, e.OMNIFUL_ENV, e.servicesMode]).toEqual([undefined, undefined, "live"]);
+    expect(e.ignored).toEqual(["SERVICES_MODE", "THAWANI_MODE", "OMNIFUL_ENV"]);
+    expect(loadEnv({ THAWANI_MODE: "live" }).ignored).toEqual([]);
+    const { warnings } = await import("../../../src/server/domain/health");
+    expect(warnings(e)).toEqual(expect.arrayContaining(["env_value_ignored:THAWANI_MODE", "env_value_ignored:OMNIFUL_ENV"]));
   });
 });
 
@@ -73,7 +81,8 @@ describe("a cold start that fails", () => {
     expect(err).toHaveBeenCalledTimes(1);
     // a zod refusal names the variable, never its value
     let zerr: unknown;
-    try { loadEnv({ THAWANI_MODE: "sk_live_secret" }); } catch (e) { zerr = e; }
+    // (a wrong string is now treated as unset, so a refusal needs a non-string — the shape is what matters)
+    try { loadEnv({ THAWANI_MODE: ["sk_live_secret"] as unknown as string }); } catch (e) { zerr = e; }
     const z = bootFailure(zerr);
     const zj = await z.text();
     expect(JSON.parse(zj)).toEqual({ ok: false, error: "server_unavailable", reason: "config_refused", vars: ["THAWANI_MODE"] });
@@ -107,5 +116,57 @@ describe("a cold start that fails", () => {
       for (const k of Object.keys(process.env)) if (!(k in keep)) delete process.env[k];
       Object.assign(process.env, keep);
     }
+  });
+});
+
+describe("the visitor's country on Netlify (no edge function any more)", () => {
+  it("comes from the function Context, written as the x-nf-geo header the app reads; a client's own header never wins", async () => {
+    const { withGeo } = await import("../../../src/server/bootstrap");
+    const { edgeCountry, edgeGeo } = await import("../../../src/server/core/http");
+    const read = (req: Request) => {
+      const c = { req: { header: (n: string) => req.headers.get(n) || undefined } } as never;
+      return { country: edgeCountry(c), geo: edgeGeo(c) };
+    };
+    const plain = new Request("https://lubanmusk.com/api/geo");
+    expect(read(withGeo(plain, { geo: { country: { code: "ae" }, city: "Dubai", latitude: 25.2048, longitude: 55.2708 } }))).toEqual({
+      country: "AE",
+      geo: { city: "Dubai", lat: 25.2, lng: 55.3 },
+    });
+    expect(read(withGeo(plain, undefined)).country).toBe("");
+    expect(read(withGeo(plain, { geo: null })).country).toBe("");
+    expect(read(withGeo(plain, { geo: { country: { code: "XXX" } } })).country).toBe("");
+    const spoofed = new Request("https://lubanmusk.com/api/geo", { headers: { "x-nf-geo": Buffer.from(JSON.stringify({ country: { code: "SA" } })).toString("base64") } });
+    expect(read(withGeo(spoofed, { geo: { country: { code: "OM" } } })).country).toBe("OM");
+    // the body and method survive the rewrap
+    const post = new Request("https://lubanmusk.com/api/order", { method: "POST", body: "{}", headers: { "content-type": "application/json" } });
+    const w = withGeo(post, { geo: { country: { code: "QA" } } });
+    expect([w.method, await w.text(), w.headers.get("content-type")]).toEqual(["POST", "{}", "application/json"]);
+  });
+});
+
+describe("the original's variable values", () => {
+  it("THAWANI_MODE=test (the original's .env.example) is uat, not a refused setting that would 503 the whole API", () => {
+    expect(loadEnv({ THAWANI_MODE: "test" }).THAWANI_MODE).toBe("uat");
+    expect(loadEnv({ THAWANI_MODE: " Live " }).THAWANI_MODE).toBe("live");
+  });
+
+  it("a value that is none of the choices is treated as unset and named, never refused (a typo must not 503 the API)", async () => {
+    const e = loadEnv({ THAWANI_MODE: "sandbox", OMNIFUL_ENV: "prod", SERVICES_MODE: "fakes" });
+    expect([e.THAWANI_MODE, e.OMNIFUL_ENV, e.servicesMode]).toEqual([undefined, undefined, "live"]);
+    expect(e.ignored).toEqual(["SERVICES_MODE", "THAWANI_MODE", "OMNIFUL_ENV"]);
+    expect(loadEnv({ THAWANI_MODE: "live" }).ignored).toEqual([]);
+    const { warnings } = await import("../../../src/server/domain/health");
+    expect(warnings(e)).toEqual(expect.arrayContaining(["env_value_ignored:THAWANI_MODE", "env_value_ignored:OMNIFUL_ENV"]));
+  });
+});
+
+describe("the database connection on Netlify", () => {
+  it("asks for TLS to a remote host (Supabase requires it) and leaves a local test database and an explicit sslmode alone", async () => {
+    const { needsTls } = await import("../../../src/server/db/client");
+    expect(needsTls("postgres://u:p@aws-0-eu-central-1.pooler.supabase.com:6543/postgres")).toBe(true);
+    expect(needsTls("postgres://u:p@127.0.0.1:5432/lm")).toBe(false);
+    expect(needsTls("postgres://u:p@localhost/lm")).toBe(false);
+    expect(needsTls("postgres://u:p@db.example.com/lm?sslmode=disable")).toBe(false);
+    expect(needsTls("not a url")).toBe(false);
   });
 });

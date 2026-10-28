@@ -56,6 +56,7 @@ export function warnings(env: Deps["env"]): string[] {
   if (String(env.SESSION_SECRET || "").length < 32) out.push("session_secret_missing");
   if (env.production && !env.siteUrl) out.push("site_url_missing");
   if (env.production && env.servicesMode !== "live") out.push("fake_services_in_production");
+  for (const name of env.ignored || []) out.push("env_value_ignored:" + name);
   return out;
 }
 

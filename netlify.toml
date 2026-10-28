@@ -10,7 +10,10 @@
 [build.environment]
   NODE_VERSION = "22"
   # Public by design (they are in the page source); exempt from the secrets scanner. Nothing else.
-  SECRETS_SCAN_OMIT_KEYS = "META_PIXEL_ID,SNAP_PIXEL_ID"
+  # SITE_URL is the site's own address: it is in every page (canonical links, sitemap, robots),
+  # and the scanner checks every variable's value against the build output (the original store
+  # hit this with ADMIN_USER), so it would fail the build.
+  SECRETS_SCAN_OMIT_KEYS = "META_PIXEL_ID,SNAP_PIXEL_ID,SITE_URL"
 
 [functions]
   node_bundler = "esbuild"

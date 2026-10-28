@@ -73,10 +73,31 @@ function zodPaths(e: unknown): string {
   return issues.map((i) => (i.path || []).join(".")).filter(Boolean).join(", ") || "unknown";
 }
 
+/** The slice of Netlify's function Context this app uses: the visitor's location, as the platform saw it. */
+export interface NetlifyGeo {
+  geo?: { country?: { code?: string }; city?: string; latitude?: number; longitude?: number } | null;
+}
+
+/**
+ * The original answered /api/geo from an EDGE function (context.geo). Here the same comes from
+ * the function's Context: when the request has no x-nf-geo header of its own, one is written
+ * from ctx.geo in the same base64-JSON shape, so edgeCountry()/edgeGeo() read either. A header
+ * the client sent is never trusted over the platform's context.
+ */
+export function withGeo(req: Request, ctx: NetlifyGeo | undefined): Request {
+  const g = ctx && ctx.geo;
+  if (!g || typeof g !== "object") return req;
+  const code = String(g.country?.code || "").trim();
+  if (!/^[A-Za-z]{2}$/.test(code) && !g.city) return req;
+  const headers = new Headers(req.headers);
+  headers.set("x-nf-geo", Buffer.from(JSON.stringify({ country: { code: code.toUpperCase() }, city: g.city, latitude: g.latitude, longitude: g.longitude })).toString("base64"));
+  return new Request(req, { headers });
+}
+
 /** A Netlify function's handler over the one app: built on first use, retried after a failed start. */
-export function netlifyHandler(): (req: Request) => Promise<Response> {
+export function netlifyHandler(): (req: Request, ctx?: NetlifyGeo) => Promise<Response> {
   let app: App | null = null;
-  return async (req) => {
+  return async (req, ctx) => {
     if (!app) {
       try {
         const { deps } = await getDeps(process.env);
@@ -85,7 +106,7 @@ export function netlifyHandler(): (req: Request) => Promise<Response> {
         return bootFailure(e);
       }
     }
-    return app.fetch(req);
+    return app.fetch(withGeo(req, ctx));
   };
 }
 

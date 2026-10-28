@@ -36,6 +36,8 @@ describe("the published site", () => {
       expect(existsSync(path.join(OUT, f)), f).toBe(true);
     }
     expect(page("_headers")).toBe(netlifyHeadersFile());
+    // the original pages' fallback path (an old page still open after the switch)
+    expect(JSON.parse(page("data/settings.json")).countries.length).toBeGreaterThan(0);
   });
 
   // from build-site.js: every local file a page names is in the copy

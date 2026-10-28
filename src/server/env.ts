@@ -6,16 +6,29 @@
 import { z } from "zod";
 
 const opt = z.string().trim().optional().transform((v) => (v ? v : undefined));
-/** An enum read forgivingly: trimmed and lower-cased ("live " is live), empty = unset. */
-const oneOf = <T extends readonly [string, ...string[]]>(values: T) =>
-  z.preprocess((v) => (typeof v === "string" ? v.trim().toLowerCase() || undefined : v), z.enum(values).optional());
+/**
+ * An enum read forgivingly: trimmed and lower-cased ("live " is live), empty = unset, and a
+ * value that is none of the choices is UNSET too (the default applies) rather than refused —
+ * a typo in one variable must never take the whole API down at start. The names of such
+ * variables are collected in `ignored` (loadEnv → env.ignored; the health check reports them).
+ */
+const ignoredNow: string[] = [];
+const oneOf = <T extends readonly [string, ...string[]]>(values: T, name: string) =>
+  z.preprocess((v) => {
+    if (typeof v !== "string") return v;
+    const t = v.trim().toLowerCase();
+    if (!t) return undefined;
+    if ((values as readonly string[]).includes(t)) return t;
+    ignoredNow.push(name);
+    return undefined;
+  }, z.enum(values).optional());
 
 export const EnvSchema = z.object({
   /**
    * live = the real services; fake = in-process fakes (local dev, e2e, tests). Default: LIVE —
    * fake only when set explicitly, and refused in production (see `production`).
    */
-  SERVICES_MODE: oneOf(["live", "fake"] as const),
+  SERVICES_MODE: oneOf(["live", "fake"] as const, "SERVICES_MODE"),
   /** Netlify deploy context (production, deploy-preview, branch-deploy, dev) — a BUILD variable; functions may not see it */
   CONTEXT: opt,
   /** set by Netlify for functions at runtime: its presence means "running on Netlify" */
@@ -37,7 +50,8 @@ export const EnvSchema = z.object({
   /** signs admin session cookies; at least 32 characters */
   SESSION_SECRET: opt,
 
-  THAWANI_MODE: oneOf(["uat", "live"] as const),
+  /** uat | live. The original's value "test" (its .env.example) is accepted as uat. */
+  THAWANI_MODE: z.preprocess((v) => (typeof v === "string" && v.trim().toLowerCase() === "test" ? "uat" : v), oneOf(["uat", "live"] as const, "THAWANI_MODE")),
   THAWANI_SECRET_KEY: opt,
   THAWANI_PUBLISHABLE_KEY: opt,
   THAWANI_WEBHOOK_SECRET: opt,
@@ -48,7 +62,7 @@ export const EnvSchema = z.object({
   OMNIFUL_CLIENT_SECRET: opt,
   OMNIFUL_HUB_CODE: opt,
   OMNIFUL_HOOK_SECRET: opt,
-  OMNIFUL_ENV: oneOf(["staging", "production"] as const),
+  OMNIFUL_ENV: oneOf(["staging", "production"] as const, "OMNIFUL_ENV"),
   OMNIFUL_BASE: opt,
 
   META_PIXEL_ID: opt,
@@ -67,6 +81,8 @@ export interface Env extends EnvVars {
   production: boolean;
   /** the public origin, no trailing slash ("" when unknown) */
   siteUrl: string;
+  /** variables whose value was none of the allowed choices and so was treated as unset */
+  ignored: string[];
 }
 
 /**
@@ -88,7 +104,10 @@ export class EnvError extends Error {
 }
 
 export function loadEnv(source: Record<string, string | undefined> = process.env): Env {
+  ignoredNow.length = 0;
   const v = EnvSchema.parse(source);
+  const ignored = [...new Set(ignoredNow)];
+  ignoredNow.length = 0;
   const production = isProduction(source);
   const servicesMode = v.SERVICES_MODE || "live";
   if (servicesMode === "fake" && production) throw new EnvError("SERVICES_MODE=fake is refused in production (SITE_ID, NODE_ENV=production or CONTEXT=production is set)");
@@ -97,5 +116,6 @@ export function loadEnv(source: Record<string, string | undefined> = process.env
     servicesMode,
     production,
     siteUrl: String(v.SITE_URL || v.URL || "").replace(/\/+$/, ""),
+    ignored,
   };
 }

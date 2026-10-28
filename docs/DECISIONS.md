@@ -146,6 +146,10 @@ Per-tab detail: `docs/notes/admin-ui.md`, `admin-catalogue-empower.md`, `admin-i
 ## Steps for the owner (by hand, in this order)
 
 Nothing here was done for you: no deploy, no database change, no live service was used.
+**The full switch-over procedure, with a gate at each step, verification and rollback, is
+`docs/CUTOVER.md`**; `npm run preflight` checks the environment and the database (read-only)
+and `db/reconcile-v1.sql` carries over orders that changed on the old site after an earlier
+copy. The list below is the short form.
 
 1. **Put the code on GitHub.** `luban-new` is a git repository with its own history (no
    remote). Push it to a new repository, or a new branch of `luban-store`.
@@ -184,6 +188,41 @@ Nothing here was done for you: no deploy, no database change, no live service wa
 
 Rollback: redeploy the original site. Its tables were never changed; orders placed on the new
 store in between are in `store.orders` (copy them back by hand if needed).
+
+## Switch-over audit (v2.0.1)
+
+An independent review of the switch path (report: `review/cutover-audit.md` outside the repo;
+the findings are summarised here) led to these changes:
+
+- **A wrong value in an enum variable no longer refuses the whole API at start.** The original
+  accepted anything in `THAWANI_MODE` / `OMNIFUL_ENV`; the rebuild refused unknown values with a
+  503 on every request. Now: `test` is `uat`; any other unknown value is treated as unset (the
+  default applies) and the Overview shows "X has a value the server does not know" (health
+  warning `env_value_ignored:X`). `SERVICES_MODE=fake` in production is still refused — that
+  one is deliberate.
+- **Geo from the function Context.** The original's `/api/geo` was an edge function; the
+  rebuild read an `x-nf-geo` header whose presence on Functions v2 is undocumented. The
+  Netlify wrappers now write the header from `ctx.geo` (a client's own header never wins).
+- **TLS to the database** unless the host is local or the URL says `sslmode` itself.
+- **`SITE_URL` exempt from Netlify's secrets scanner** (it is in every page; the original hit
+  the same with `ADMIN_USER`).
+- **The import follows the old site's newer rows on re-runs** for Empower parcels, the
+  catalogue (until someone publishes in the new admin), the Empower records (token rotation,
+  SKU map) and customers' notes; analytics events are added incrementally; the KPI hours are
+  copied once (the raw events already hold what the old purge rolls up later, so a second copy
+  would double-count). Orders are still never overwritten by the import; `db/reconcile-v1.sql`
+  carries over status, payment, tracking, settlement detail and trash/flag for orders the new
+  store has not touched. `public.orders` has no `updated_at`, so "newer" for orders means
+  "untouched in the new store".
+- **`/data/settings.json` is published again**: the original pages fall back to it when
+  `/api/settings` is slow, and visitors keep old pages open across the switch.
+- **Previews are production to the server** (`SITE_ID`): the runbook keeps the CAPI tokens off
+  the preview and says to trash test orders. Not changed in code: detecting a preview would
+  need `CONTEXT`, which functions do not see.
+- Known, accepted: imported orders carry `lang = ar` (the original stored no language);
+  imported Omniful parcels lose `attempt_at`; "delivery hours" shifts without SMSA parcels and
+  `booked_at`; the analytics country can be set by an `x-country` header (noise only, no
+  pricing effect).
 
 ## Open questions for the owner
 

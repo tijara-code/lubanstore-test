@@ -9,4 +9,4 @@ import { netlifyHandler } from "../../src/server/bootstrap";
 
 const handle = netlifyHandler();
 
-export default async (req: Request, _ctx: Context): Promise<Response> => handle(req);
+export default async (req: Request, ctx: Context): Promise<Response> => handle(req, ctx);

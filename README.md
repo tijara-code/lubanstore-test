@@ -69,6 +69,8 @@ skip themselves when the original is not there. Playwright needs a Chromium:
 
 ## Going live (by hand)
 
-See the final section of `docs/DECISIONS.md` ("Steps for the owner") for the ordered list:
-database migration and data import in Supabase, the Netlify environment variables, the
-webhook URLs, and the switch-over.
+`docs/CUTOVER.md` is the runbook: prepare on a preview, switch at a quiet hour, verify, roll
+back if needed. `npm run preflight` (read-only) checks your `.env` and the database before and
+after; `db/import-from-v1.sql` copies the original's data; `db/reconcile-v1.sql` carries over
+what changed on the old site after an earlier copy. `docs/DECISIONS.md` has the short form
+and the reasons.

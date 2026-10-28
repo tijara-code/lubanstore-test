@@ -14,7 +14,7 @@
  * images, clips and the fonts' CSS keep ?v=<hash of the files> (scripts/site-meta.ts).
  */
 import { fileURLToPath } from "node:url";
-import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { transform } from "esbuild";
 import { build as viteBuild, type InlineConfig } from "vite";
@@ -133,6 +133,12 @@ export async function buildSite(opts: { log?: (s: string) => void; outDir?: stri
   }
 
   writeFileSync(path.join(DIST, "_headers"), netlifyHeadersFile());
+
+  /* /data/settings.json: the ORIGINAL pages' last resort when /api/settings does not answer in
+     four seconds (store.js loadCatalogue). Visitors who still have an old page open after the
+     switch keep that path; it is the bundled catalogue, as it was there. */
+  mkdirSync(path.join(DIST, "data"), { recursive: true });
+  writeFileSync(path.join(DIST, "data", "settings.json"), readFileSync(path.join(REPO, "data", "catalogue.json")));
 
   const missing = missingRefs(DIST);
   const bad = leftovers(DIST);
