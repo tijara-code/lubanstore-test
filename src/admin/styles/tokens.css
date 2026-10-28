@@ -1,0 +1,82 @@
+/* ==========================================================
+   LUBAN & MUSK — admin panel: design tokens
+
+   Ported from the original panel (assets/css/admin.css :root) so the
+   owner sees the same instrument: a calm editorial shell, white sidebar,
+   ink-black active state, a blue accent spent only on accents and on the
+   figures that matter. Small text clears 4.5:1 on its ground.
+
+   Inter is bundled with the panel (latin, variable 400–700): the site's
+   CSP allows fonts from 'self' only, so the original's Google Fonts link
+   is not an option. Arabic customer names fall through to the system's
+   Arabic face, as they did.
+   ========================================================== */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("./fonts/inter-latin-var.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  /* neutrals: the page, a card, a block inside a card, a header strip, a rule */
+  --bg: #eceef2;
+  --panel: #ffffff;
+  --ink: #14161a;
+  --ink-2: #4a4f57; /* 8.4:1 on white */
+  --muted: #5d636c; /* 5.3:1 on --bg, 5.9:1 on white */
+  --line: #e6e8ec;
+  --line-2: #f0f1f4;
+  --field: #e2e4e9; /* a control's own border */
+  --tile: #f4f5f7; /* a block inside a card */
+  --head: #fafbfc; /* a table header */
+
+  /* the sidebar */
+  --shell: #ffffff;
+  --shell-2: #f2f3f6;
+  --shell-tx: #5d636c;
+
+  /* the accent is blue; --brand-dp is the one used on text (5.9:1) */
+  --brand: #2f6bed;
+  --brand-dp: #2452c8;
+  --brand-lt: #5b8bf2;
+  --brand-sk: #e8eefd;
+  --brand-ln: #d9e2fb;
+
+  /* status — each darkened just enough to clear 4.5:1 on its own tint */
+  --blue: #2452c8;
+  --blue-sk: #e8eefd;
+  --leaf: #177a50;
+  --leaf-sk: #e4f4ec;
+  --amber: #8a6316;
+  --amber-sk: #fbf1dd;
+  --red: #ac4741;
+  --red-sk: #fbeeed;
+  --violet: #6248bd;
+  --violet-sk: #eeeafb;
+
+  --r: 22px; /* cards */
+  --r-m: 17px; /* inner blocks */
+  --r-s: 11px; /* a box you type in */
+  --r-p: 100px; /* a button, a select, a search field, a pill */
+  --side: 244px;
+
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* the one small-caps heading */
+  --caps-fs: 10px;
+  --caps-ls: 0.08em;
+
+  /* one spacing scale: card padding and the gap between cards are one value */
+  --gap: 14px;
+  --pad: 20px;
+  --pad-y: 18px;
+  --row: 48px;
+  --row-h: 38px;
+
+  --focus-ring: 0 0 0 3px rgba(47, 107, 237, 0.15);
+}

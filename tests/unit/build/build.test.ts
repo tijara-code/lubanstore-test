@@ -108,7 +108,10 @@ describe("the published site", () => {
 });
 
 describe("the pages' scripts", () => {
-  const coreChunk = () => readdirSync(path.join(OUT, "assets")).find((f) => /^core-.*\.js$/.test(f))!;
+  // the chunk that holds the core (found by what it does — its name follows Rolldown's chunking):
+  // the parked-order queue's storage key lives only in src/web/core/orders.ts
+  const coreChunk = () =>
+    readdirSync(path.join(OUT, "assets")).find((f) => f.endsWith(".js") && readFileSync(path.join(OUT, "assets", f), "utf8").includes("lm_order_queue"))!;
 
   it("the product page and the checkout reach the core; privacy and 404 do not (no catalogue, no geo there)", () => {
     const core = "assets/" + coreChunk();

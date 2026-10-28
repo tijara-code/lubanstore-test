@@ -19,7 +19,8 @@ import { esc, NO_STORE, pageHtml } from "../core/http";
 import { call } from "../core/outbound";
 import { handleWebhook } from "../domain/payments/webhook";
 import { forgetCatalogue, publishCatalogue } from "../domain/catalogue";
-import { settings } from "../db/schema";
+import { orderEvents, orders, settings, shipments, type NewOrderRow } from "../db/schema";
+import { newInvoiceKey, newOrderId } from "../domain/orders";
 import type { Catalogue } from "../../shared/catalogue/types";
 import { HOSTS, type ThawaniPayment, type ThawaniSession } from "../services/thawani";
 import { completedEvent, paymentEvent, signDelivery } from "../services/thawani/fake";
@@ -63,6 +64,55 @@ export function registerDevRoutes(app: Hono<AppEnv>): void {
     await deps.db.delete(settings);
     forgetCatalogue(deps.db as unknown as object);
     return c.json({ ok: true });
+  });
+
+  /*
+   * The admin panel's end-to-end tests (fake mode only): write orders as they are, in any
+   * state the tests need (a card order awaiting payment, one delivered by Empower with a
+   * waybill, one shipped by hand…), each with its "created" event and, when asked, its Empower
+   * send. Prices are given, not computed: these are fixtures, not sales.
+   *   POST /__fake/admin/orders { orders: [{ …order fields, shipment?: { awb?, status?, … } }] }
+   *   → { ok, ids }
+   */
+  app.post("/__fake/admin/orders", async (c) => {
+    const deps = c.get("deps");
+    const body = (await c.req.json().catch(() => null)) as { orders?: Array<Record<string, unknown>> } | null;
+    if (!body || !Array.isArray(body.orders) || !body.orders.length || body.orders.length > 200) return c.json({ ok: false, error: "bad_input" }, 400);
+    const ids: string[] = [];
+    let k = 0;
+    for (const raw of body.orders) {
+      const { shipment, createdAt, ...o } = raw as Record<string, unknown> & { shipment?: Record<string, unknown>; createdAt?: string };
+      const at = new Date(createdAt ? Date.parse(createdAt) : deps.now() - k++ * 60e3);
+      const row = {
+        id: String(o.id || newOrderId(at.getTime() + k)),
+        createdAt: at,
+        updatedAt: at,
+        pay: "cod",
+        countryCode: "OM",
+        country: "عُمان",
+        items: [{ itemId: "oud-large", scent: "عود", size: "كبير", price: 30, qty: 1 }],
+        cur: "OMR",
+        sub: 30,
+        ship: 0,
+        codFee: 0,
+        total: 30,
+        omrRate: 1,
+        omr: 30,
+        invoiceKey: newInvoiceKey(),
+        paymentStatus: o.pay === "card" ? "unpaid" : "cod",
+        ...o,
+      } as NewOrderRow;
+      await deps.db.insert(orders).values(row);
+      await deps.db.insert(orderEvents).values({ orderId: row.id, at, kind: "created", from: null, to: row.status || "new", by: "shopper", detail: { origin: row.origin || null } });
+      if (shipment) {
+        await deps.db.insert(shipments).values({
+          id: "omf-" + row.id, orderId: row.id, carrier: "empower", sentId: row.id, reference: "OMF" + row.id.slice(-6), courierName: "Aramex",
+          status: "created", createdAt: at, updatedAt: at, ...shipment,
+        } as typeof shipments.$inferInsert);
+      }
+      ids.push(row.id);
+    }
+    return c.json({ ok: true, ids });
   });
 
   app.get("/__fake/thawani/pay/:sessionId", async (c) => {

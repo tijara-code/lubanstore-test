@@ -56,6 +56,8 @@ interface StepResult {
   domEqual: boolean;
   pixels: number;
   diff?: { ref: unknown; new: unknown };
+  /** what both sides recorded (when equal) */
+  recorded?: unknown[];
 }
 const results: StepResult[] = [];
 
@@ -204,7 +206,27 @@ async function storage(page: Page): Promise<Record<string, string | null>> {
 
 /* ---------------- normalising one side's records ---------------- */
 
+/* THE ORIGINAL'S RACE on the page-view relays' market: pixel.js read LM.c when it ran, and as a
+   separate deferred script it sometimes ran after the preloaded /api/settings had answered (cc
+   set) and sometimes before (cc absent — the server then takes the edge's country). One bundle
+   evaluates before any answer can arrive, so the new page's relays carry the address's / kept
+   country only, as the original's did whenever it lost the race. Compared without that field. */
+function dropPageViewCc(recs: Rec[]): Rec[] {
+  return recs.map((r) => {
+    const a = r.a as Record<string, unknown> | null;
+    if (/^beacon:(snap|meta)$/.test(r.t) && a && (a.name === "PAGE_VIEW" || a.name === "PageView")) {
+      const { cc: _cc, ...rest } = a;
+      return { t: r.t, a: rest };
+    }
+    return r;
+  });
+}
+
 function normalise(side: SideName, recs: Rec[]): unknown[] {
+  recs = dropPageViewCc(recs);
+  /* an error's stack names each side's own file and line: compared as present or not */
+  recs = recs.map((r) => (r.t === "beacon:log" && r.a && typeof (r.a as any).detail === "string"
+    ? { t: r.t, a: { ...(r.a as object), detail: (r.a as any).detail ? "<stack>" : "" } } : r));
   const tokens = new Map<string, string>();
   const tok = (kind: string, v: string) => {
     if (!tokens.has(v)) tokens.set(v, kind + (tokens.size + 1));
@@ -272,6 +294,7 @@ async function journey(name: string, o: TabOpts, steps: Step[]): Promise<StepRes
       journey: name, step: st.name, equal, records: got.ref.recs.length, domEqual: got.ref.dom === got.new.dom, pixels,
     };
     if (!equal) r.diff = { ref: got.ref.recs, new: got.new.recs };
+    else r.recorded = got.ref.recs;
     if (pixels > 0.0005) {
       writeFileSync(path.join(OUT, (name + "-" + st.name).replace(/\W+/g, "_") + "-ref.png"), got.ref.png);
       writeFileSync(path.join(OUT, (name + "-" + st.name).replace(/\W+/g, "_") + "-new.png"), got.new.png);
@@ -295,7 +318,12 @@ function shopping(lang: "ar" | "en"): Step[] {
   return [
     { name: "land with utm tags + click ids", run: go(root + "?utm_source=IG&utm_medium=Paid%20Social&utm_campaign=National%20Day&utm_content=reel_1&fbclid=IwAR_parity&ScCid=sc-parity") },
     { name: "open a size", run: async (t) => { await t.page.locator(".size").first().click(); } },
-    { name: "choose a scent", run: async (t) => { await t.page.locator("button:has-text('+'):visible").first().click(); } },
+    { name: "choose a scent", run: async (t) => {
+      /* a desktop opens nothing by itself: the large box's single offer first (a phone has it chosen) */
+      const plus = t.page.locator("button:has-text('+'):visible").first();
+      if (!(await plus.isVisible().catch(() => false))) await t.page.locator("label.tier:visible").first().click();
+      await t.page.locator("button:has-text('+'):visible").first().click();
+    } },
     { name: "add to the basket", run: async (t) => { await t.page.click("#add"); } },
     { name: "open the basket", run: async (t) => { await t.page.locator(".cart:visible").first().click().catch(() => {}); } },
     { name: "the checkout", run: go(root + "checkout.html") },
@@ -371,7 +399,7 @@ suite("tracking parity in a real browser (original vs new)", () => {
       { name: "privacy", run: go("/privacy.html?utm_source=wa"), strictLook: true },
       { name: "a missing page", run: go("/no-such-page"), strictLook: true },
       { name: "privacy in English", run: go("/en/privacy.html"), strictLook: true },
-      { name: "a script error, masked", run: async (t) => {
+      { name: "an injected script's errors are not ours (nothing sent)", run: async (t) => {
         await t.page.evaluate(() => { setTimeout(() => { throw new Error("boom for ali@example.com +968 9123 4567"); }, 0); });
         await t.page.evaluate(() => { void Promise.reject(new Error("rejected 12345678")); });
       } },
@@ -382,6 +410,12 @@ suite("tracking parity in a real browser (original vs new)", () => {
     expectSteps(await journey("markets", { width: 390, lang: "ar", local: { lm_ph_v2: "c".repeat(64), lm_am_v1: JSON.stringify({ fn: "a".repeat(64), em: "bad" }) } }, [
       { name: "AE by address", run: go("/?country=AE") },
       { name: "open a size (AE)", run: async (t) => { await t.page.locator(".size").first().click(); } },
+      { name: "an error in our own code is reported (once)", run: async (t) => {
+        /* thrown inside the pixel module (a line of null) from an event listener — reported, not
+           propagated; the stack's top frame names our file. (The page's clock wraps timers.) */
+        await t.page.evaluate("document.addEventListener('lm:parity', function () { window.LMPX.addCart(null); });" +
+          "document.dispatchEvent(new Event('lm:parity')); document.dispatchEvent(new Event('lm:parity'));");
+      } },
       { name: "SA by address, English", run: go("/en/?country=SA&gclid=x") },
       { name: "KW checkout, back from the card page", run: async (t, side) => { await t.page.goto(base[side] + "/checkout.html?country=KW", { referer: "https://checkout.thawani.om/pay/x", waitUntil: "networkidle" }); } },
     ]));

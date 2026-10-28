@@ -36,7 +36,7 @@ describe("the parked-order queue", () => {
       await tick(30);
       return json({ ok: true, id: b.order.id, omr: 5 });
     });
-    window.LMPX = { purchase: () => void bought++ };
+    window.LMPX = { purchase: () => void bought++ } as unknown as Window["LMPX"];
     localStorage.setItem("lm_order_queue", JSON.stringify([{ id: "LM-2000001", omr: 5, items: [] }]));
     await Promise.all([LM.flushOrders(), LM.flushOrders()]);
     expect([posts(), bought, localStorage.getItem("lm_order_queue")]).toEqual([1, 1, null]);
@@ -52,7 +52,7 @@ describe("the parked-order queue", () => {
   it("the Purchase goes under the id and total the server answered", async () => {
     const seen: Array<{ id: string; omr: number }> = [];
     const { LM } = await withTill(() => json({ ok: true, id: "LM-777777", omr: 9.5 }));
-    window.LMPX = { purchase: (o) => void seen.push(o as { id: string; omr: number }) };
+    window.LMPX = { purchase: (o: unknown) => void seen.push(o as { id: string; omr: number }) } as unknown as Window["LMPX"];
     LM.queueOrder({ id: "LM-tmp-1", omr: 5 });
     expect(await LM.flushOrders()).toBe(1);
     expect(seen.map((o) => o.id + " " + o.omr)).toEqual(["LM-777777 9.5"]);
@@ -62,7 +62,7 @@ describe("the parked-order queue", () => {
   it("an `already` answer lands the order but fires no browser Purchase", async () => {
     let bought = 0;
     const { LM } = await withTill((b) => json({ ok: true, id: b.order.id, already: true }));
-    window.LMPX = { purchase: () => void bought++ };
+    window.LMPX = { purchase: () => void bought++ } as unknown as Window["LMPX"];
     LM.queueOrder({ id: "LM-3000001" });
     expect(await LM.flushOrders()).toBe(1);
     expect(bought).toBe(0);
@@ -72,7 +72,7 @@ describe("the parked-order queue", () => {
   // from test-v336-checkout.js: a parked order the server later refuses is reported, without the person
   it("a refusal (4xx with an error) drops it and logs one line with no personal data", async () => {
     const sent: Array<{ k: string; b: Record<string, string> }> = [];
-    window.LMBeacon = { queue: (k, b) => void sent.push({ k, b: b as Record<string, string> }), flush() {} };
+    window.LMBeacon = { queue: (k: string, b: unknown) => void sent.push({ k, b: b as Record<string, string> }), flush() {} } as unknown as Window["LMBeacon"];
     const { LM } = await withTill(() => json({ ok: false, error: "offer_closed" }, { status: 409 }), {
       lm_order_queue: JSON.stringify([{ id: "LM-3000000001", name: "Test Shopper", phone: "+968 91234567", region: "Street 5" }]),
     });

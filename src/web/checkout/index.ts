@@ -1071,6 +1071,9 @@ function onSubmit(e: Event): void {
 }
 
 function start(): void {
+  /* not the checkout's markup (a test importing the entry into an empty document): nothing to
+     drive. On the page itself the form is always there. */
+  if (!document.getElementById("co") || !document.getElementById("form")) return;
   /* (v336) through the shared reader: a malformed basket is cleaned, not thrown on */
   cart = LM.readCart();
 
@@ -1086,7 +1089,8 @@ function start(): void {
     /* storage blocked */
   }
 
-  $("#year").textContent = String(new Date().getFullYear());
+  const year = document.querySelector("#year");
+  if (year) year.textContent = String(new Date().getFullYear());
 
   /* the drawer can edit the cart from this page too — stay in sync */
   G().lmOnCartChange = () => {

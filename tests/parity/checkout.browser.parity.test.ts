@@ -239,6 +239,9 @@ const SERIALISE = `(function (sel) {
   if (!root) return "(none: " + sel + ")";
   var c = root.cloneNode(true);
   Array.prototype.forEach.call(c.querySelectorAll("script, noscript, iframe, link, style"), function (x) { x.remove(); });
+  /* the band's copies: as many as the window is wide over the text's width, measured once
+     (font-timing dependent, as the width below) — two are kept */
+  Array.prototype.forEach.call(c.querySelectorAll(".ship-run"), function (r) { while (r.children.length > 2) r.lastElementChild.remove(); });
   return c.outerHTML;
 })`;
 
@@ -336,6 +339,8 @@ async function both(name: string, journey: Journey): Promise<void> {
     }
   }
   for (const k of Object.keys(got.ref.data)) {
+    /* an order compared as "null on both sides" would prove nothing */
+    if (/stored$/.test(k) && got.ref.data[k] == null) failures.push("data " + k + ": the original stored nothing");
     const same = JSON.stringify(got.ref.data[k]) === JSON.stringify(got.new.data[k]);
     results.push({ journey: name, step: "data:" + k, domEqual: same, pixels: 0, note: same ? undefined : JSON.stringify({ ref: got.ref.data[k], new: got.new.data[k] }) });
     if (!same) failures.push("data " + k + " differs:\n  ref: " + JSON.stringify(got.ref.data[k]) + "\n  new: " + JSON.stringify(got.new.data[k]));
@@ -440,6 +445,12 @@ describe.skipIf(!READY)("checkout, cart and header against the original, in a br
           await settle(page, 200);
           rec("drawer-open", await snap(page, "#drawer", ".drawer-panel"));
           rec("focus-open", { dom: String(await page.evaluate("document.activeElement && document.activeElement.className")), png: Buffer.alloc(0) } as Snap);
+          /* Tab stays inside the open drawer: back from the first control is the last, on from the last is the first */
+          const focus = () => page.evaluate("(document.activeElement.id || document.activeElement.className || '') + '|' + (document.activeElement.getAttribute('data-inc') || document.activeElement.getAttribute('data-del') || '')");
+          await page.keyboard.press("Shift+Tab");
+          rec("focus-shift-tab", { dom: String(await focus()), png: Buffer.alloc(0) } as Snap);
+          await page.keyboard.press("Tab");
+          rec("focus-tab-wraps", { dom: String(await focus()), png: Buffer.alloc(0) } as Snap);
           await page.click('[data-inc="0"]');
           await settle(page, 200);
           rec("drawer-inc", await snap(page, "#drawer", ".drawer-panel"));
@@ -465,6 +476,37 @@ describe.skipIf(!READY)("checkout, cart and header against the original, in a br
     }
   }
 
+  /* ---- the whole way: add on the product page → the drawer → the checkout ---- */
+  for (const width of [390, 1366]) {
+    for (const lang of ["ar", "en"] as const) {
+      it(`add from the product page → drawer → checkout (${lang}, ${width}px)`, async () => {
+        await both(`add-to-checkout-${lang}-${width}`, async (side, rec, data) => {
+          const home = lang === "en" ? "/en/?country=OM" : "/?country=OM";
+          const { ctx, page, errors } = await openPage(side, home, { width, lang });
+          /* the first scent's "+" in the open size's picker, then the add button */
+          /* on a desktop nothing is chosen at first (v440): the large box's row first */
+          const plus = page.locator(".prow button:text-is('+'):visible").first();
+          if (!(await plus.isVisible().catch(() => false))) await page.locator("label.tier:visible").first().click();
+          await settle(page, 200);
+          await page.locator(".prow button:text-is('+'):visible").first().click();
+          await page.click("#add");
+          await settle(page, 600);
+          data.basket = await page.evaluate("JSON.parse(sessionStorage.getItem('lm_cart') || '[]').map(function (l) { return [l.scentId, l.sizeId, l.qty, l.price]; })");
+          expect((data.basket as unknown[]).length).toBeGreaterThan(0);
+          rec("band-after-add", await snap(page, "#hdr", "#hdr"));
+          if (await page.locator("#drawer").isHidden().catch(() => true)) await page.click(".cart");
+          await settle(page, 200);
+          rec("drawer", await snap(page, "#drawer", ".drawer-panel"));
+          await Promise.all([page.waitForURL(/checkout\.html/), page.click("#drawerPay")]);
+          await settle(page);
+          rec("checkout", await snap(page));
+          expect(errors).toEqual([]);
+          await ctx.close();
+        });
+      }, 180_000);
+    }
+  }
+
   /* ---- the checkout summary under catalogue variants ---- */
   const variants: Array<{ name: string; country: string; cart: unknown[]; edit?: (c: Catalogue) => void }> = [
     { name: "om-short", country: "OM", cart: [LINE("oud", "large", 1)] },
@@ -475,7 +517,10 @@ describe.skipIf(!READY)("checkout, cart and header against the original, in a br
     { name: "sa-trio-off", country: "SA", cart: [{ sizeId: "trio", scentId: null, mix: ["oud", "oud", "amber"], qty: 1, scent: "3", size: "", price: 1 }, LINE("lemon", "large", 1)] },
     { name: "kw-cod-off", country: "KW", cart: [LINE("oud", "large", 1)], edit: (c) => c.countries.forEach((x) => x.code === "KW" && (x.codOn = false)) },
     { name: "om-offer-off", country: "OM", cart: [{ scentId: "bundle", sizeId: "bundle", qty: 1, scent: "set", size: "", price: 1 }], edit: (c) => c.offer && (c.offer.active = false) },
-    { name: "om-freeship-deal", country: "OM", cart: [LINE("oud", "large", 1)], edit: (c) => c.countries.forEach((x) => x.code === "OM" && ((x as Record<string, unknown>).freeShip = { on: true, over: 0, from: "2026-09-30T00:00:00+04:00" })) },
+    { name: "om-freeship-deal", country: "OM", cart: [LINE("oud", "large", 1)], edit: (c) => ((c as Record<string, unknown>).freeShip = { active: true, countries: { OM: { on: true, over: 0 }, AE: { on: true, over: 100 } } }) },
+    { name: "ae-freeship-lower", country: "AE", cart: [LINE("oud", "small", 1)], edit: (c) => ((c as Record<string, unknown>).freeShip = { active: true, countries: { AE: { on: true, over: 100 } } }) },
+    { name: "om-tiers-on", country: "OM", cart: [{ sizeId: "duo", scentId: null, mix: ["oud", "lemon"], qty: 1, scent: "2", size: "", price: 1 }, LINE("amber", "large", 1)], edit: (c) => (c.tiers = { active: true, sizeId: "large", countries: [] }) },
+    { name: "ae-tiers-on-large", country: "AE", cart: [LINE("oud", "large", 1)], edit: (c) => (c.tiers = { active: true, sizeId: "large", countries: [] }) },
     { name: "qa-tiers-off", country: "QA", cart: [{ sizeId: "duo", scentId: null, mix: ["oud", "lemon"], qty: 1, scent: "2", size: "", price: 1 }], edit: (c) => c.tiers && (c.tiers.active = false) },
   ];
   for (const v of variants) {
@@ -532,7 +577,8 @@ describe.skipIf(!READY)("checkout, cart and header against the original, in a br
     await both("form", async (side, rec) => {
       const { ctx, page, errors } = await openPage(side, "/checkout.html?country=OM", { cart: [LINE("oud", "large", 1)] });
       await page.click("#confirm");
-      await settle(page, 200);
+      /* past the 1.6 s the button shakes red (a timer), so both sides are caught at rest */
+      await settle(page, 2000);
       rec("empty-submit", await snap(page));
       rec("empty-submit-focus", { dom: String(await page.evaluate("document.activeElement.id")), png: Buffer.alloc(0) } as Snap);
       await page.fill("#name", "José Zoë 12 محمد");
@@ -541,11 +587,13 @@ describe.skipIf(!READY)("checkout, cart and header against the original, in a br
       rec("typing", await snap(page));
       await page.fill("#phone", "+971501234567");
       await page.click("#confirm");
-      await settle(page, 200);
+      /* past the 1.6 s the button shakes red (a timer), so both sides are caught at rest */
+      await settle(page, 2000);
       rec("foreign-code", await snap(page));
       await page.fill("#phone", "21234567");
       await page.click("#confirm");
-      await settle(page, 200);
+      /* past the 1.6 s the button shakes red (a timer), so both sides are caught at rest */
+      await settle(page, 2000);
       rec("first-digit", await snap(page));
       await page.fill("#phone", "91234567");
       await settle(page, 100);
@@ -555,14 +603,16 @@ describe.skipIf(!READY)("checkout, cart and header against the original, in a br
       rec("to-ae", await snap(page));
       await page.fill("#phone", "05012345");
       await page.click("#confirm");
-      await settle(page, 200);
+      /* past the 1.6 s the button shakes red (a timer), so both sides are caught at rest */
+      await settle(page, 2000);
       rec("ae-short", await snap(page));
       await page.selectOption("#country", "965");
       await settle(page);
       rec("to-kw", await snap(page));
       await page.fill("#email", "not-an-email");
       await page.click("#confirm");
-      await settle(page, 200);
+      /* past the 1.6 s the button shakes red (a timer), so both sides are caught at rest */
+      await settle(page, 2000);
       rec("bad-email", await snap(page));
       expect(errors).toEqual([]);
       await ctx.close();
@@ -597,17 +647,22 @@ describe.skipIf(!READY)("checkout, cart and header against the original, in a br
         lastCheckoutPath = (lang === "en" ? "/en" : "") + "/checkout.html";
         const { ctx, page, errors } = await openPage(side, lastCheckoutPath + "?country=OM", { cart: [LINE("oud", "large", 1)], lang });
         await fillForm(page, { name: "Sara Hashmi", phone: "91234567" });
-        const [req, res] = await Promise.all([
+        /* the answer is read on its way through (the page navigates away at once) */
+        let answer: { status: number; j: Record<string, unknown> } | null = null;
+        await page.route("**/api/pay/session", async (r) => {
+          const resp = await r.fetch();
+          const body = await resp.text();
+          answer = { status: resp.status(), j: JSON.parse(body) };
+          await r.fulfill({ response: resp, body });
+        });
+        const [req] = await Promise.all([
           page.waitForRequest((r) => r.url().endsWith("/api/pay/session")),
-          page.waitForResponse((r) => r.url().endsWith("/api/pay/session")),
+          page.waitForURL((u) => !/checkout\.html/.test(u.toString())),
           page.click("#confirm"),
         ]);
         data.post = postedOrder(req);
-        const j = (await res.json()) as Record<string, unknown>;
-        data.answer = { status: res.status(), ok: j.ok, hasUrl: typeof j.url === "string", hasSession: typeof j.session_id === "string" };
-        await page.waitForURL((u) => !/checkout\.html/.test(u.toString()));
-        const pending = JSON.parse(String(await page.evaluate("sessionStorage.getItem('lm_pending')")) || "{}") as Record<string, unknown>;
-        data.pendingKeys = Object.keys(pending).sort();
+        const a = answer as unknown as { status: number; j: Record<string, unknown> };
+        data.answer = { status: a.status, ok: a.j.ok, hasUrl: typeof a.j.url === "string", hasSession: typeof a.j.session_id === "string" };
         const id = String((data.post as Record<string, unknown>).id);
         await side.payAndReturn(page, id);
         await page.waitForSelector("#done", { state: "visible", timeout: 15000 });
@@ -627,8 +682,12 @@ describe.skipIf(!READY)("checkout, cart and header against the original, in a br
       lastCheckoutPath = "/checkout.html";
       const { ctx, page } = await openPage(side, "/checkout.html?country=OM", { cart: [LINE("oud", "large", 1)] });
       await fillForm(page, { name: "Sara", phone: "91234567" });
-      await Promise.all([page.waitForURL((u) => !/checkout\.html/.test(u.toString())), page.click("#confirm")]);
-      const id = String(JSON.parse(String(await page.evaluate("sessionStorage.getItem('lm_pending')"))).id);
+      const [req] = await Promise.all([
+        page.waitForRequest((r) => r.url().endsWith("/api/pay/session")),
+        page.waitForURL((u) => !/checkout\.html/.test(u.toString())),
+        page.click("#confirm"),
+      ]);
+      const id = String(postedOrder(req).id);
       await side.cancelAndReturn(page, id);
       await settle(page);
       rec("cancelled-with-basket", await snap(page));

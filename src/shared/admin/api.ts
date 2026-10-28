@@ -13,22 +13,9 @@ import type { KpiResult } from "../kpi";
 import type { Attribution, OrderLine } from "../orders/types";
 
 export * from "./schemas";
-
-export const API = "/api/admin";
-/** the header a cross-site form cannot send */
-export const CSRF_HEADER = "X-LM-Admin";
-export const SESSION_COOKIE = "lm_admin";
-export const SESSION_HOURS = 12;
-
-/* ---------------- the panel's pages ---------------- */
-
-/** the pages that may be hidden in Settings (Overview never is) */
-export const ADMIN_PAGES = ["orders", "payments", "catalogue", "empower", "customers", "analytics"] as const;
-export type AdminPage = (typeof ADMIN_PAGES)[number];
-/** the original panel's names for the same pages (a saved list in the old words still reads) */
-export const PAGE_ALIASES: Record<string, AdminPage> = {
-  pay: "payments", products: "catalogue", omniful: "empower", crm: "customers", stats: "analytics",
-};
+/* the values the panel needs live apart from the schemas, so the SPA can import them without zod */
+export * from "./constants";
+import type { AdminPage } from "./constants";
 
 /* ---------------- wire helpers ---------------- */
 

@@ -1,0 +1,486 @@
+/* ==========================================================
+   ORDERS — the row's actions, the open order, the editors,
+   the status flow, the history, the typed-in order form
+   ========================================================== */
+.fold-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-align: left;
+}
+.trash-note {
+  margin: 14px 16px 0;
+}
+.orders-tbl {
+  min-width: 860px;
+}
+.orders-tbl .st {
+  min-width: 190px;
+}
+.acts-td {
+  width: 1%;
+}
+.acts {
+  display: flex;
+  gap: 2px;
+  justify-content: flex-end;
+}
+.acts .btn svg {
+  width: 14px;
+  height: 14px;
+}
+.acts .pin[aria-pressed="false"],
+.acts .flag:not(.on) {
+  opacity: 0.45;
+}
+.acts .pin[aria-pressed="false"]:hover,
+.acts .flag:not(.on):hover {
+  opacity: 0.8;
+}
+.acts .pin[aria-pressed="true"] {
+  color: var(--brand-dp);
+  background: var(--brand-sk);
+}
+.acts .flag.on {
+  color: var(--red);
+  background: var(--red-sk);
+}
+.acts .flag.on svg {
+  fill: currentColor;
+  fill-opacity: 0.25;
+}
+.acts .trk {
+  opacity: 0.75;
+}
+.acts .trk:hover {
+  opacity: 1;
+}
+.acts .chev svg {
+  transition: transform 0.2s;
+}
+.tbl tr.open-row .acts .chev svg {
+  transform: rotate(180deg);
+}
+.tbl tr.flagged > td:first-child {
+  box-shadow: inset 3px 0 0 var(--red);
+}
+
+/* ---- the open order ---- */
+tr.detail > td {
+  padding: 0;
+  background: var(--head);
+}
+/* the open order stays in the visible part of a table that scrolls sideways */
+.orders-wrap {
+  container-type: inline-size;
+}
+tr.detail > td > .det {
+  position: sticky;
+  left: 0;
+  width: 100cqw;
+}
+.det {
+  padding: 22px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  background: var(--head);
+  min-width: 0;
+}
+.det > * {
+  min-width: 0;
+}
+.det h4 {
+  font-size: var(--caps-fs);
+  text-transform: uppercase;
+  letter-spacing: var(--caps-ls);
+  color: var(--muted);
+  margin-bottom: 9px;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.det h4 .lnk {
+  margin-left: 6px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.det h4 .muted {
+  text-transform: none;
+  letter-spacing: 0;
+}
+.det dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 14px;
+  font-size: 12px;
+  margin-top: 6px;
+}
+.det dt {
+  color: var(--muted);
+  white-space: nowrap;
+}
+.det dd {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.det .full {
+  grid-column: 1 / -1;
+}
+.det .lines {
+  list-style: none;
+  font-size: 12px;
+}
+.det .lines li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line-2);
+}
+.det .lines li b {
+  margin-inline-start: auto;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.det .confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-bottom: 15px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+.det .confirm > span:first-child {
+  font-size: 12.5px;
+  color: var(--ink-2);
+  margin-inline-end: auto;
+}
+.det-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+}
+.det-form > input {
+  height: 34px;
+  padding: 0 12px;
+  background: #fff;
+  border: 1px solid var(--field);
+  border-radius: var(--r-s);
+  font-size: 12px;
+  outline: none;
+  min-width: 0;
+}
+.det-form > input.grow {
+  flex: 1 1 180px;
+}
+.det-form > input:focus {
+  border-color: var(--brand-lt);
+  box-shadow: var(--focus-ring);
+}
+.det-form .tf {
+  flex: 1 1 160px;
+}
+.hand {
+  margin-top: 14px;
+}
+.hand-lnk {
+  display: inline-block;
+  margin: 12px 0 0;
+}
+
+/* the status flow: where it is, and the moves allowed from there */
+.flow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.step {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--r-p);
+  border: 1px solid var(--field);
+  background: #fff;
+  color: var(--ink-2);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+button.step:hover:not(:disabled) {
+  border-color: var(--brand-lt);
+  color: var(--ink);
+}
+button.step:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+button.step.back {
+  border-style: dashed;
+}
+button.step.void {
+  color: var(--red);
+  border-color: #f0d8d4;
+}
+button.step.void:hover:not(:disabled) {
+  background: var(--red-sk);
+  border-color: #e7bcb7;
+  color: var(--red);
+}
+.step.here {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+.step.here.void {
+  background: var(--red);
+  border-color: var(--red);
+}
+
+/* raw payload */
+.raw {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.raw summary {
+  cursor: pointer;
+  font-size: 11.5px;
+  color: var(--muted);
+  list-style: none;
+  user-select: none;
+}
+.raw summary::-webkit-details-marker {
+  display: none;
+}
+.raw summary::before {
+  content: "▸ ";
+}
+.raw[open] summary::before {
+  content: "▾ ";
+}
+.raw summary:hover {
+  color: var(--ink);
+}
+.raw .btn {
+  margin-top: 10px;
+}
+.raw pre {
+  margin: 10px 0 0;
+  padding: 12px 14px;
+  max-height: 300px;
+  overflow: auto;
+  background: var(--shell-2);
+  border-radius: 14px;
+  font: 11px/1.6 var(--mono);
+  color: var(--ink-2);
+  white-space: pre;
+}
+
+/* the history */
+.timeline {
+  list-style: none;
+  font-size: 12px;
+}
+.timeline li {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line-2);
+}
+.timeline li:last-child {
+  border-bottom: none;
+}
+.timeline time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.timeline .by {
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* ---- the editors ---- */
+.cust-edit,
+.item-edit {
+  margin-top: 4px;
+}
+.item-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.item-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+}
+.item-line .pick {
+  flex: 1 1 130px;
+  min-width: 0;
+}
+.item-line > .pick:first-child {
+  flex-basis: 220px;
+}
+.item-acts {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 11px;
+}
+.item-edit .hint,
+.cust-edit .hint {
+  margin: 10px 0 0;
+}
+.cod-amt {
+  margin-top: 11px;
+  max-width: 260px;
+}
+
+/* ---- the typed-in order ---- */
+.wa-items {
+  margin: 16px 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.wa-total {
+  font-size: 12.5px;
+  color: var(--ink);
+  text-align: right;
+}
+.wa-total b {
+  font-weight: 650;
+}
+.wa-total .sub {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.warn-t {
+  color: var(--red);
+}
+
+/* ==========================================================
+   A PHONE: the orders table becomes a stack of cards, so the
+   page never scrolls sideways at 360 px; an open order is the
+   full width under its card
+   ========================================================== */
+@media (max-width: 720px) {
+  .orders-tbl {
+    min-width: 0;
+  }
+  .orders-tbl thead tr {
+    display: flex;
+    align-items: center;
+  }
+  .orders-tbl thead th {
+    display: none;
+  }
+  .orders-tbl thead th.tick {
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;
+    width: 100%;
+    height: 40px;
+  }
+  .orders-tbl thead th.tick::after {
+    content: "Select all on this page";
+    margin-left: 10px;
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 500;
+    font-size: 11px;
+  }
+  .orders-tbl,
+  .orders-tbl tbody {
+    display: block;
+    width: 100%;
+  }
+  .orders-tbl tbody tr.row {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "tick id total"
+      "tick who who"
+      "tick st st"
+      "tick acts acts";
+    gap: 4px 8px;
+    padding: 12px 13px;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .orders-tbl tbody tr.row > td,
+  .orders-tbl tbody tr.row:hover > td,
+  .orders-tbl tbody tr.row.open-row > td,
+  .orders-tbl tbody tr.row.sel > td {
+    background: transparent !important;
+  }
+  .orders-tbl tbody tr.row.open-row {
+    background: var(--head);
+  }
+  .orders-tbl tbody tr.row.sel {
+    background: var(--brand-sk);
+  }
+  .orders-tbl tbody tr.row.flagged {
+    box-shadow: inset 3px 0 0 var(--red);
+  }
+  .orders-tbl tbody tr.row > td {
+    display: block;
+    height: auto;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+  .orders-tbl td.tick {
+    grid-area: tick;
+    padding-top: 2px;
+  }
+  .orders-tbl td.id {
+    grid-area: id;
+  }
+  .orders-tbl td.total {
+    grid-area: total;
+    text-align: right;
+  }
+  .orders-tbl td.who {
+    grid-area: who;
+  }
+  .orders-tbl td.st {
+    grid-area: st;
+    min-width: 0;
+  }
+  .orders-tbl td.acts-td {
+    grid-area: acts;
+    width: auto;
+  }
+  .orders-tbl tbody tr.row > td.hide-sm {
+    display: none;
+  }
+  .orders-tbl .acts {
+    justify-content: flex-start;
+  }
+  .orders-tbl tr.detail,
+  .orders-tbl tr.detail > td {
+    display: block;
+    width: 100%;
+  }
+  .det {
+    grid-template-columns: 1fr;
+    padding: 16px 13px;
+    gap: 18px;
+  }
+  .timeline li {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  .det-form .tf {
+    flex-basis: 100%;
+  }
+}

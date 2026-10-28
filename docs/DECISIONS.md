@@ -65,3 +65,28 @@ deciding rule belonged to a dropped feature:
 - **"15-day refund guarantee" on the product page vs the privacy page's narrower refund
   policy:** the storefront is copied exactly, so both stay as they are. Flagged to the owner
   as a copy/legal question.
+
+## Storefront
+
+- **The original HTML and CSS, the page scripts ported module by module.** Every page script
+  (store, main, cart, header, checkout, pixel, stats) was ported line for line into typed ES
+  modules (`src/web/*`), keeping the same `LM` API, DOM, events, storage keys and request
+  bodies. Proof is in `tests/parity/*.browser.parity.test.ts`, which drive the same journeys
+  on the original and the new site in a real browser and compare the DOM, the screenshots,
+  the requests and the stored orders at every step.
+- **Rules shared, not copied.** Offer windows, free delivery, availability, the phone table and
+  UTM attribution now come from `src/shared`; the browser's own extra conditions (e.g. a set
+  is shown only when it has a price) are kept where the original had them.
+- **Self-hosted fonts** (the same Google Fonts files and unicode ranges): two third-party
+  origins leave the critical path, and the rendering is identical.
+- **Content-hashed bundles** replace `?v=N` on code: a new deploy is a new URL, so a cached
+  page can never meet an older script (the original's v401 iPhone crash). Images and clips
+  keep a `?v=` filled in from a hash of the files.
+- **The delivery band's width is measured with the real font.** The original measured the
+  running text before its Arabic font had arrived from Google, so its loop was 28–33 px too
+  long and jumped once per cycle; with the font self-hosted and preloaded the measurement is
+  the true width. Visible only as the band's loop length.
+- **Page-view relays always let the server take the market from the edge** when the catalogue
+  has not answered yet (the original sometimes had it, sometimes not, depending on timing).
+- **Pixel ids** are injected at build from `META_PIXEL_ID` / `SNAP_PIXEL_ID`, defaulting to the
+  shop's current (public) ids, so the page and the server relay use the same values.

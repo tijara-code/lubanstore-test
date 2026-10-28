@@ -1,0 +1,553 @@
+/* ==========================================================
+   LOGIN
+   ========================================================== */
+.gate {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: radial-gradient(900px 500px at 50% -20%, #232831, #0f1115);
+}
+.gate form {
+  width: 100%;
+  max-width: 352px;
+  background: var(--panel);
+  border-radius: 24px;
+  padding: 34px 28px;
+  box-shadow: 0 26px 74px rgba(0, 0, 0, 0.42);
+}
+.gate-mark,
+.brand-mark {
+  display: grid;
+  place-items: center;
+  background: var(--ink);
+  color: #fff;
+  font-family: Georgia, "Times New Roman", serif;
+  letter-spacing: 0.04em;
+}
+.gate-mark {
+  width: 42px;
+  height: 42px;
+  margin: 0 auto 14px;
+  border-radius: 14px;
+  font-size: 14px;
+}
+.gate h1 {
+  display: block;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+  text-align: center;
+}
+.gate .sub {
+  display: block;
+  font-size: 11.5px;
+  color: var(--muted);
+  text-align: center;
+  margin: 4px 0 26px;
+}
+.gate label {
+  display: block;
+  font-size: 11.5px;
+  color: var(--ink-2);
+  margin: 13px 0 5px;
+  font-weight: 500;
+}
+.gate input {
+  width: 100%;
+  height: 42px;
+  padding: 0 14px;
+  background: var(--panel);
+  border: 1px solid var(--field);
+  border-radius: 12px;
+  outline: none;
+  font-size: 12.5px;
+}
+.gate input:focus {
+  border-color: var(--brand-lt);
+  box-shadow: var(--focus-ring);
+}
+.gate .err {
+  min-height: 16px;
+  font-size: 11.5px;
+  color: var(--red);
+  margin: 11px 0 4px;
+}
+.gate .btn {
+  width: 100%;
+  height: 40px;
+}
+.boot {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* ==========================================================
+   SHELL — light sidebar, sticky topbar
+   ========================================================== */
+.shell {
+  display: grid;
+  grid-template-columns: var(--side) minmax(0, 1fr);
+  min-height: 100dvh;
+}
+.side {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 14px 18px;
+  background: var(--shell);
+  color: var(--shell-tx);
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.side-top {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 44px;
+  padding: 0 10px 24px;
+}
+.brand-mark {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  border-radius: 12px;
+  font-size: 12.5px;
+}
+.brand-copy {
+  min-width: 0;
+}
+.side .brand {
+  display: block;
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.nav-label {
+  display: block;
+  padding: 16px 12px 8px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.nav > .nav-label:first-child {
+  padding-top: 2px;
+}
+.nav-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 40px;
+  padding: 0 13px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: var(--shell-tx);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+}
+.nav-btn svg {
+  width: 17px;
+  height: 17px;
+  stroke-width: 1.8;
+}
+.nav-btn:hover {
+  background: var(--shell-2);
+  color: var(--ink);
+}
+.nav-btn[aria-current="page"],
+.nav-btn[aria-current="page"]:hover {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+  font-weight: 600;
+}
+.nav-btn .badge {
+  margin-left: auto;
+  min-width: 20px;
+  height: 19px;
+  padding: 0 6px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-p);
+  background: var(--brand-sk);
+  color: var(--brand-dp);
+  font-size: 10px;
+  font-weight: 700;
+}
+.nav-btn[aria-current="page"] .badge {
+  background: var(--brand);
+  color: #fff;
+}
+.side-foot {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 18px;
+}
+.store-card {
+  margin: 0 2px 12px;
+  padding: 13px 14px;
+  border-radius: 16px;
+  background: var(--shell-2);
+}
+.store-card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.store-card-top i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  box-shadow: 0 0 0 3px var(--line);
+  flex: none;
+}
+.store-card.ok .store-card-top i {
+  background: var(--leaf);
+  box-shadow: 0 0 0 3px var(--leaf-sk);
+}
+.store-card.warn .store-card-top i {
+  background: var(--amber);
+  box-shadow: 0 0 0 3px var(--amber-sk);
+}
+.store-card.bad .store-card-top i {
+  background: var(--red);
+  box-shadow: 0 0 0 3px var(--red-sk);
+}
+.store-card b {
+  display: block;
+  font-size: 11.5px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.store-card p {
+  margin: 5px 0 0 15px;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+.ghost-link {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 38px;
+  padding: 0 13px;
+  border-radius: 12px;
+  color: var(--shell-tx);
+  font-size: 12px;
+  text-align: left;
+  width: 100%;
+  transition: background 0.15s, color 0.15s;
+}
+.ghost-link svg {
+  width: 15px;
+  height: 15px;
+}
+.ghost-link:hover {
+  background: var(--shell-2);
+  color: var(--ink);
+}
+
+/* ---- main + topbar ---- */
+.main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  padding: 22px 30px 18px;
+  background: rgba(236, 238, 242, 0.86);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+}
+.top-copy {
+  min-width: 180px;
+  display: flex;
+  flex-direction: column-reverse;
+}
+.top h1 {
+  font-size: 27px;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  outline: none;
+}
+.crumb {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.top-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: min(340px, 28vw);
+  margin-left: auto;
+}
+.top-search svg {
+  position: absolute;
+  left: 14px;
+  width: 15px;
+  height: 15px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.top-search input {
+  width: 100%;
+  height: 40px;
+  padding: 0 56px 0 38px;
+  border: 1px solid var(--field);
+  border-radius: var(--r-p);
+  background: var(--panel);
+  outline: none;
+  font-size: 12px;
+}
+.top-search input:focus {
+  border-color: var(--brand-lt);
+  box-shadow: var(--focus-ring);
+}
+.top-search kbd {
+  position: absolute;
+  right: 10px;
+  padding: 3px 7px;
+  border-radius: var(--r-p);
+  background: var(--shell-2);
+  color: var(--muted);
+  font: 500 9px/1.4 var(--sans);
+  pointer-events: none;
+}
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.top-actions:first-child {
+  margin-left: auto;
+}
+.stamp {
+  padding: 0 3px;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.stamp.info {
+  color: var(--blue);
+}
+.stamp.low {
+  color: var(--amber);
+}
+.avatar {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+}
+#topSettings {
+  display: none;
+}
+
+/* ---- the page ---- */
+.tab {
+  width: min(100%, 1480px);
+  margin: 0 auto;
+  padding: 6px 30px 44px;
+  animation: tab-in 0.26s ease both;
+}
+@keyframes tab-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+}
+.overview-head {
+  margin: 8px 2px 18px;
+}
+.eyebrow {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--brand-dp);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.overview-head h2 {
+  font-size: clamp(21px, 2.1vw, 28px);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+}
+.overview-head p {
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+/* ==========================================================
+   RESPONSIVE SHELL
+   ========================================================== */
+@media (max-width: 1160px) {
+  :root {
+    --side: 214px;
+  }
+  .top-search {
+    width: min(280px, 26vw);
+  }
+}
+@media (max-width: 940px) {
+  :root {
+    --side: 74px;
+  }
+  .side {
+    padding-inline: 9px;
+  }
+  .side-top {
+    justify-content: center;
+    padding-inline: 0;
+  }
+  .brand-copy,
+  .nav-label,
+  .nav-btn span,
+  .ghost-link span,
+  .store-card {
+    display: none;
+  }
+  .nav-btn,
+  .ghost-link {
+    justify-content: center;
+    padding: 0;
+  }
+  .nav-btn .badge {
+    position: absolute;
+    right: 4px;
+    top: 3px;
+    margin: 0;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+  }
+  .top-search {
+    display: none;
+  }
+}
+/* a phone: the sidebar becomes one scrollable bottom row, thumb-reachable
+   (v202), the foot's links move into the Settings dialog */
+@media (max-width: 720px) {
+  body {
+    padding-bottom: 76px;
+  }
+  .shell {
+    display: block;
+  }
+  .side {
+    position: fixed;
+    inset: auto 0 0;
+    width: 100%;
+    height: auto;
+    padding: 7px 8px calc(7px + env(safe-area-inset-bottom));
+    border: 0;
+    border-top: 1px solid var(--line);
+    overflow: visible;
+    box-shadow: 0 -10px 30px -26px rgba(20, 22, 26, 0.7);
+  }
+  .side-top,
+  .side-foot,
+  .nav-label {
+    display: none;
+  }
+  .nav {
+    flex-direction: row;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+  .nav::-webkit-scrollbar {
+    display: none;
+  }
+  .nav-btn {
+    flex: 0 0 calc((100% - 20px) / 5.5);
+    scroll-snap-align: start;
+    min-height: 52px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    padding: 5px 2px;
+    font-size: 9px;
+    border-radius: 10px;
+  }
+  .nav-btn span {
+    display: block;
+    white-space: nowrap;
+  }
+  .nav-btn .badge {
+    right: calc(50% - 22px);
+    top: 2px;
+  }
+  .top {
+    padding: 14px 16px 12px;
+    gap: 10px;
+    align-items: center;
+  }
+  .top-copy {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .top h1 {
+    font-size: 21px;
+  }
+  .crumb,
+  .top .stamp,
+  .avatar {
+    display: none;
+  }
+  #topSettings {
+    display: inline-flex;
+  }
+  .tab {
+    padding: 6px 15px 36px;
+  }
+  .overview-head {
+    margin: 4px 2px 14px;
+  }
+  html {
+    scroll-padding-bottom: 84px;
+  }
+}

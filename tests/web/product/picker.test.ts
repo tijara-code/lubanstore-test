@@ -200,3 +200,53 @@ describe("from test-v209.js / test-v208.js: one rule for the rows and the add", 
     expect(p.$("#addLabel")!.textContent).toContain(p.LM.money(p.LM.price("large")));
   });
 });
+
+describe("from test-store-look.js / test-v415.js / test-v425.js / test-v432.js: a row's badge and rating", () => {
+  it("the badge first (words, the shop's colour), then three leaves; under 4.6 the first leaf is half; none at 0", async () => {
+    const c = cat();
+    const om = marketOf(c, "OM");
+    om.scents = JSON.parse(JSON.stringify(c.scents));
+    Object.assign(om.scents!.find((s) => s.id === "oud")!, { stars: 4.34, tag: "الأكثر مبيعا", tagColor: "#123456" });
+    Object.assign(om.scents!.find((s) => s.id === "lemon")!, { stars: 4.8 });
+    Object.assign(om.scents!.find((s) => s.id === "amber")!, { stars: 9, tag: "", tagColor: "red" });
+    const p = await openPage({ catalogue: c, setup: pickerSetup });
+    const mid = (id: string) => row(p, id).querySelector(".prow-mid")!;
+    const LEAF = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 3.8C10.5 3.8 3.8 10.5 3.8 20.2c9.7 0 16.4-6.7 16.4-16.4Z"></path></svg>';
+    expect(mid("oud").innerHTML).toBe(
+      '<em class="sz-tag" style="--tag:#123456">الأكثر مبيعا</em><span class="sc-rate sc-leaves" role="img" aria-label="4.3 من 5"><i class="lv-half">' + LEAF + LEAF + "</i>" + LEAF + LEAF + "</span>",
+    );
+    expect(mid("lemon").innerHTML).toBe('<span class="sc-rate sc-leaves" role="img" aria-label="4.8 من 5">' + LEAF + LEAF + LEAF + "</span>");
+    // clamped to 5; an emptied tag clears the badge
+    expect(mid("amber").querySelector(".sc-rate")!.getAttribute("aria-label")).toBe("5 من 5");
+    expect(mid("amber").querySelector(".sz-tag")).toBe(null);
+    expect(row(p, "oud").querySelector(".prow-txt b")!.textContent).toBe("لُبان العود مع اللافندر وورد");
+    expect(row(p, "oud").querySelector(".prow-art")!.getAttribute("style")).toBe("--accent:#6A5CA8");
+    expect(row(p, "oud").querySelector('[data-step="-1"]')!.getAttribute("aria-label")).toBe("إنقاص عود الافندر");
+    expect(row(p, "oud").querySelector('[data-step="1"]')!.getAttribute("aria-label")).toBe("زيادة عود الافندر");
+    expect(row(p, "oud").querySelector("[data-count]")!.getAttribute("aria-live")).toBe("polite");
+    const plain = await openPage({ setup: pickerSetup });
+    expect(plain.$$(".sc-rate").length).toBe(0);
+  });
+
+  it("from test-v202.js: an add is announced (#addLive) and the basket takes the focus", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      const p = await openPage({ setup: pickerSetup });
+      step(row(p, "oud"), 1);
+      const add = p.$<HTMLButtonElement>("#add")!;
+      add.focus();
+      tap(add);
+      expect(document.activeElement).toBe(p.$(".cart"));
+      expect(p.$("#addLive")!.textContent).toBe("");
+      vi.advanceTimersByTime(60);
+      expect(p.$("#addLive")!.textContent).toBe("تمت الإضافة ✓");
+      expect(add.textContent).toBe("تمت الإضافة ✓");
+      expect(add.classList.contains("ok")).toBe(true);
+      vi.advanceTimersByTime(1600);
+      expect(add.classList.contains("ok")).toBe(false);
+      expect(p.$("#addLabel")!.textContent).toBe("اختر رائحة");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
