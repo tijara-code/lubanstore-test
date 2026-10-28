@@ -86,9 +86,9 @@ describe("the published site", () => {
     }
   });
 
-  it("fonts are self-hosted: the Arabic pages preload the Arabic face, the English pages only the Latin one", () => {
+  it("fonts are self-hosted and load like the original's (no font preload competing with the first paint); English pages only the Latin face", () => {
     expect(page("index.html")).toMatch(/href="\/assets\/fonts\/fonts\.css\?v=/);
-    expect(page("index.html")).toMatch(/rel="preload" as="font" type="font\/woff2" href="\/assets\/fonts\/ibmplexsansarabic-/);
+    for (const f of ["index.html", "checkout.html", "en/index.html", "en/checkout.html"]) expect(page(f)).not.toMatch(/as="font"/);
     for (const f of ["en/index.html", "en/checkout.html", "en/privacy.html"]) {
       expect(page(f)).toMatch(/href="\/assets\/fonts\/fonts-en\.css\?v=/);
       expect(page(f)).not.toMatch(/ibmplexsansarabic|amiri|fonts\.css/);
@@ -97,6 +97,14 @@ describe("the published site", () => {
     for (const m of css.matchAll(/url\(([^)]+)\)/g)) expect(existsSync(path.join(OUT, "assets/fonts", m[1]!)), m[1]).toBe(true);
     expect((css.match(/@font-face \{/g) || []).length).toBe(36);
     expect((page("assets/fonts/fonts-en.css").match(/@font-face \{/g) || []).length).toBe(10);
+  });
+
+  it("the page scripts load at low priority, like the original's deferred scripts (the stylesheet and hero photo first)", () => {
+    for (const f of ["index.html", "checkout.html", "en/index.html", "en/checkout.html", "privacy.html", "404.html"]) {
+      const h = page(f);
+      expect(h, f).toMatch(/<script type="module" crossorigin fetchpriority="low" src=/);
+      expect(h, f).not.toMatch(/<link rel="modulepreload" crossorigin href=/);
+    }
   });
 
   it("the public pixel ids: the original's unless the build's environment names others (validated)", () => {

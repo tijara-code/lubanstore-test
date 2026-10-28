@@ -47,6 +47,27 @@ function lmPages(values: Record<string, string>): Plugin {
   };
 }
 
+/**
+ * The page scripts load at LOW priority, as the original's `defer` scripts did: a module script
+ * and its modulepreloads default to High and then share a slow line with the stylesheet and
+ * the hero photo, which pushed the first paint back by ~0.5 s on a throttled phone (measured).
+ * The admin page keeps the default.
+ */
+function lowPriorityScripts(): Plugin {
+  return {
+    name: "lm-low-priority-scripts",
+    transformIndexHtml: {
+      order: "post",
+      handler(html, ctx) {
+        if (/admin\//.test(ctx.path)) return html;
+        return html
+          .replace(/<script type="module" crossorigin src=/g, '<script type="module" crossorigin fetchpriority="low" src=')
+          .replace(/<link rel="modulepreload" crossorigin href=/g, '<link rel="modulepreload" crossorigin fetchpriority="low" href=');
+      },
+    },
+  };
+}
+
 /* The original pages carry the Meta pixel's <noscript><img> in the head — valid in practice,
    and kept as it is; parse5 reports it on every build, so that one notice is dropped. */
 const logger = createLogger();
@@ -63,7 +84,7 @@ export default defineConfig((): UserConfig => {
     publicDir: "public",
     base: "/",
     appType: "mpa",
-    plugins: [preact(), lmPages(values)],
+    plugins: [preact(), lmPages(values), lowPriorityScripts()],
     resolve: {
       alias: [{ find: /^\/src\//, replacement: path.join(REPO, "src") + "/" }],
     },

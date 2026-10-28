@@ -22,14 +22,13 @@ import { Btn, Empty, Pager, Pill, SearchField, Select, toast } from "../../kit";
 import { downloadCsv } from "../../lib/csv";
 import { dt, plural } from "../../lib/format";
 import { COUNTRY_EN, explain } from "../../lib/words";
-import { bandOf, BANDS, crmCountries, crmCsv, crmRows, SORTS, type CrmFilters, type CrmSort } from "./crm";
+import { bandOf, BANDS, crmCountries, crmCsv, crmRows, CUSTOMERS_KEY, omr, SORTS, type CrmFilters, type CrmSort } from "./crm";
 import { CustomerDialog } from "./CustomerDialog";
 
 export const PER_PAGE = 20;
 const CALL = 500;
 const MAX_CALLS = 20;
 
-export const CUSTOMERS_KEY = "customers:all";
 
 /** Every customer (500 a call, at most 10,000). */
 export async function loadCustomers(): Promise<{ rows: CustomerRow[]; capped: boolean }> {
@@ -52,11 +51,6 @@ export function crmFiltersOf(p: Record<string, string>): CrmFilters & { page: nu
   };
 }
 
-/** a figure in OMR without the currency (the column's header carries it) */
-export const omr = (n: number) => {
-  const v = Math.round((Number(n) || 0) * 1000) / 1000;
-  return v % 1 ? v.toFixed(3).replace(/\.?0+$/, "") : String(v);
-};
 
 export function Customers() {
   const r = useRoute();
@@ -164,15 +158,15 @@ export function Customers() {
                         </em>
                       ) : null}
                     </td>
-                    <td class="num" dir="ltr">
+                    <td class="num c-phone" dir="ltr">
                       {c.phone || "—"}
                     </td>
                     <td class="hide-sm">{c.countries.join(" ") || "—"}</td>
-                    <td class="num">
+                    <td class="num c-orders">
                       {c.orders}
                       {c.live !== c.orders ? <em class="sub">{c.live} live</em> : null}
                     </td>
-                    <td class="num">{omr(c.spend)}</td>
+                    <td class="num c-spend">{omr(c.spend)}</td>
                     <td class="hide-sm num">{dt(c.first)}</td>
                     <td class="hide-sm num">{dt(c.last)}</td>
                   </tr>

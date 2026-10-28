@@ -80,3 +80,11 @@ export const CRM_CSV_HEAD = ["Name", "Phone", "Country", "Orders", "Live orders"
 export function crmCsv(rows: readonly CustomerRow[]): Array<Array<string | number>> {
   return [CRM_CSV_HEAD, ...rows.map((c) => [c.name || "", c.phone || "", c.countries.join(" "), c.orders, c.live, c.spend, bandOf(c.spend).label, c.first, c.last, c.note, c.tags.join(", ")])];
 }
+
+export const CUSTOMERS_KEY = "customers:all";
+
+/** a figure in OMR without the currency (the column's header carries it) */
+export const omr = (n: number) => {
+  const v = Math.round((Number(n) || 0) * 1000) / 1000;
+  return v % 1 ? v.toFixed(3).replace(/\.?0+$/, "") : String(v);
+};

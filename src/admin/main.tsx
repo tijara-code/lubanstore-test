@@ -8,6 +8,9 @@ import "./styles/base.css";
 import "./styles/shell.css";
 import "./styles/kit.css";
 import "./styles/orders.css";
+import "./styles/insights.css";
+import "./styles/catalogue.css";
+import "./styles/empower.css";
 import { App } from "./app/App";
 
 const root = document.getElementById("app");

@@ -15,7 +15,8 @@ import { explain } from "../../lib/words";
 import { ItemLines, itemsOf, lineOf, newLine, type Line } from "./ItemLines";
 import type { DetailOrder } from "./OrderDetail";
 
-export function ItemsEditor({ order: o, onDone }: { order: DetailOrder; onDone: () => void }) {
+/** `manual`: the Empower tab's "adjust before push" (v189) — sold-out and switched-off items allowed, no shelf cap. */
+export function ItemsEditor({ order: o, onDone, manual }: { order: DetailOrder; onDone: () => void; manual?: boolean }) {
   const opts = useItemOptions(o.countryCode);
   const [lines, setLines] = useState<Line[]>(() => (o.items || []).map(lineOf));
   const [cod, setCod] = useState("");
@@ -30,7 +31,7 @@ export function ItemsEditor({ order: o, onDone }: { order: DetailOrder; onDone: 
     if (!items.length) return toast("An order needs at least one item");
     setBusy(true);
     try {
-      const j = await putItems(o.id, { items, ...(unpaidCod && cod.trim() ? { codAmount: cod.trim() } : {}) });
+      const j = await putItems(o.id, { items, ...(manual ? { manual: true } : {}), ...(unpaidCod && cod.trim() ? { codAmount: cod.trim() } : {}) });
       toast("Total is now " + money(j.total, j.cur) + (j.was && j.was !== j.total ? " (was " + money(j.was, j.cur) + ")" : ""), true);
       onDone();
       await afterOrderWrite();

@@ -14,8 +14,7 @@ import { Btn, Empty, Field, LinkBtn, Modal, Pill, toast } from "../../kit";
 import { dt, dtt, money, waDigits } from "../../lib/format";
 import { orderTotal } from "../../lib/order";
 import { COUNTRY_EN, explain, STATUS } from "../../lib/words";
-import { bandOf, tagsOf } from "./crm";
-import { CUSTOMERS_KEY, omr } from "./Customers";
+import { bandOf, CUSTOMERS_KEY, omr, tagsOf } from "./crm";
 
 const SAY: Record<string, string> = { bad_phone_key: "That customer has no usable phone number to keep a note against." };
 

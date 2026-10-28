@@ -183,7 +183,7 @@ function CountryCard({ c, i, d, edit, loaded, published, open, onToggle, onRoute
               <NumBox label="COD fee" value={c.cod ?? 0} onValue={(v) => ec((m) => (m.cod = v || 0))} rule={MONEY} />
               <Tick label="Cash on delivery" text="Offered here" checked={c.codOn !== false} onChange={(on) => ec((m) => (m.codOn = on))} width="" title="Off hides cash on delivery at checkout for this market, and the till refuses it." />
               <TextBox label="OMR rate (from deploy)" value={c.toOmr == null ? 1 : c.toOmr} onValue={() => {}} readOnly width="narrow" title="Set in the deploy's catalogue and applied automatically" />
-              <Box label="Ships with">
+              <Box label="Ships with" width="wide">
                 <select class="pick" value={route} disabled={routing || !published} title={published ? "Saved at once (not with Save & publish)" : "Publish this market first"} onChange={(e) => changeRoute((e.currentTarget as HTMLSelectElement).value)}>
                   <option value="omniful">Empower (Omniful)</option>
                   <option value="manual">By hand</option>
@@ -236,7 +236,7 @@ function CountryCard({ c, i, d, edit, loaded, published, open, onToggle, onRoute
                   <NumBox label="Was" value={price(z.id, "was")} onValue={(v) => setPrice(z.id, "was", v)} rule={MONEY} width="narrow" />
                   <TextBox label="Badge" value={z.tag} onValue={(v) => es((s) => (s.tag = v))} width="wide" />
                   <ColorBox label="Colour" value={z.tagColor} fallback="#9c464c" onValue={(v) => es((s) => (s.tagColor = v))} />
-                  <Tick label="Stock" text="Sold out here" checked={out} onChange={(on) => es((s) => (s.soldOut = on))} />
+                  <Tick label="Stock" text="Sold out here" width="" checked={out} onChange={(on) => es((s) => (s.soldOut = on))} />
                   <div class="field-b act">
                     <span class="cap" aria-hidden="true">
                       {" "}
@@ -250,7 +250,6 @@ function CountryCard({ c, i, d, edit, loaded, published, open, onToggle, onRoute
                   <TextBox label="Weight · EN" value={z.weight_en} onValue={(v) => es((s) => (s.weight_en = v))} width="narrow" en />
                   <Gap n={2} />
                   <TextBox label="Badge · EN" value={z.tag_en} onValue={(v) => es((s) => (s.tag_en = v))} width="wide" en />
-                  <Gap />
                   <div class="field-b wide row2" role="group" aria-label={"On the page: " + (z.name || z.id)}>
                     <span class="cap" aria-hidden="true">
                       On the page

@@ -196,11 +196,11 @@ export function Payments() {
       </div>
 
       <Kpis five label="Payment figures">
-        <Kpi icon="coin" tone="brand" dark label="Collected" value={money(t.gross, "OMR")} delta={money(t.net, "OMR") + " net to the bank" + (t.refundedN ? " · " + money(t.refunded, "OMR") + " refunded" : "")} />
+        <Kpi icon="coin" tone="blue" label="Collected" value={money(t.gross, "OMR")} delta={money(t.net, "OMR") + " net to the bank" + (t.refundedN ? " · " + money(t.refunded, "OMR") + " refunded" : "")} up />
         <Kpi icon="clock" tone="amber" label="Pending" value={money(k.pendingOmr, "OMR")} delta={k.pending ? k.pending + " waiting" : ""} />
         <Kpi icon="check" tone="leaf" label="Settled" value={String(k.settled)} delta={money(t.fees, "OMR") + " in fees"} />
         <Kpi icon="card" tone="blue" label="Transactions" value={String(k.all)} />
-        <Kpi icon="alert" tone="red" label="Failed" value={String(k.failed)} delta={k.failed ? "card attempts that did not go through" : ""} up={k.failed ? false : null} />
+        <Kpi icon="alert" tone="red" label="Failed" value={String(k.failed)} />
       </Kpis>
       {list.data?.capped ? <p class="note warn">The newest {PAY_ALL_MAX} transactions only: narrow the dates to see older ones.</p> : null}
 
@@ -259,13 +259,13 @@ function PayRow({ row, open, onToggle, onRefund }: { row: PaymentRow; open: bool
   return (
     <>
       <tr class={"row" + (open ? " open-row" : "")} data-pay={rowKey(row)} onClick={click}>
-        <td class="num">
+        <td class="num p-total">
           <b>{money(row.amount, "OMR")}</b>
         </td>
-        <td class="num">{money(row.fee, "OMR")}</td>
-        <td class="num">{money(row.net, "OMR")}</td>
+        <td class="num p-fee">{money(row.fee, "OMR")}</td>
+        <td class="num p-net">{money(row.net, "OMR")}</td>
         <td class="hide-sm id">{row.invoice || "—"}</td>
-        <td class="id">
+        <td class="id p-order">
           {row.orderId || <span class="muted">—</span>}
           {row.customer ? (
             <em class="sub" dir="auto">
@@ -273,7 +273,7 @@ function PayRow({ row, open, onToggle, onRefund }: { row: PaymentRow; open: bool
             </em>
           ) : null}
         </td>
-        <td>
+        <td class="p-st">
           <Pill tone={st.c}>{st.t}</Pill>
           {row.refunds && row.refunds.length && row.refunds[0]!.reason ? <em class="sub">{row.refunds[0]!.reason}</em> : null}
           {row.stale ? <em class="sub">not checked with Thawani</em> : null}

@@ -22,7 +22,7 @@ import { Box, MarketTicks, NumBox, Pick, TextBox, Tick } from "./fields";
 import type { Edit } from "./Markets";
 import { anchorText, convertLen, fsStamp, fsWords, hoursOf, lenShown, muscatDayOf, offerStamp, tiersState, type Draft } from "./model";
 
-export function FoldCard({ title, stamp, tone, children, open: initial = false, id }: { title: string; stamp: ComponentChildren; tone?: string; children: ComponentChildren; open?: boolean; id?: string }) {
+export function FoldCard({ title, stamp, tone, children, open: initial = false, id, lead }: { title: string; stamp: ComponentChildren; tone?: string; children: ComponentChildren; open?: boolean; id?: string; lead?: ComponentChildren }) {
   const [open, setOpen] = useState(initial);
   const body = useId();
   return (
@@ -34,6 +34,7 @@ export function FoldCard({ title, stamp, tone, children, open: initial = false, 
         </button>
         <span class={"stamp" + (tone ? " " + tone : "")}>{stamp}</span>
       </div>
+      {lead ? <div class="fold-lead">{lead}</div> : null}
       {/* kept in the page while folded: nothing in it is lost by folding (test-admin-batch) */}
       <div id={body} hidden={!open} class="fold-body">
         {children}

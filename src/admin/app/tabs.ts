@@ -12,8 +12,13 @@ import type { ComponentType } from "preact";
 import type { AdminPage } from "../../shared/admin/api";
 import { useNewOrders } from "../data/hooks";
 import type { IconName } from "../kit/Icon";
+import { Catalogue } from "../tabs/catalogue/Catalogue";
+import { Empower, useEmpowerWaiting } from "../tabs/empower/Empower";
+import { Analytics } from "../tabs/analytics/Analytics";
+import { Customers } from "../tabs/customers/Customers";
 import { Orders } from "../tabs/orders/Orders";
 import { Overview } from "../tabs/overview/Overview";
+import { Payments } from "../tabs/payments/Payments";
 import { placeholder } from "../tabs/Placeholder";
 
 export interface TabDef {
@@ -31,11 +36,11 @@ export interface TabDef {
 export const TABS: TabDef[] = [
   { id: "overview", label: "Overview", icon: "grid", title: "Overview", sub: "Today at a glance", group: "Workspace", page: null, component: Overview },
   { id: "orders", label: "Orders", icon: "box", title: "Orders", sub: "Search and fulfil", group: "Workspace", page: "orders", component: Orders, badge: useNewOrders },
-  { id: "payments", label: "Payments", icon: "card", title: "Payments", sub: "Transactions and refunds", group: "Workspace", page: "payments", component: placeholder("Payments", "card") },
-  { id: "catalogue", label: "Catalogue", icon: "tag", title: "Catalogue", sub: "Prices and stock", group: "Workspace", page: "catalogue", component: placeholder("Catalogue", "tag") },
-  { id: "empower", label: "Empower", icon: "truck", title: "Empower", sub: "Omniful fulfilment", group: "Workspace", page: "empower", component: placeholder("Empower", "truck") },
-  { id: "customers", label: "Customers", icon: "users", title: "Customers", sub: "Who buys, and how much", group: "Insights", page: "customers", component: placeholder("Customers", "users") },
-  { id: "analytics", label: "Analytics", icon: "trend", title: "Analytics", sub: "Visitor activity", group: "Insights", page: "analytics", component: placeholder("Analytics", "trend") },
+  { id: "payments", label: "Payments", icon: "card", title: "Payments", sub: "Transactions and refunds", group: "Workspace", page: "payments", component: Payments },
+  { id: "catalogue", label: "Catalogue", icon: "tag", title: "Catalogue", sub: "Prices and stock", group: "Workspace", page: "catalogue", component: Catalogue },
+  { id: "empower", label: "Empower", icon: "truck", title: "Empower", sub: "Omniful fulfilment", group: "Workspace", page: "empower", component: Empower, badge: useEmpowerWaiting },
+  { id: "customers", label: "Customers", icon: "users", title: "Customers", sub: "Who buys, and how much", group: "Insights", page: "customers", component: Customers },
+  { id: "analytics", label: "Analytics", icon: "trend", title: "Analytics", sub: "Visitor activity", group: "Insights", page: "analytics", component: Analytics },
 ];
 
 export const tabOf = (id: string) => TABS.find((t) => t.id === id);

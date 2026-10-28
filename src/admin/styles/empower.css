@@ -1,0 +1,210 @@
+/* ==========================================================
+   EMPOWER — the connection, the Waiting and Pushed tables, the
+   order as the warehouse sees it, routes and SKU codes.
+   ========================================================== */
+.fold-lead {
+  margin-top: 10px;
+}
+.card.fold:not(.open) .fold-lead {
+  margin-top: 8px;
+}
+.omf-lines .note {
+  margin: 0 0 4px;
+}
+.omf-lines .note:last-child {
+  margin-bottom: 0;
+}
+.omf-setup .note-list {
+  margin: 0 0 12px 18px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--ink-2);
+}
+.omf-setup code,
+.omf-wait code,
+.sku-tbl code {
+  font-family: var(--mono);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.omf-auto-note {
+  margin: 10px var(--pad) 0;
+}
+.omf-wait .card-head .spacer {
+  margin-left: auto;
+}
+.omf-tbl {
+  min-width: 760px;
+}
+.omf-tbl.omf-pushed {
+  min-width: 860px;
+}
+.omf-tbl .st .sub {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  font-style: normal;
+}
+.omf-tbl td.id .src {
+  display: block;
+}
+.omf-items .sku-of {
+  font-size: 11px;
+  color: var(--ink-2);
+}
+.omf-items .sku-of.muted {
+  color: var(--muted);
+}
+.omf-items .sku-of.warn {
+  color: var(--red);
+  font-weight: 600;
+}
+.omf-items .sku-of code {
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.card-head.filters {
+  justify-content: flex-start;
+}
+.card-head.filters .srch {
+  flex: 1 1 200px;
+  min-width: 0;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--field);
+  border-radius: var(--r-p);
+  background: #fff;
+  font-size: 12px;
+  outline: none;
+}
+.card-head.filters .srch:focus {
+  border-color: var(--brand-lt);
+  box-shadow: var(--focus-ring);
+}
+.card.flush > .pager {
+  padding: 12px var(--pad);
+}
+.omf-wa .wa-form {
+  margin-top: 0;
+}
+
+/* routes: one capsule per route, a radio underneath */
+.routes .flag-sw input[type="radio"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  clip-path: inset(50%);
+  overflow: hidden;
+}
+.routes .flag-sw:has(input:checked) {
+  background: var(--brand-dp);
+  border-color: var(--brand-dp);
+  color: #fff;
+}
+.routes .flag-sw:has(input:focus-visible) {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.routes .stock-row > b {
+  min-width: 14em;
+}
+.routes em.sub {
+  font-size: 11px;
+  color: var(--muted);
+  font-style: normal;
+}
+
+/* the SKU codes */
+.sku-tbl {
+  width: 100%;
+}
+.sku-tbl td {
+  height: 44px;
+}
+.sku-in {
+  width: 100%;
+  max-width: 260px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--field);
+  border-radius: var(--r-s);
+  font-size: 12px;
+  font-family: var(--mono);
+  outline: none;
+  background: #fff;
+}
+.sku-in:focus {
+  border-color: var(--brand-lt);
+  box-shadow: var(--focus-ring);
+}
+.sku-in.bad {
+  border-color: var(--red);
+  background: var(--red-sk);
+}
+.sku-tbl .err-t {
+  display: block;
+  font-size: 10.5px;
+  font-style: normal;
+  color: var(--red);
+  margin-top: 3px;
+}
+#omfSkuCard .item-acts {
+  margin-top: 12px;
+}
+
+/* ---- phone: the tables become stacks of cards ---- */
+@media (max-width: 720px) {
+  .omf-tbl,
+  .omf-tbl.omf-pushed {
+    min-width: 0;
+    width: 100%;
+  }
+  .omf-tbl thead {
+    display: none;
+  }
+  .omf-tbl tbody tr.row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 10px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .omf-tbl tbody tr.row > td {
+    display: block;
+    height: auto;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+  .omf-tbl tbody tr.row > td.hide-sm {
+    display: none;
+  }
+  .omf-tbl tbody tr.row > td.acts-td {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    width: auto;
+  }
+  .omf-tbl tbody tr.row > td.st,
+  .omf-tbl tbody tr.row > td.total {
+    grid-column: 1;
+  }
+  .omf-tbl tr.detail,
+  .omf-tbl tr.detail > td {
+    display: block;
+    width: 100%;
+  }
+  .omf-tbl td.empty {
+    display: block;
+  }
+  .card-head.filters .srch {
+    flex-basis: 100%;
+  }
+  .omf-wait .card-head .spacer {
+    margin-left: 0;
+  }
+  .routes .stock-row > b {
+    min-width: 0;
+    width: 100%;
+  }
+}

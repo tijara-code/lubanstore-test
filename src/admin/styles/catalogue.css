@@ -1,0 +1,659 @@
+/* ==========================================================
+   CATALOGUE — the offer cards, the free-delivery grid, the
+   Stock Tracker, the market cards, the publishing dock.
+   Ported from the original's admin.css (field-b widths, the
+   country card, fs-grid, the sticky dock), on the kit's tokens.
+   ========================================================== */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- a caption over a control ---- */
+.field-b {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.field-b > .cap {
+  font-size: 10.5px;
+  color: var(--muted);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 13px;
+}
+.field-b input,
+.field-b select.pick {
+  width: 100%;
+  height: 35px;
+  padding: 0 11px;
+  background: #fff;
+  border: 1px solid var(--field);
+  border-radius: var(--r-s);
+  font-size: 12px;
+  color: var(--ink);
+  outline: none;
+  min-width: 0;
+  font-family: var(--sans);
+}
+.field-b select.pick {
+  padding-inline-end: 30px;
+}
+.field-b input:focus,
+.field-b select:focus {
+  border-color: var(--brand-lt);
+  box-shadow: var(--focus-ring);
+}
+.field-b input[readonly] {
+  background: var(--shell-2);
+  color: var(--muted);
+}
+.field-b input[type="color"] {
+  padding: 3px;
+  cursor: pointer;
+}
+.field-b.bad input,
+.field-b input[aria-invalid="true"] {
+  border-color: var(--red);
+  background: var(--red-sk);
+}
+.field-b .err-t {
+  color: var(--red);
+  font-size: 10.5px;
+  font-style: normal;
+}
+.field-b .flag-sw {
+  height: 35px;
+  min-height: 0;
+  width: 100%;
+  padding-inline: 8px;
+  justify-content: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.field-b .flag-wrap .flag-sw,
+.field-b .flag-pair .flag-sw {
+  width: auto;
+  min-width: 54px;
+  height: 32px;
+  padding-inline: 14px;
+}
+.flag-wrap,
+.flag-pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.flag-pair {
+  flex-wrap: nowrap;
+}
+.field-b .flag-pair .flag-sw {
+  min-width: 0;
+  flex: 1 1 auto;
+  padding-inline: 10px;
+  white-space: nowrap;
+}
+.flag-sw em.sub {
+  color: var(--muted);
+  font-style: normal;
+}
+.flag-sw:has(input:checked) em.sub {
+  color: #d3def9;
+}
+.field-b.en > .cap {
+  color: var(--blue);
+}
+.field-b.en input {
+  background: var(--blue-sk);
+}
+.with-unit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+.with-unit i {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ---- rows of fields ---- */
+.item-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px 10px;
+  align-items: end;
+}
+.sub-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px 10px;
+  align-items: end;
+}
+.item-row + .item-row {
+  margin-top: 10px;
+}
+.sub-row {
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  border-radius: 14px;
+  background: var(--head);
+}
+.sub-row:last-child {
+  margin-bottom: 0;
+}
+.sub-row.off {
+  background: var(--shell-2);
+}
+.sub-row.off .field-b > .cap {
+  color: var(--muted);
+}
+.field-b.wide {
+  grid-column: span 2;
+}
+.field-b.narrow {
+  max-width: 132px;
+}
+.field-b.swatch {
+  max-width: 74px;
+}
+.field-b.rate {
+  min-width: 110px;
+  max-width: 128px;
+}
+.field-b.act {
+  max-width: 104px;
+}
+.field-b.act .btn {
+  height: 35px;
+}
+.en-gap {
+  visibility: hidden;
+}
+@media (max-width: 900px) {
+  .field-b.wide {
+    grid-column: span 1;
+  }
+  .field-b.narrow,
+  .field-b.swatch,
+  .field-b.act,
+  .field-b.rate {
+    max-width: none;
+  }
+  .en-gap {
+    display: none;
+  }
+}
+
+/* ---- one category, one line (the original's rule): the rows of a section are
+   columns you scan down; the section scrolls, never the page ---- */
+.cty-sec > .rows {
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.cty-sec > .rows > .item-row,
+.cty-sec > .rows > .sub-row {
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(80px, 148px);
+  grid-template-columns: none;
+  column-gap: 8px;
+  width: max-content;
+  max-width: 100%;
+  min-width: 100%;
+}
+.cty-sec > .rows .field-b.swatch {
+  max-width: 56px;
+}
+.cty-sec > .rows .field-b.act {
+  max-width: 96px;
+}
+.cty-sec > .rows .field-b.rate {
+  min-width: 110px;
+}
+@media (min-width: 901px) {
+  .cty-sec > .rows > .sub-row.has-en {
+    grid-auto-flow: column dense;
+  }
+  .cty-sec > .rows > .sub-row.has-en > .field-b {
+    grid-row: 1;
+  }
+  .cty-sec > .rows > .sub-row.has-en > .field-b.en,
+  .cty-sec > .rows > .sub-row.has-en > .en-gap,
+  .cty-sec > .rows > .sub-row.has-en > .row2 {
+    grid-row: 2;
+  }
+  /* Remove at the end of the second line, where the row has room: the first line is the
+     one that runs long */
+  .cty-sec > .rows > .sub-row.has-en > .field-b.act {
+    grid-row: 2;
+    order: 1;
+  }
+  .en-gap.w2 {
+    grid-column: span 2;
+  }
+}
+@media (max-width: 900px) {
+  .cty-sec > .rows > .item-row,
+  .cty-sec > .rows > .sub-row {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    width: auto;
+    min-width: 0;
+    max-width: none;
+  }
+  .cty-sec > .rows > .sub-row.has-en > .field-b.act {
+    order: 1;
+  }
+}
+
+/* ---- sections inside a card ---- */
+.cty-sec {
+  padding: 14px 0;
+  border-top: 1px solid var(--line-2);
+}
+.cty-sec:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+.cty-sec:last-child {
+  padding-bottom: 0;
+}
+.cty-sec > h4,
+.sec-head > h4 {
+  font-size: var(--caps-fs);
+  font-weight: 700;
+  letter-spacing: var(--caps-ls);
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.sec-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.sec-head > h4 {
+  margin: 0 auto 0 0;
+}
+.cty-sec .note {
+  margin: 10px 0 0;
+}
+.fold-body > .hint:first-child {
+  margin-bottom: 12px;
+}
+
+/* ---- the market cards ---- */
+.markets .card-head .btn {
+  margin-left: auto;
+}
+.markets .card-head .stamp {
+  margin-left: 6px;
+}
+.common {
+  border-bottom: 1px solid var(--line-2);
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+.sub-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sub-head .stamp {
+  margin-left: auto;
+}
+.sub-head h3 {
+  margin: 0;
+  font-size: 13px;
+}
+.common .fold-chev {
+  transition: transform 0.18s;
+}
+.common.open .fold-chev {
+  transform: rotate(180deg);
+}
+.common-body {
+  padding-top: 12px;
+}
+.stock-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.stock-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.stock-row > b {
+  min-width: 9em;
+  font-weight: 600;
+  font-size: 12.5px;
+}
+.stock-row .flag-sw {
+  min-height: 28px;
+}
+.cty-card {
+  border-radius: 18px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.cty-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--head);
+}
+.cty-card.open .cty-head {
+  border-bottom: 1px solid var(--line-2);
+}
+.cty-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  padding: 4px 0;
+}
+.cty-toggle b {
+  font-size: 13.5px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.cty-sum {
+  font-size: 11px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cty-chev {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  color: var(--muted);
+  transition: transform 0.18s;
+}
+.cty-card.open .cty-chev {
+  transform: rotate(180deg);
+}
+.cty-body {
+  padding: 0 16px;
+}
+.cty-body .cty-sec:first-child {
+  padding-top: 14px;
+}
+.cty-body .cty-sec:last-child {
+  padding-bottom: 14px;
+}
+
+/* ---- the free-delivery grid ---- */
+.fs-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-bottom: 14px;
+}
+.fs-top > .flag-sw {
+  min-width: 132px;
+  height: 35px;
+  justify-content: center;
+}
+.fs-hint {
+  font-size: 11.5px;
+  color: var(--muted);
+  flex: 1 1 220px;
+}
+.fs-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fs-row {
+  display: grid;
+  align-items: center;
+  gap: 12px;
+  grid-template-columns: minmax(90px, 1fr) 100px minmax(150px, 1.2fr) 140px minmax(140px, 1fr);
+  padding: 9px 14px;
+  border-radius: var(--r-s);
+  background: var(--tile);
+}
+.fs-row.is-on {
+  background: #fff;
+  box-shadow: inset 3px 0 0 var(--brand), 0 0 0 1px var(--line);
+}
+.fs-headrow {
+  background: none;
+  padding-block: 0;
+}
+.fs-headrow span {
+  font-size: 10.5px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.fs-row > span {
+  min-width: 0;
+}
+.fs-mk {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+.fs-mk b {
+  font-size: 12.5px;
+}
+.fs-mk em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fs-over,
+.fs-days,
+.fs-now {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.fs-over .field-b > .cap {
+  display: none;
+}
+.fs-row small {
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.fs-now {
+  align-items: flex-start;
+}
+.btn.xs {
+  height: 24px;
+  padding: 0 10px;
+  font-size: 10.5px;
+}
+.stepper {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 32px;
+  height: 35px;
+  border: 1px solid var(--field);
+  border-radius: var(--r-s);
+  background: #fff;
+  overflow: hidden;
+}
+.stepper button {
+  font-size: 16px;
+  color: var(--ink-2);
+  background: var(--head);
+}
+.stepper button:hover {
+  background: var(--tile);
+  color: var(--ink);
+}
+.stepper input {
+  width: 100%;
+  min-width: 0;
+  border: none;
+  height: 100%;
+  text-align: center;
+  padding: 0 4px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+  background: #fff;
+}
+.stepper input[aria-invalid="true"] {
+  background: var(--red-sk);
+}
+.pill.fs-live {
+  background: var(--leaf-sk);
+  color: var(--leaf);
+}
+.pill.fs-pending {
+  background: var(--blue-sk);
+  color: var(--blue);
+}
+.pill.fs-ended {
+  background: var(--tile);
+  color: var(--muted);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.pill.fs-off,
+.pill.fs-unset {
+  background: var(--tile);
+  color: var(--muted);
+}
+.pill.fs-unset {
+  color: var(--amber);
+}
+.fs-grid + .note {
+  margin-top: 14px;
+}
+.stamp.ok {
+  color: var(--leaf);
+}
+.stamp.warn {
+  color: var(--red);
+}
+@media (max-width: 900px) {
+  .fs-headrow {
+    display: none;
+  }
+  .fs-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    row-gap: 10px;
+  }
+  .fs-row > span:nth-child(2) {
+    justify-self: end;
+  }
+  .fs-row > span:nth-child(3)::before {
+    content: "Free over";
+    font-size: 10.5px;
+    color: var(--muted);
+  }
+  .fs-row > span:nth-child(4)::before {
+    content: "Days";
+    font-size: 10.5px;
+    color: var(--muted);
+  }
+  .fs-days > small {
+    display: none;
+  }
+  .fs-row > span:nth-child(5) {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+/* ---- the Stock Tracker ---- */
+.st-tbl {
+  min-width: 860px;
+}
+.st-tbl td small.sub {
+  display: block;
+  color: var(--muted);
+  font-size: 10.5px;
+  font-family: var(--mono);
+}
+.st-tbl tr.st-off > td {
+  background: var(--shell-2);
+}
+.st-tbl .flag-sw {
+  min-height: 26px;
+  padding: 0 12px;
+}
+.st-note {
+  margin: 12px 0 0;
+}
+.st-held {
+  margin: 6px 0 0;
+}
+
+/* ---- the publishing dock: in reach while the tab scrolls ---- */
+.card.dock {
+  position: sticky;
+  bottom: 12px;
+  z-index: 5;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 -3px 20px rgba(20, 22, 26, 0.1);
+}
+@supports (backdrop-filter: blur(6px)) {
+  .card.dock {
+    backdrop-filter: blur(6px);
+  }
+}
+.card.dock .card-head {
+  margin-bottom: 12px;
+  justify-content: flex-start;
+}
+.card.dock .stamp.info {
+  color: var(--brand-dp);
+  font-weight: 600;
+}
+.pub-changes ul {
+  margin: 6px 0 0 18px;
+  line-height: 1.55;
+}
+.card.dock .note {
+  margin-bottom: 12px;
+}
+.cat-tab .stale .hint {
+  display: block;
+  margin: 2px 0 0;
+}
+@media (max-width: 720px) {
+  .card.dock {
+    position: static;
+  }
+  .cty-head {
+    padding: 8px 12px;
+  }
+  .cty-body {
+    padding: 0 12px;
+  }
+  .cty-sum {
+    display: none;
+  }
+}
