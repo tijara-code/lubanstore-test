@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
-import { orderEvents, shipments } from "../../../src/server/db/schema";
+import { logs, orderEvents, shipments } from "../../../src/server/db/schema";
 import { loadCatalogue } from "../../../src/server/domain/catalogue";
 import { adopt, cancelPushed, pushOrder, sweep, PUSH_NEED_MS, SWEEP_MAX } from "../../../src/server/domain/empower/push";
 import { applyHook } from "../../../src/server/domain/empower/sync";
@@ -88,9 +88,8 @@ describe("pushing an order to Empower", () => {
     const p: any = await pushOrder(h.deps, o, cfg);
     expect(p.error + " " + p.codes.join(",")).toBe("sku_not_set burner");
     expect(h.omfCalls().length).toBe(0);
-    const logs = await h.db.execute<{ message: string; order_id: string }>("select message, order_id from logs" as never);
-    const rows = (logs as unknown as { rows: Array<{ message: string; order_id: string }> }).rows;
-    expect(rows.some((l) => l.order_id === o.id && /Incense burner \(burner\)/.test(l.message))).toBe(true);
+    const rows = await h.db.select().from(logs);
+    expect(rows.some((l) => l.orderId === o.id && /Incense burner \(burner\)/.test(l.message))).toBe(true);
     // with no SKU map at all, nothing is sent under default codes
     const bare = await empowerHarness();
     const o2 = await bare.order();

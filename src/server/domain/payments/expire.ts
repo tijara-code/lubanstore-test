@@ -10,6 +10,7 @@
  * future — a reopened reminder link), and deletes nothing: cancelled, not removed. The read's
  * conditions are repeated in the write, so an order paid in between keeps its money.
  */
+import { errorText } from "../../core/log";
 import { and, eq, inArray, isNull, lt, or } from "drizzle-orm";
 import type { Deps } from "../../core/deps";
 import { orders } from "../../db/schema";
@@ -52,7 +53,7 @@ export async function expireUnpaid(deps: Deps): Promise<{ cancelled: number; cut
   try {
     purged = await purgeWebhookEvents(deps, 90);
   } catch (e) {
-    await deps.log.error("job:orders-expire", "the webhook record purge failed: " + String((e as Error)?.message || e), { side: "job" });
+    await deps.log.error("job:orders-expire", "the webhook record purge failed: " + errorText(e), { side: "job" });
   }
   return { cancelled: ids.length, cutoff: cutoff.toISOString(), ids, purged };
 }

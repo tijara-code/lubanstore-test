@@ -21,9 +21,35 @@ export interface Logger {
   write(entry: LogEntry): Promise<void>;
 }
 
-/** Mask phone numbers, emails and long digit runs (keeps order ids, dates and decimals). */
+/**
+ * An error as it may be logged: for a database error, the server's own code and message —
+ * NEVER the failed query or its parameters (drizzle's "Failed query: … params: …" carries the
+ * customer's name, phone, city, IP …). Anything else: its message, any query text cut off.
+ */
+export function errorText(e: unknown): string {
+  const err = e as { message?: unknown; code?: unknown; cause?: { message?: unknown; code?: unknown } } | null;
+  const cause = err && err.cause && typeof err.cause === "object" ? err.cause : null;
+  if (cause && cause.message) return ((cause.code ? String(cause.code) + " " : "") + String(cause.message)).slice(0, 300);
+  const msg = String((err && err.message) || e);
+  if (/^Failed query:/.test(msg)) return "database query failed";
+  return withoutQuery(msg).slice(0, 300);
+}
+
+/** For a log: a database error as errorText; anything else with its stack, any query text cut off. */
+export function errorStack(e: unknown): string {
+  const err = e as { stack?: unknown; cause?: { message?: unknown } } | null;
+  if (err && err.cause && typeof err.cause === "object" && err.cause.message) return errorText(e);
+  return withoutQuery(String((err && err.stack) || e));
+}
+
+/** Cut "Failed query: …" (and the "params: …" that follows it) out of any text. */
+export function withoutQuery(s: string): string {
+  return s.replace(/Failed query:[\s\S]*?(?=\n\s+at |$)/g, "Failed query (detail withheld)").replace(/\bparams: [^\n]*/g, "params withheld");
+}
+
+/** Mask phone numbers, emails and long digit runs (keeps order ids, dates and decimals); drop any failed query's text. */
 export function mask(s: unknown): string {
-  return String(s == null ? "" : s)
+  return withoutQuery(String(s == null ? "" : s))
     .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[email]")
     .replace(/(?<![\w-])\+?(?:\d[\s-]?){8,15}(?![\w-])/g, (m) => (/^\d{4}-\d\d-\d\d/.test(m) ? m : "[number]"))

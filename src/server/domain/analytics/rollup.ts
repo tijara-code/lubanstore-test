@@ -11,7 +11,11 @@
  */
 import { sql } from "drizzle-orm";
 import { ITEM_KEPT } from "../../../shared/pixels/catalogue";
-import type { DbOrTx } from "../../db/client";
+import { rowsOf, type DbOrTx } from "../../db/client";
+import { eventHours, events, orders } from "../../db/schema";
+
+// Tables are named through their Drizzle objects ("store"."events"), never left to the
+// connection's search_path (which the Supabase transaction pooler may not keep).
 
 export interface RolledRow {
   /** 16 hex of md5(sid); "" for an event with no session */
@@ -24,12 +28,8 @@ export interface RolledRow {
   n: number;
 }
 
-/** rows of a raw query, whichever driver answered */
-export function rowsOf<T>(res: unknown): T[] {
-  if (Array.isArray(res)) return res as T[];
-  const r = res as { rows?: T[] } | null;
-  return (r && Array.isArray(r.rows) ? r.rows : []) as T[];
-}
+/** rows of a raw query, whichever driver answered (db/client.ts) */
+export { rowsOf };
 
 const kept = sql.join(ITEM_KEPT.map((n) => sql`${n}`), sql`, `);
 
@@ -41,12 +41,12 @@ export async function rollup(db: DbOrTx, since: Date, until: Date | null): Promi
              date_trunc('hour', e.at) as h, coalesce(e.country, '') as country, e.name,
              case when e.name in (${kept}) then coalesce(e.item, '') else '' end as item,
              count(*)::int as n
-        from events e
+        from ${events} e
        where e.at >= ${since} and (${until}::timestamptz is null or e.at < ${until}::timestamptz)
        group by 1, 2, 3, 4, 5
       union all
       select s.sid, s.hour as h, s.country, s.name, s.item, s.n
-        from event_hours s
+        from ${eventHours} s
        where s.hour >= date_trunc('hour', ${since}::timestamptz) and (${until}::timestamptz is null or s.hour < ${until}::timestamptz)
     )
     select sid, (extract(epoch from h) / 3600)::int as hh, country, name, item, sum(n)::int as n
@@ -65,7 +65,7 @@ export async function rollup(db: DbOrTx, since: Date, until: Date | null): Promi
 /** The first moment on record: the earliest event, kept hour, or order (any state). NaN when there is none. */
 export async function firstOnRecord(db: DbOrTx): Promise<number> {
   const res = await db.execute(sql`
-    select (extract(epoch from least((select min(at) from events), (select min(hour) from event_hours), (select min(created_at) from orders))) * 1000)::float8 as t`);
+    select (extract(epoch from least((select min(at) from ${events}), (select min(hour) from ${eventHours}), (select min(created_at) from ${orders}))) * 1000)::float8 as t`);
   const t = Number(rowsOf<{ t: unknown }>(res)[0]?.t);
   return Number.isFinite(t) && t > 0 ? t : NaN;
 }
@@ -80,14 +80,14 @@ export async function purgeEvents(db: DbOrTx, now: number, opts: { days?: number
   const cap = Math.max(1, Math.floor(Number(opts.cap) || 500000));
   const cutoff = new Date(now - days * 86400e3);
   const res = await db.execute(sql`
-    with keep as (select id from events order by id desc offset ${cap} limit 1),
+    with keep as (select id from ${events} order by id desc offset ${cap} limit 1),
     gone as (
-      delete from events
+      delete from ${events}
        where at < ${cutoff} or id <= coalesce((select id from keep), 0)
        returning sid, at, country, name, item
     ),
     ins as (
-      insert into event_hours (hour, sid, country, name, item, n)
+      insert into ${eventHours} as eh (hour, sid, country, name, item, n)
       select date_trunc('hour', at),
              case when sid is null then '' else left(md5(sid), 16) end,
              coalesce(country, ''), name,
@@ -95,7 +95,7 @@ export async function purgeEvents(db: DbOrTx, now: number, opts: { days?: number
              count(*)::int
         from gone
        group by 1, 2, 3, 4, 5
-      on conflict (hour, sid, country, name, item) do update set n = event_hours.n + excluded.n
+      on conflict (hour, sid, country, name, item) do update set n = eh.n + excluded.n
       returning 1
     )
     select (select count(*) from gone)::int as moved`);

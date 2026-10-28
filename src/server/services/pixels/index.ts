@@ -106,10 +106,10 @@ export function createPixelsClient(ctx: ServiceContext): PixelsClient {
     pixelId: () => s(env.META_PIXEL_ID),
     configured: () => !!(s(env.META_PIXEL_ID) && s(env.META_CAPI_TOKEN)),
     /* NEVER ON THE LIVE SITE: a test code sends every server event — the Purchase included — to
-       Test Events, where it is not counted, and Snap has no such switch. Previews may use it. */
+       Test Events, where it is not counted, and Snap has no such switch. Local runs may use it. */
     testCode: () => {
-      const ctxName = s(env.CONTEXT);
-      if (ctxName === "production" || (!ctxName && env.production)) return "";
+      // production = Netlify's runtime SITE_ID, NODE_ENV or CONTEXT=production (env.ts)
+      if (env.production) return "";
       return s(env.META_TEST_EVENT_CODE);
     },
     async send(events, o) {

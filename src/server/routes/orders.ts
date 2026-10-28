@@ -12,6 +12,7 @@
  * address is a flood, not a shopper), and our own faults 5xx (503 pricing_unavailable,
  * 502 upstream — never the database's words in the body; the detail goes to `logs`).
  */
+import { errorText } from "../core/log";
 import type { Hono } from "hono";
 import type { AppEnv } from "../core/deps";
 import { clientIp, fail, HttpError, readJson, sameSiteJson } from "../core/http";
@@ -22,15 +23,8 @@ import { anyCap, baseOrderRow, inStockTx, newInvoiceKey, orderIdFrom, writeOrder
 import { reportPurchase } from "../domain/purchase";
 import { gateStock, priceBasket, readGate } from "../domain/till";
 
-/**
- * The database's own words for a failed write — never the query or its parameters (they
- * carry the customer's name and phone): drizzle puts the server's message on `cause`.
- */
-export function dbErrorText(e: unknown): string {
-  const cause = (e as { cause?: { message?: string; code?: string } })?.cause;
-  if (cause && cause.message) return (cause.code ? cause.code + " " : "") + cause.message;
-  return String((e as Error)?.message || e).replace(/\bparams:[\s\S]*$/, "").slice(0, 300);
-}
+/** The database's own words for a failed write — never the query or its parameters (core/log.ts errorText). */
+export const dbErrorText = errorText;
 
 export function registerOrderRoutes(app: Hono<AppEnv>): void {
   app.post("/api/order", async (c) => {
@@ -78,7 +72,7 @@ export function registerOrderRoutes(app: Hono<AppEnv>): void {
     try {
       ga4 = (await reportPurchase(deps, order, { ip, ua, url: inn.pageUrl || undefined })).ga4;
     } catch (e) {
-      await deps.log.error("order-purchase", "the Purchase report failed: " + String((e as Error)?.message || e), { orderId: order.id });
+      await deps.log.error("order-purchase", "the Purchase report failed: " + errorText(e), { orderId: order.id });
     }
     return c.json({ ok: true, id: order.id, omr: order.omr, ga4 });
   });

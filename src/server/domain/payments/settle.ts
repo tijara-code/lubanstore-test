@@ -1,8 +1,9 @@
 /**
  * THE MONEY IS IN — what a confirmed card payment writes on its order. Two paths confirm a
  * payment, the shopper's return (/api/pay/verify) and Thawani's webhook, and they routinely
- * arrive together; there is one patch, and each path's write carries its own condition in the
- * UPDATE itself, so whichever lands second changes nothing (and reports nothing).
+ * arrive together; there is one patch, built from the row read under its lock (markPaid),
+ * and each path's write carries its own condition, so whichever lands second changes nothing
+ * (and reports nothing).
  */
 import { and, eq, inArray, notInArray, type SQL } from "drizzle-orm";
 import { r3 } from "../../../shared/money";
@@ -85,29 +86,57 @@ function conditionOf(c: SettleCondition): SQL {
   return and(notInArray(orders.paymentStatus, ["paid", "refunded"]), eq(orders.refunded, false), eq(orders.trashed, false))!;
 }
 
+/** The same conditions in the code, for the row read under the lock. */
+export function matches(c: SettleCondition, o: Pick<OrderRow, "paymentStatus" | "pay" | "refunded" | "trashed">): boolean {
+  if (o.refunded || o.trashed) return false;
+  if (c === "open") return o.paymentStatus === "unpaid" || o.paymentStatus === "cancelled";
+  if (c === "cod_card") return o.paymentStatus === "cod" && o.pay === "cod";
+  return o.paymentStatus !== "paid" && o.paymentStatus !== "refunded";
+}
+
+export interface Settled {
+  /** THIS write moved the row (only that path reports the Purchase) */
+  changed: boolean;
+  /** the row as written, when it was */
+  order: OrderRow | null;
+  /** the row as it stood under the lock (null: no such order) — what the caller answers from when nothing changed */
+  fresh: OrderRow | null;
+}
+
 /**
- * The settling write, conditional, with its event. → { changed, order } — whether THIS write
- * moved the row (only that path reports the Purchase). Throws on a failed write.
+ * The settling write. The row is read FOR UPDATE inside the transaction and the patch is
+ * built from THAT row, so a writer that committed in between (the cash switch from the
+ * reminder link, a refund, the other settling path) is seen, never written over from a stale
+ * read: `cond` (a condition, or one chosen from the fresh row; null = not ours) is checked on
+ * the fresh row, `build` makes the patch from it (null = refuse, e.g. the amount no longer
+ * agrees), and the UPDATE repeats the condition. With its order_events row, in the same
+ * transaction. Throws on a failed write.
  */
 export async function markPaid(
   deps: Deps,
   id: string,
-  before: OrderRow,
-  patch: OrderPatch,
-  cond: SettleCondition,
+  cond: SettleCondition | ((fresh: OrderRow) => SettleCondition | null),
+  build: (fresh: OrderRow) => OrderPatch | null,
   by: string,
   detail: Record<string, unknown> = {},
-): Promise<{ changed: boolean; order: OrderRow | null }> {
+): Promise<Settled> {
   return deps.db.transaction(async (tx) => {
-    const rows = await tx.update(orders).set(patch).where(and(eq(orders.id, id), conditionOf(cond))).returning();
+    const locked = await tx.select().from(orders).where(eq(orders.id, id)).limit(1).for("update");
+    const fresh = locked[0] || null;
+    if (!fresh) return { changed: false, order: null, fresh: null };
+    const c = typeof cond === "function" ? cond(fresh) : cond;
+    if (!c || !matches(c, fresh)) return { changed: false, order: null, fresh };
+    const patch = build(fresh);
+    if (!patch) return { changed: false, order: null, fresh };
+    const rows = await tx.update(orders).set(patch).where(and(eq(orders.id, id), conditionOf(c))).returning();
     const row = rows[0] || null;
     if (row) {
       await recordEvent(tx, {
-        orderId: id, kind: "payment", from: standing(before), to: standing(row), by, at: new Date(deps.now()),
+        orderId: id, kind: "payment", from: standing(fresh), to: standing(row), by, at: new Date(deps.now()),
         detail: { paid: true, invoice: row.invoiceNo, paymentId: row.paymentId, ...detail },
       });
     }
-    return { changed: !!row, order: row };
+    return { changed: !!row, order: row, fresh };
   });
 }
 

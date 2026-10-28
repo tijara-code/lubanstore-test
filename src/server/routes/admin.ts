@@ -11,6 +11,7 @@
  * A refusal is { ok: false, error, …extra } with its status; a catalogue that cannot be read
  * is 503 with its code; anything else is a 500 server_error, the detail in the logs only.
  */
+import { errorStack } from "../core/log";
 import { Hono } from "hono";
 import type { AppEnv } from "../core/deps";
 import { HttpError } from "../core/http";
@@ -35,7 +36,7 @@ export function adminApp(): Hono<AppEnv> {
     }
     if (err instanceof CatalogueError) return c.json({ ok: false, error: err.code }, err.code === "busy" ? 409 : 503, ADMIN_HEADERS);
     const deps = c.get("deps");
-    await deps.log.error("admin", String((err as Error)?.stack || err), { path: "/api/admin" + relPath(c) });
+    await deps.log.error("admin", errorStack(err), { path: "/api/admin" + relPath(c) });
     return c.json({ ok: false, error: "server_error" }, 500, ADMIN_HEADERS);
   });
   return r;

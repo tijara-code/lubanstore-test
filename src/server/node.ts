@@ -50,7 +50,9 @@ export async function startServer(opts: { port?: number; distDir?: string; env?:
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname);
 if (isMain) {
-  startServer().then(({ port, deps }) => {
+  // `npm start` is a local run: the fakes unless SERVICES_MODE says otherwise (the server's own
+  // default is live, and fake is refused wherever SITE_ID / NODE_ENV=production says production)
+  startServer({ env: { ...process.env, SERVICES_MODE: process.env.SERVICES_MODE || "fake" } }).then(({ port, deps }) => {
     console.log(`Luban & Musk on http://localhost:${port}  (services: ${deps.env.servicesMode})`);
   });
 }

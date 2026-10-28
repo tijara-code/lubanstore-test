@@ -12,6 +12,7 @@
  */
 import type { Context, Hono } from "hono";
 import type { AppEnv } from "../core/deps";
+import { allow } from "../core/ratelimit";
 import { clientIp, NO_STORE, rawBody, readJson, sameSiteJson, siteOrigin } from "../core/http";
 import { liveOf } from "../domain/payments/events";
 import { resume, type ResumeResult } from "../domain/payments/resume";
@@ -62,6 +63,10 @@ export function registerPaymentRoutes(app: Hono<AppEnv>): void {
 
   app.get("/api/pay/verify", async (c) => {
     const deps = c.get("deps");
+    // public, and each call for an open order is a Thawani API call: generous per address
+    // (the checkout asks at most four times per return), never unlimited
+    const rl = await allow(deps.db, "payVerify", clientIp(c), deps.now());
+    if (!rl.ok) return send(c, { status: 429, body: { ok: false, error: "rate_limited" }, headers: { "Retry-After": String(rl.retryAfter || 60) } });
     const q = { ref: c.req.query("ref") || "", sid: c.req.query("sid") || "", k: c.req.query("k") || "" };
     return send(c, await verifyPayment(deps, q, liveOf(c)));
   });

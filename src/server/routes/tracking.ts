@@ -15,10 +15,12 @@
  * Every one answers 204 with no body when it accepted (or quietly declined) and 400 with no
  * body when the body is refused; a GET is 405. The relays refuse Purchase / PURCHASE and any
  * name outside the event catalogue, and need an event id (no id, no dedup, no send).
- * /api/ev and /api/log posted to directly are counted per address (60 and 30 a minute); the
- * items a beacon carries were counted by the beacon. DNT / GPC switch off the first-party
+ * /api/ev and /api/log posted to directly are counted per address (60 and 30 a minute), and
+ * /api/meta and /api/snap (120 a minute each); the items a beacon carries were counted by the
+ * beacon. DNT / GPC switch off the first-party
  * events only (as the page does); the ad platforms run for every visitor.
  */
+import { errorText } from "../core/log";
 import type { Context, Hono } from "hono";
 import { attribute, ownHostOf } from "../../shared/attribution";
 import { LM_NAMES } from "../../shared/pixels/catalogue";
@@ -95,7 +97,7 @@ async function ev(c: C, b: Body, viaBeacon: boolean): Promise<204 | 400 | 429> {
     });
   } catch (e) {
     /* a measurement failure never surfaces to a shopper */
-    await deps.log.warn("ev", "an event could not be written: " + String((e as Error)?.message || e), { path: "/api/ev" });
+    await deps.log.warn("ev", "an event could not be written: " + errorText(e), { path: "/api/ev" });
   }
   return 204;
 }
@@ -193,6 +195,11 @@ export function registerTrackingRoutes(app: Hono<AppEnv>): void {
       /* an unconfigured relay is quietly a no-op, whatever it was sent */
       if (kind === "meta" && !deps.services.pixels.meta.configured()) return empty(c, 204);
       if (kind === "snap" && !deps.services.pixels.snap.configured()) return empty(c, 204);
+      /* the relays posted to directly are counted per address too (120 a minute each) */
+      if (kind === "meta" || kind === "snap") {
+        const rl = await allow(deps.db, kind, clientIp(c), deps.now());
+        if (!rl.ok) return empty(c, 429, { "Retry-After": String(rl.retryAfter || 60) });
+      }
       if (!b) {
         if (kind === "ev" || kind === "log") {
           const rl = await allow(deps.db, kind, clientIp(c), deps.now());

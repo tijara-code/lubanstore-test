@@ -7,7 +7,7 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Page } from "playwright";
-import { BASE, openBrowser, pageWidth, signIn, type Session } from "./admin-helpers";
+import { adminPost, BASE, openBrowser, pageWidth, signIn, type Session } from "./admin-helpers";
 
 let s: Session;
 let page: Page;
@@ -25,6 +25,8 @@ beforeAll(async () => {
   s = await openBrowser({ ip: "198.51.100.63" });
   page = s.page;
   await signIn(page);
+  // the e2e server is shared by every suite: start from no analytics, so the counts are this suite's own
+  await adminPost(page, "POST", "/analytics/reset", { confirm: "events" });
   await ev("session_start", "e2eLive01", { land: { search: "?utm_source=instagram&utm_medium=paid_social", referrer: "" } });
   await ev("page_view", "e2eLive01", { item: "home" });
   await ev("offer_add", "e2eLive01", { item: "bundle" });

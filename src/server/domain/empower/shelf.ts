@@ -15,6 +15,7 @@
  * so Omniful is asked about once a minute however many shoppers look; a push marks it
  * expired (the shelf moved) so the next read asks again.
  */
+import { errorText } from "../../core/log";
 import type { Catalogue } from "../../../shared/catalogue/types";
 import type { Deps } from "../../core/deps";
 import { getOpData, putOp } from "../../core/ops";
@@ -201,7 +202,7 @@ export async function readShelf(
   try {
     skus = await readSkus(deps, { strict: true });
   } catch (e) {
-    return kept("the SKU codes could not be read: " + String((e as Error)?.message || e));
+    return kept("the SKU codes could not be read: " + errorText(e));
   }
   const map = skuByItem(cfg, skus);
   const want = Array.isArray(opts.only) ? opts.only.filter((k) => map[k]) : Object.keys(map);
@@ -209,7 +210,7 @@ export async function readShelf(
   try {
     got = await client.hubInventory(5, want.map((k) => map[k]!));
   } catch (e) {
-    return kept(String((e as Error)?.message || e));
+    return kept(errorText(e));
   }
   let tracker = trackerRows(cfg, skus, got.rows);
   const onShelf = new Set(got.rows.map((r: ShelfRow) => String(r.sku_code).toUpperCase()));

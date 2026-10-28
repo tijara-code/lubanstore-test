@@ -8,6 +8,7 @@
  * shipped afterwards (status.ts's isLive/transition refuse a refunded order from then on). One
  * already shipped or delivered keeps its status (a return).
  */
+import { errorText } from "../../core/log";
 import { and, eq, inArray } from "drizzle-orm";
 import type { Deps } from "../../core/deps";
 import { fail } from "../../core/http";
@@ -83,7 +84,7 @@ export async function refundPayment(deps: Deps, body: { paymentId?: unknown; rea
         });
       });
     } catch (e) {
-      await deps.log.error("refund", "refunded at Thawani but the order was not updated: " + o.id + " " + String((e as Error)?.message || e), { orderId: o.id });
+      await deps.log.error("refund", "refunded at Thawani but the order was not updated: " + o.id + " " + errorText(e), { orderId: o.id });
     }
   }
   return { ok: true, refundId, orderId: order ? order.id : null, amount: r.amount };

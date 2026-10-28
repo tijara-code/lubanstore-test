@@ -1,0 +1,58 @@
+# Review fixes — worker notes
+
+Fixes for the independent server review (`/home/claude/review/server-review.md`). Each
+finding below gives the fix and the test that holds it. Both suites pass:
+
+- PGlite: `npx vitest run --project server --project unit`.
+- Real PostgreSQL 16 through postgres-js, the production driver: `LM_TEST_PG_URL=postgres://… npm run test:pg`. Result: 37 files, 464 tests.
+
+## The `pg` Vitest project (finding 1's CI ask, lead decision 8)
+
+**What it is.** A Vitest project named `pg` (`vitest.config.ts`). It runs all of `tests/server/**` again on a real PostgreSQL, but only when `LM_TEST_PG_URL` is set. Without it, the project runs only `tests/pg/skipped.test.ts`, a single `it.skip`, so it shows as skipped. Run it with `npm run test:pg` (also listed under Commands in `AGENTS.md`).
+
+**How it swaps the database.** A `resolve.alias` swaps `tests/helpers/harness` for `tests/helpers/harness-pg.ts`. That file is based on the reviewer's harness-pg.ts.
+- The harness body now lives in `tests/helpers/harness-core.ts` as `buildHarness(db, opts)`. `harness.ts` gives it a PGlite; `harness-pg.ts` gives it a `connectPostgres` connection (pool of 4, idle timeout 1 s).
+- `harness-pg.ts` must never import `./harness`, or the alias would loop.
+
+**One database per harness.** `tests/helpers/pg-global-setup.ts` migrates one template database per run (`lmt<time>_tpl`). Each `createHarness()` clones it with `create database … template …`, so every test file and every harness gets a fresh database. Teardown drops every database of the run (checked: none left behind).
+
+**`search_path` in tests only.** The pg harness connection sets `search_path=store,public` so tests' own raw SQL (`update orders …`) keeps working. Production code no longer relies on it (finding 6). PGlite still sets it for dev and test convenience; it is harmless there.
+
+**Tests that read driver-specific shapes**, fixed:
+- `tests/helpers/harness.ts` `reset()`: used `.rows`; now uses `queryRows`, and truncates `"store"."…"`.
+- `tests/server/empower/push.test.ts`: read the logs through raw SQL `.rows`; now a Drizzle select.
+
+## Findings
+
+| # | Finding | Fix | Test |
+|---|---|---|---|
+| 1 | A raw `sql` Date failed under postgres-js. This broke rate limits (they fail open), the admin lockout, analytics, the event purge and retention. | `src/server/db/client.ts` `connectPostgres`: after creating the drizzle client, the serializers for oids 1184/1114/1082/1083 become `dateParam` (Date → ISO string). drizzle had installed identity serializers there; its own columns still pass strings. Driver-shape helpers `rowsOf` / `queryRows` live in `client.ts`. Every `.execute(` in src was checked: `health` (`select 1`) and the advisory lock read no rows; `rollup` and `analytics/index` use `rowsOf`. | `tests/server/review-fixes/db-drivers.test.ts` (Date binds; the limiter counts 1..10 and rolls over; rollup, firstOnRecord, purge and retention run; `rowsOf`). On `pg`, every rate-limit, lockout, analytics and retention test that used to fail now passes. |
+| 2 | On Netlify, production fell back to fake services. | `src/server/env.ts`: `SERVICES_MODE` defaults to `live`. `isProduction` = `SITE_ID` set, or `NODE_ENV=production`, or `CONTEXT=production`. `loadEnv` throws `EnvError` for fake in production; `bootstrap` refuses it again. `pixels.meta.testCode()` returns "" whenever `env.production`. Every launcher passes fake explicitly: `scripts/dev.ts` (already), `src/server/node.ts` main (`npm start`, now `SERVICES_MODE || "fake"`), `tests/e2e/global-setup.ts` and the parity browser tests (already), and the harness (already). `scripts/seed.ts` uses `connectPglite` directly and builds no services. Documented in `docs/ENV.md`. | `tests/server/review-fixes/env.test.ts`. `relays.test.ts` (test code: preview vs production) still passes. |
+| 3 | A cash switch racing the card webhook recorded a card payment as cash, with a fee never charged. The mirror race on verify answered "already paid" while the order said cash. | `markPaid` (`domain/payments/settle.ts`) now takes `(deps, id, cond, build, by, detail)`:<br>1. selects the row `FOR UPDATE` inside its transaction;<br>2. checks the condition on that fresh row (`matches`; `cond` may be chosen from the fresh row);<br>3. builds the patch from it (`build` returns null to refuse);<br>4. updates with the SQL condition repeated.<br>It returns `{ changed, order, fresh }`.<br>**Webhook:** the amount check is redone in `build`; when nothing changed, it answers from `fresh` (duplicate / mismatch / paid_unsettled).<br>**Verify:** `open` or `cod_card` is chosen from the fresh row, so a switch that just committed is settled as cod_card and converted back to card. When nothing changed, it answers from `fresh`, never assumes `already`.<br>**Admin "mark paid by hand":** same.<br>**Resume `toCash` / `toCard`:** re-read the row `FOR UPDATE` in the write's transaction (`lockReopenable`) and build the admin note and the Purchase decision from it. | `tests/server/review-fixes/races.test.ts`, run on `pg`: the switch racing the webhook is always `card/paid/new/fee0` at the charged figure; verify racing the switch likewise. I checked that it catches the bug: building the webhook patch from the stale row again makes that test fail on `pg`. |
+| 4 | Stock gate `except` excused an order's boxes by id alone. | `domain/stock.ts` `isOwn()`: a posted `{ id, dedupeId }` counts only when both the posted and the row's dedupe ids are non-empty and equal. A new `{ id, known: true }` form covers orders the server read itself (the admin re-quote in `order-admin.ts`, the reminder-link cash switch), which go by id. `till.ts` passes `except` only when both the proposed id and the dedupe id are present. | `tests/server/orders/stock-gate.test.ts` and `tests/server/payments/stock.test.ts` now run the REAL gate over the fake Omniful shelf (one oud-large left); before, they mocked `enforceStock`. New cases cover no dedupe id and an empty dedupe id. `tests/server/empower/stock.test.ts`: `dedupeId: null` / `""` → stock_short; `known: true` → ok; a row with no dedupe id cannot be matched. |
+| 5 | `/resume` revived cash orders the shop had cancelled. | `domain/payments/resume.ts` `voidedByPayment()`. A void order comes back only if the last move to void in `order_events` (`to = 'void'` or `'void/%'`) was made by the payment path: `job:orders-expire` (lapsed), or `shopper` (cancelled at the gateway, written by verify). The shop (`admin`) or the courier never qualifies. With nothing on record (an imported row), only a card attempt (`amountBaisa` or `sessionId`) counts. It is checked before the page and again under the row lock. The win-back for lapsed card attempts is kept. | `tests/server/review-fixes/revive.test.ts` (shop-cancelled cash order, shop-cancelled card attempt, switched-then-shop-cancelled, imported cash void → no action; expiry-lapsed and gateway-cancelled → revived). The existing `resume.test.ts` cases (rows with no events) still pass. |
+| 6 | Raw SQL relied on `search_path`. | `analytics/rollup.ts` interpolates `${events}`, `${eventHours}` and `${orders}` (alias `eh` in the upsert). `connectPostgres` no longer sets `search_path`; it is an opt-in `searchPath` option used by the pg test harness only. | `db-drivers.test.ts` scans every `sql\`…\`` template in `src/server` for an unqualified store table name. |
+| 7 | Database errors went to the logs with customer data. | `core/log.ts`:<br>- `errorText(e)` returns the code and the server's message (drizzle's `cause`), never the query or its params.<br>- `errorStack(e)` is the same for a DB error, otherwise the stack with any query text cut out.<br>- `mask()` strips any `Failed query:` / `params:` as a backstop.<br>Used in every server log call, the webhook's `error: …` record, `app.onError`, the admin and jobs error logs, health, the shelf and push notes. `routes/orders.ts` `dbErrorText` = `errorText`.<br>`runRetention` also strips customer and browser keys from `logs.detail` of the orders it clears (`scrubLogDetail`). | `tests/server/review-fixes/logs-limits.test.ts` (unit, a real failed write on resume and on the webhook, retention). |
+| 8 | A failed cold start was cached forever and crashed the function. | `bootstrap.ts`:<br>- `getDeps` drops a rejected build, so the next call retries.<br>- `bootFailure(e)` answers 503 `{ ok:false, error:"server_unavailable" }` and logs the reason once (zod: variable names only, never values).<br>- `netlifyHandler()` is the function body. `netlify/functions/api.mts` and `thawani-webhook.mts` now use it; `jobs/netlify.ts` uses `bootFailure`.<br>Enum env values are trimmed and lower-cased (`oneOf` in `env.ts`), so `THAWANI_MODE="live "` works. | `env.test.ts` (retry after a failed build; 503 JSON; handler 503 then 200 once fixed; trimmed enums). |
+| 9a | `/api/pay/verify` had no rate limit. | `payVerify`: 120 per 10 min per address (`routes/payments.ts`). The checkout calls it at most 4 times per return (`src/web/checkout/index.ts` `tries < 4`). | `logs-limits.test.ts` |
+| 9b | `verify` told the amounts on a mismatch to anyone. | `expected_baisa` / `paid_baisa` are sent only to the payer: the matching `sid`, or the order key (A22). | `verify.test.ts` (updated), `logs-limits` |
+| 9c | `/api/meta` and `/api/snap` had no rate limit. | Direct posts: 120 a minute per address each. The storefront sends these through the beacon (counted once per beacon); the direct post is only the fallback when there is no beacon, a handful per page. | `logs-limits.test.ts` |
+| 9d | A late `payment.succeeded` cleared a fresh refund. | The handler re-reads the row `FOR UPDATE` and patches from it. `refunded` is only ever set to true, never written false. | `races.test.ts` ("a late payment.succeeded never clears a refund") and `webhook.test.ts` |
+
+## Deliberate differences and open points
+
+**Production includes previews.** "Production" now includes Netlify deploy previews and branch deploys, because functions there also see `SITE_ID` (lead decision). So `META_TEST_EVENT_CODE` has no effect on Netlify at all, and fake mode is refused on previews too.
+
+**Rate-limited verify reads as "not paid".** A 429 from verify (`rate_limited`) is treated by the checkout page as a definite "not paid", since `rate_limited` is not in its `UNSURE` list. At 120 per 10 min per address no shopper reaches it. Adding `rate_limited` to `UNSURE` in `src/web/checkout/index.ts` is a storefront change, outside this brief.
+
+**Revival with no events on record.** A void order with no void event recorded counts as voided by the payment only if it was a card attempt. This keeps imported rows and the original's tests working.
+
+**`markPaid`'s signature changed.** It was `(deps, id, before, patch, cond, by)` and is now `(deps, id, cond, build, by)`; `docs/notes/payments.md` still describes the old one. All callers are updated.
+
+**Files outside the listed scope:**
+- `netlify/functions/api.mts` and `netlify/functions/thawani-webhook.mts`: minimal, to call `netlifyHandler`. Finding 8 is in those files.
+- `AGENTS.md`: one line.
+
+**SIGKILLs on the full PGlite run.** On a full PGlite run with several workers, `tests/server/empower/push.test.ts` and `stock.test.ts` were SIGKILLed by memory pressure in the sandbox. The reviewer saw the same. Both pass when run alone, and both pass on `pg`.
+
+**Reviewer's scripts.** All the reviewer's reproductions in `/home/claude/review/` now pass. Their `netlify-env.test.ts` builds live services, so its pay-session request goes to the real Thawani host with an invented key. Do not rerun it as is.

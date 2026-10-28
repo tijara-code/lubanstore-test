@@ -1,35 +1,13 @@
 /**
- * The shelf's cap on the card paths (the shelf itself is the Empower area's: domain/stock.ts
- * is replaced here by a one-box shelf for oud-large that counts what open orders hold).
+ * The shelf's cap on the card paths — the REAL gate (domain/stock.ts over the fake Omniful's
+ * shelf): oud-large capped, one box left in the warehouse.
  */
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { ops } from "../../../src/server/db/schema";
 import { bundledCatalogue } from "../../../src/server/domain/catalogue";
+import { omnifulFake } from "../../../src/server/services/omniful/fake";
+import { ALL_SKUS } from "../empower/_helpers";
 import { KEY, payHarness, type PayHarness } from "./_helpers";
-
-const seen: Array<{ except: unknown }> = [];
-
-vi.mock("../../../src/server/domain/stock", async () => {
-  const { fail } = await import("../../../src/server/core/http");
-  const schema = await import("../../../src/server/db/schema");
-  const { inArray } = await import("drizzle-orm");
-  return {
-    async readShelfForGate() {
-      return { asked: ["oud-large"], reading: null, autoOn: false };
-    },
-    async enforceStock(deps: any, cfg: any, _cc: string, lines: any[], except?: { id: string; dedupeId: string | null } | null) {
-      seen.push({ except: except || null });
-      if (!cfg.stockCap || !cfg.stockCap["oud-large"]) return;
-      const want = lines.filter((l) => l.itemId === "oud-large").reduce((t, l) => t + l.qty, 0);
-      if (!want) return;
-      const open = await deps.db.select().from(schema.orders).where(inArray(schema.orders.status, ["new", "prep", "pending"]));
-      const held = open
-        .filter((o: any) => !(except && o.id === except.id && o.dedupeId === except.dedupeId))
-        .reduce((t: number, o: any) => t + o.items.filter((i: any) => i.itemId === "oud-large").reduce((s: number, i: any) => s + i.qty, 0), 0);
-      const left = Math.max(0, 1 - held);
-      if (want > left) throw fail("stock_short", 409, { item: "oud-large", left });
-    },
-  };
-});
 
 const capped = () => {
   const c = bundledCatalogue() as ReturnType<typeof bundledCatalogue> & { countries: Array<Record<string, any>> };
@@ -39,19 +17,30 @@ const capped = () => {
 };
 
 let h: PayHarness;
+const omfCalls = () => h.world.calls.filter((c) => /omniful/.test(c.host)).length;
 beforeAll(async () => { h = await payHarness({ catalogue: capped() }); });
-afterEach(async () => { seen.length = 0; await h.reset(capped()); });
+beforeEach(async () => {
+  await h.db.insert(ops).values({ key: "omniful_skus", data: ALL_SKUS, updatedAt: new Date(h.clock.t) }).onConflictDoUpdate({ target: ops.key, set: { data: ALL_SKUS } });
+  omnifulFake(h.world).inventory = { LM3001: 1 };
+});
+afterEach(async () => { await h.reset(capped()); });
 
 describe("the card till and the shelf", () => {
   it("the last capped box: the card session opens; the next basket is refused 409 stock_short, no session, nothing written", async () => {
-    const a = await h.openCard({ id: "LM-5100001" });
+    const a = await h.openCard({ id: "LM-5100001", countryCode: "AE", phone: "+971 50 123 4567" });
     expect(a.status).toBe(200);
-    expect(seen[0]!.except).toEqual({ id: "LM-5100001", dedupeId: expect.any(String) });
-    const b = await h.openCard({ id: "LM-5100002" });
+    const b = await h.openCard({ id: "LM-5100002", countryCode: "AE", phone: "+971 50 123 4567" });
     expect(b.status).toBe(409);
     expect(b.j).toEqual({ ok: false, error: "stock_short", item: "oud-large", left: 0 });
     expect(h.th().state.sessions.length).toBe(1);
     expect((await h.verify({ ref: "LM-5100002" })).status).toBe(404);
+  });
+
+  // (review-fixes, finding 4) the open attempt's id posted again without its dedupe id is not its own
+  it("a basket naming the open card attempt's id with no dedupe id is refused", async () => {
+    expect((await h.openCard({ id: "LM-5100003", countryCode: "AE", phone: "+971 50 123 4567" })).status).toBe(200);
+    const b = await h.openCard({ id: "LM-5100003", dedupeId: "", countryCode: "AE", phone: "+971 50 123 4567" });
+    expect([b.status, b.j.error]).toEqual([409, "stock_short"]);
   });
 });
 
@@ -63,12 +52,11 @@ describe("the cash switch from the reminder link", () => {
     const res = await h.request("/resume/LM-123456?k=" + KEY + "&cod=1", { method: "POST" });
     expect(res.status).toBe(409);
     expect(await res.text()).toMatch(/الكمية المتوفرة من أحد المنتجات أقل مما في طلبك/);
-    expect(seen.pop()!.except).toEqual({ id: "LM-123456", dedupeId: "d-own" });
     expect((await h.row("LM-123456")).status).toBe("void");
   });
 
-  it("the order's own box is its own: with nothing else held it converts", async () => {
-    await h.seed({ id: "LM-123456", dedupeId: "d-own" });
+  it("the order's own box is its own (a known order, by id — even with no dedupe id): with nothing else held it converts", async () => {
+    await h.seed({ id: "LM-123456", dedupeId: null });
     const res = await h.request("/resume/LM-123456?k=" + KEY + "&cod=1", { method: "POST" });
     expect(res.status).toBe(200);
     expect((await h.row("LM-123456")).paymentStatus).toBe("cod");
@@ -76,7 +64,8 @@ describe("the cash switch from the reminder link", () => {
 
   it("opening the cash link (GET) never asks the shelf", async () => {
     await h.seed({ id: "LM-123456" });
+    const before = omfCalls();
     await h.request("/resume/LM-123456?k=" + KEY + "&cod=1");
-    expect(seen.length).toBe(0);
+    expect(omfCalls() - before).toBe(0);
   });
 });

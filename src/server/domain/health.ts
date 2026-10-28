@@ -11,6 +11,7 @@
  * than two of its periods have passed since (or it never ran). A job that skipped because
  * its service is not configured is not stale.
  */
+import { errorText } from "../core/log";
 import { sql } from "drizzle-orm";
 import { RELEASE } from "../app";
 import type { Deps } from "../core/deps";
@@ -95,7 +96,7 @@ export async function healthStatus(deps: Pick<Deps, "db" | "now" | "env">): Prom
     await deps.db.execute(sql`select 1`);
     dbOk = true;
   } catch (e) {
-    dbError = String((e as Error)?.message || e).slice(0, 200);
+    dbError = errorText(e).slice(0, 200);
   }
   dbMs = Math.round(performance.now() - t0);
   let jobs: Record<string, JobHealth> = {};

@@ -3,6 +3,7 @@
  * (invoice, reminder link) and the admin API. One Hono app, run by Netlify Functions in
  * production and by Node locally and in the end-to-end tests.
  */
+import { errorStack } from "./core/log";
 import { Hono } from "hono";
 import type { Deps, AppEnv } from "./core/deps";
 import { HttpError } from "./core/http";
@@ -31,7 +32,7 @@ export function createApp(deps: Deps): Hono<AppEnv> {
       for (const [k, v] of Object.entries(err.headers)) c.header(k, v);
       return c.json({ ok: false, error: err.code, ...err.extra }, err.status);
     }
-    await deps.log.error("http", String((err as Error)?.stack || err), { path: new URL(c.req.url).pathname });
+    await deps.log.error("http", errorStack(err), { path: new URL(c.req.url).pathname });
     return c.json({ ok: false, error: "server_error" }, 500);
   });
 

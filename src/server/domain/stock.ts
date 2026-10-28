@@ -10,6 +10,7 @@
  * on (14 days while it is off — orders then wait for a person, often longer). An unpaid card
  * attempt holds its boxes only while it can still be paid (its expire_at, else an hour).
  */
+import { errorStack } from "../core/log";
 import { and, desc, eq, gte, inArray } from "drizzle-orm";
 import type { Catalogue } from "../../shared/catalogue/types";
 import type { QuoteLine } from "../../shared/pricing/price";
@@ -85,15 +86,34 @@ export async function heldOrders(deps: Deps, cfg: Catalogue, tx?: DbOrTx, autoOn
 const linesOfOrder = (o: HeldOrder) => (o.items || []).map((i) => ({ itemId: i.itemId, qty: i.qty }));
 
 /**
- * The boxes open orders hold, of those named in `boxes`. `except`: this order's own row —
- * by id alone for a known order; for the till only when the row also carries this
- * submission's dedupe id (A5: the browser proposes the id).
+ * Which open order's boxes are this order's own (not held against it):
+ *   { id, dedupeId }         a POSTED id (the tills; A5 — the browser proposes the id): only
+ *                            when the posted dedupe id and the row's are both non-empty and
+ *                            equal, i.e. this same submission arriving again. An id alone
+ *                            excuses nothing (else any basket naming an open order's id
+ *                            could buy that order's reserved boxes a second time).
+ *   { id, known: true }      an order the server read itself (the admin's re-quote, the
+ *                            reminder link's cash switch): by id.
  */
+export interface StockExcept {
+  id: string;
+  dedupeId?: string | null;
+  known?: boolean;
+}
+
+export function isOwn(except: StockExcept | null | undefined, o: { id: string; dedupeId: string | null }): boolean {
+  if (!except || !except.id || o.id !== except.id) return false;
+  if (except.known === true) return true;
+  const posted = String(except.dedupeId || "");
+  return !!posted && !!o.dedupeId && o.dedupeId === posted;
+}
+
+/** The boxes open orders hold, of those named in `boxes`, less `except`'s own (see StockExcept). */
 export async function reserved(
   deps: Deps,
   cfg: Catalogue,
   boxes: Record<string, unknown>,
-  except?: { id: string; dedupeId: string | null } | null,
+  except?: StockExcept | null,
   rows?: HeldOrder[],
   tx?: DbOrTx,
   autoOn?: boolean,
@@ -101,7 +121,7 @@ export async function reserved(
   const list = rows || (await heldOrders(deps, cfg, tx, autoOn));
   const taken: Record<string, number> = {};
   for (const o of list) {
-    if (except && except.id && o.id === except.id && (!except.dedupeId || (o.dedupeId && o.dedupeId === except.dedupeId))) continue;
+    if (isOwn(except, o)) continue;
     const need = boxesOf(cfg, o.countryCode, linesOfOrder(o));
     for (const k of Object.keys(need)) if (boxes[k] != null) taken[k] = (taken[k] || 0) + need[k]!;
   }
@@ -193,7 +213,7 @@ export async function enforceStock(
   cfg: Catalogue,
   countryCode: string,
   lines: Array<Pick<QuoteLine, "itemId" | "qty">>,
-  except?: { id: string; dedupeId: string | null } | null,
+  except?: StockExcept | null,
   tx?: DbOrTx,
   pre?: GateShelf | null,
 ): Promise<void> {
@@ -243,7 +263,7 @@ export async function publicStock(deps: Deps): Promise<{ body: PublicStock; head
     const last = LAST.get(deps.db as unknown as object);
     if (last && deps.now() - last.at < LAST_OK_MS) return { body: last.body, headers: cdn(15, 60, false) };
     /* no number is better than a wrong one: the page shows no line */
-    await deps.log.error("stock", String((e as Error)?.stack || e), { path: "/api/stock" });
+    await deps.log.error("stock", errorStack(e), { path: "/api/stock" });
     throw fail("upstream", 502);
   }
 }

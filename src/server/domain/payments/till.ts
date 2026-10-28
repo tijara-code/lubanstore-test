@@ -6,6 +6,7 @@
  * from the catalogue; the browser chooses items, quantities and country and supplies no
  * money at all.
  */
+import { errorText } from "../../core/log";
 import { eq } from "drizzle-orm";
 import { baisaToOmr, toBaisa } from "../../../shared/money";
 import type { Deps } from "../../core/deps";
@@ -68,7 +69,7 @@ export async function cardTill(deps: Deps, body: Record<string, unknown>, req: T
     });
   } catch (e) {
     if (e instanceof HttpError) throw e;
-    await deps.log.error("pay-session", "the card order could not be written: " + String((e as Error)?.message || e), { path: "/api/pay/session" });
+    await deps.log.error("pay-session", "the card order could not be written: " + errorText(e), { path: "/api/pay/session" });
     return { status: 502, body: { ok: false, error: "db_write_failed" } };
   }
   // the same submission twice: never a second session against a row this request did not write
@@ -100,7 +101,7 @@ export async function cardTill(deps: Deps, body: Record<string, unknown>, req: T
       .where(eq(orders.id, wrote.id));
   } catch (e) {
     // the reference lookup still finds it by order id — the webhook's invoice lookups cannot
-    await deps.log.error("pay-session", "the session was opened but not recorded on " + wrote.id + ": " + String((e as Error)?.message || e), { orderId: wrote.id });
+    await deps.log.error("pay-session", "the session was opened but not recorded on " + wrote.id + ": " + errorText(e), { orderId: wrote.id });
   }
 
   return {

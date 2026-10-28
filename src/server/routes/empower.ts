@@ -10,6 +10,7 @@
  *   while the counter is on), the boxes ticked "hide at 0" that are at 0, the ceiling of every
  *   capped box. CDN-cached a minute (durable, stale for five while it refreshes).
  */
+import { errorStack } from "../core/log";
 import { createHash, timingSafeEqual } from "node:crypto";
 import type { Hono } from "hono";
 import type { AppEnv } from "../core/deps";
@@ -51,7 +52,7 @@ export function registerEmpowerRoutes(app: Hono<AppEnv>): void {
     try {
       out = (await applyStatus(deps, news)) as unknown as Record<string, unknown>;
     } catch (e) {
-      await deps.log.error("omniful-hook", String((e as Error)?.stack || e), { path: "/api/omniful/hook", orderId: news.orderId || null });
+      await deps.log.error("omniful-hook", errorStack(e), { path: "/api/omniful/hook", orderId: news.orderId || null });
       out = { error: "hook_failed" };
     }
     const applied = out.error ? "failed" : out.ignored ? String(out.ignored) : out.adopted ? "adopted" : "applied";

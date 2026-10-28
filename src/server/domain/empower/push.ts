@@ -23,6 +23,7 @@
  * After a push a New order moves to Preparing (moveOrder "push"); one already further on is
  * never walked back.
  */
+import { errorText } from "../../core/log";
 import { and, asc, eq, inArray, lte, or, sql } from "drizzle-orm";
 import { checkOf } from "../../../shared/orders/phone";
 import type { Catalogue } from "../../../shared/catalogue/types";
@@ -272,7 +273,7 @@ export async function pushOrder(deps: Deps, order: OrderRow, cfg: Catalogue, opt
     try {
       res = await client.createOrder(body, { deadline: opts.deadline });
     } catch (e) {
-      const err = e instanceof OmnifulError ? e : new OmnifulError("omniful_rejected", String((e as Error)?.message || e));
+      const err = e instanceof OmnifulError ? e : new OmnifulError("omniful_rejected", errorText(e));
       if (isDuplicate(err)) {
         const un = (await readNotes(deps, UNSURE_KEY))[o.id];
         if ((un && un.sentId === sentId) || opts.adopt === true) {

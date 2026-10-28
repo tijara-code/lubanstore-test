@@ -3,6 +3,7 @@
  * (netlify/functions/job-*.mts) and the admin's "run now" buttons call them through runJob.
  * Every run is recorded in ops (`job:<name>`) so /api/health can say when a job is stale.
  */
+import { errorStack, errorText } from "../core/log";
 import type { Deps } from "../core/deps";
 import { putOp } from "../core/ops";
 
@@ -24,8 +25,8 @@ export async function runJob(deps: Deps, name: string): Promise<Record<string, u
     result = await job.run(deps);
     return result;
   } catch (e) {
-    result = { error: String((e as Error)?.message || e) };
-    await deps.log.error("job:" + name, String((e as Error)?.stack || e), { side: "job" });
+    result = { error: errorText(e) };
+    await deps.log.error("job:" + name, errorStack(e), { side: "job" });
     throw e;
   } finally {
     await putOp(deps.db, "job:" + name, { at: new Date(started).toISOString(), ms: deps.now() - started, ...result }, new Date(deps.now())).catch(() => {});

@@ -15,7 +15,7 @@
  *                        the server's own errors out), webhook deliveries (90 days), once-only
  *                        claims (60 days), expired rate-limit counters.
  */
-import { and, eq, inArray, isNull, lt, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
 import { phoneKey } from "../../shared/orders/phone";
 import type { Deps } from "../core/deps";
 import { purgeClaims } from "../core/ops";
@@ -56,6 +56,16 @@ export function scrubGateway(v: unknown, depth = 0): unknown {
   return out;
 }
 
+/** The customer's fields (and the browser signals) taken out of any log detail, at any depth. */
+const LOG_PII_KEYS = new Set([...PII_KEYS, "note", "client", "ip", "ua", "client_ip_address", "client_user_agent", "fbp", "fbc", "params"]);
+export function scrubLogDetail(v: unknown, depth = 0): unknown {
+  if (!v || typeof v !== "object" || depth > 8) return v;
+  if (Array.isArray(v)) return v.map((x) => scrubLogDetail(x, depth + 1));
+  const out: Record<string, unknown> = {};
+  for (const [k, x] of Object.entries(v)) if (!LOG_PII_KEYS.has(k)) out[k] = scrubLogDetail(x, depth + 1);
+  return out;
+}
+
 export async function runRetention(deps: Deps, months = PII_MONTHS): Promise<{ cleared: number; more: boolean }> {
   const cutoff = monthsAgo(deps.now(), months);
   const now = new Date(deps.now());
@@ -84,6 +94,12 @@ export async function runRetention(deps: Deps, months = PII_MONTHS): Promise<{ c
       .update(orders)
       .set({ name: null, phone: null, email: null, city: null, region: null, note: null, client: null, piiClearedAt: now, updatedAt: now })
       .where(and(inArray(orders.id, due.map((o) => o.id)), isNull(orders.piiClearedAt)));
+    // the same customer in the error log's details, if any are still kept for these orders
+    const kept = await tx
+      .select({ id: logs.id, detail: logs.detail })
+      .from(logs)
+      .where(and(inArray(logs.orderId, due.map((o) => o.id)), isNotNull(logs.detail)));
+    for (const l of kept) await tx.update(logs).set({ detail: scrubLogDetail(l.detail) as typeof l.detail }).where(eq(logs.id, l.id));
   });
   return { cleared: due.length, more: due.length === RETENTION_BATCH };
 }

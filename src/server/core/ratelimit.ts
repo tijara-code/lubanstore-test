@@ -17,6 +17,11 @@ export const LIMITS = {
   beacon: { max: 60, windowMs: 60e3 },
   track: { max: 30, windowMs: 60e3 },
   resume: { max: 30, windowMs: 10 * 60e3 },
+  /* each call for an open order asks Thawani; the checkout asks at most 4 times per return */
+  payVerify: { max: 120, windowMs: 10 * 60e3 },
+  /* direct relay posts (a page without the beacon sends a handful per view; the beacon's items are the beacon's) */
+  meta: { max: 120, windowMs: 60e3 },
+  snap: { max: 120, windowMs: 60e3 },
 } as const;
 
 export type LimitName = keyof typeof LIMITS;

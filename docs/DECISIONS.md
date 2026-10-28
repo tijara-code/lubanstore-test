@@ -90,3 +90,48 @@ deciding rule belonged to a dropped feature:
   has not answered yet (the original sometimes had it, sometimes not, depending on timing).
 - **Pixel ids** are injected at build from `META_PIXEL_ID` / `SNAP_PIXEL_ID`, defaulting to the
   shop's current (public) ids, so the page and the server relay use the same values.
+
+## Server
+
+Per-area detail (every decision, with the original behaviour it replaces): `docs/notes/orders.md`,
+`payments.md`, `empower.md`, `tracking.md`, `admin-api.md`, `review-fixes.md`.
+
+- **Every status, payment and fulfilment change is recorded** in `order_events` (who, when,
+  from → to), and every write is conditional on what was read, inside a transaction with a
+  row lock where money is involved (settling a card payment, the cash switch, the expiry).
+- **The stock gate and the order insert are one locked step**, with the shelf read *before*
+  the lock (never a network call while holding it). The original could sell the last capped
+  box twice (check, then write).
+- **Admin sessions are HttpOnly, SameSite=Strict cookies** (no token in browser storage),
+  signed with `SESSION_SECRET` and the password's fingerprint; every non-GET request needs
+  `X-LM-Admin: 1` and a same-origin check; the password can be stored as a scrypt hash
+  (`npm run admin:hash`). Lockout per address and overall. Every admin write is audited.
+- **REST routes with zod validation** replace the single `POST /api/admin {action}` router.
+- **Rate limits are in the database** (serverless instances share no memory) and cover every
+  public write: order, card session, verify, resume, track, the analytics collectors, the
+  pixel relays, admin sign-in.
+- **Analytics are added up in SQL** over raw events plus hourly roll-ups (kept for good), so
+  "All" reaches the first visit with no read caps.
+- **Tables live in the Postgres schema `store`**, not `public`: the original's tables stay
+  untouched during the move, and Supabase's auto-generated public API cannot reach them.
+- **Production can never run on the fake services**: they must be asked for explicitly and are
+  refused on Netlify or with NODE_ENV=production.
+- **Inherited defects fixed** (found by an independent review, each with a reproduction): the
+  stock cap could be bypassed by posting another open order's id; a customer's reminder link
+  could revive an order the shop had cancelled; a cash switch racing the card webhook could
+  record a card payment as cash; a late "payment succeeded" could clear a refund.
+
+## Admin panel
+
+Per-tab detail: `docs/notes/admin-ui.md`, `admin-catalogue-empower.md`, `admin-insights.md`.
+
+- **Preact, rebuilt from scratch, with the original's look and information architecture**
+  (the owner uses it daily): Overview, Orders, Payments, Catalogue, Empower, Customers,
+  Analytics, plus panel settings. Dropped with their features: Shipping (SMSA), Local labels,
+  Sales (ledger), WhatsApp (Cloud API).
+- **Catalogue publishing is conditional**: it carries the version it loaded and refuses
+  (409, with a reload offer) if someone else published meanwhile; stock switches and market
+  routes save on their own, never publishing half-made edits.
+- **Analytics follows the original's latest layout** (v446 removed the Funnel and "Orders by
+  source" cards at the owner's request; the server still computes both).
+- **No demo mode**: `npm run seed` builds a realistic invented shop for local use.

@@ -29,6 +29,7 @@ Read `docs/ARCHITECTURE.md` (what lives where) and `docs/DECISIONS.md` (why) fir
 npm run dev          site + API on http://localhost:8888 (fake services, PGlite in .data/)
 npm run build        dist/ (storefront, English pages, admin)
 npm test             every suite
+npm run test:pg      the server suite again on a real PostgreSQL (needs LM_TEST_PG_URL; skipped without)
 npm run typecheck    tsc over server, web, admin and tests
 npm run check        typecheck + test + build
 npm run db:generate  regenerate db/migrations from schema.ts

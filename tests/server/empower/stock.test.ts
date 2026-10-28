@@ -255,7 +255,15 @@ describe("the till's gate", () => {
     expect(await short(enforceStock(h.deps, cfg, "OM", [{ itemId: "amber-small", qty: 11 }]))).toBe("ok");
     expect(await short(enforceStock(h.deps, cfg, "OM", [{ itemId: "oud-small", qty: 2 }], { id: lm1.id, dedupeId: "d-1" }))).toBe("ok");
     expect(await short(enforceStock(h.deps, cfg, "OM", [{ itemId: "oud-small", qty: 2 }], { id: lm1.id, dedupeId: "d-other" }))).toBe("stock_short:0:oud-small:409");
-    expect(await short(enforceStock(h.deps, cfg, "OM", [{ itemId: "oud-small", qty: 2 }], { id: lm1.id, dedupeId: null }))).toBe("ok");
+    // (review-fixes) a posted id with no dedupe id excuses nothing — else a basket naming an
+    // open order's id buys that order's boxes a second time; a known order (read by the
+    // server: the admin's re-quote, the reminder link) is its own by id
+    expect(await short(enforceStock(h.deps, cfg, "OM", [{ itemId: "oud-small", qty: 2 }], { id: lm1.id, dedupeId: null }))).toBe("stock_short:0:oud-small:409");
+    expect(await short(enforceStock(h.deps, cfg, "OM", [{ itemId: "oud-small", qty: 2 }], { id: lm1.id, dedupeId: "" }))).toBe("stock_short:0:oud-small:409");
+    expect(await short(enforceStock(h.deps, cfg, "OM", [{ itemId: "oud-small", qty: 2 }], { id: lm1.id, known: true }))).toBe("ok");
+    // the row's own dedupe id empty: a posted one cannot match it
+    const lm4 = await h.order({ ...om, items: [{ itemId: "oud-small", qty: 2, scent: "", size: "", price: 10 }] });
+    expect(await short(enforceStock(h.deps, cfg, "OM", [{ itemId: "oud-small", qty: 2 }], { id: lm4.id, dedupeId: "d-any" }))).toBe("stock_short:0:oud-small:409");
   });
 
   it("inside the till's transaction: the shelf read beforehand, only the open orders read through the tx", async () => {

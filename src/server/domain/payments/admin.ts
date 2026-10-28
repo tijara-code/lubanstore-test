@@ -298,9 +298,12 @@ export async function markPaidByHand(deps: Deps, body: { id?: unknown; paymentId
   const gross = baisaToOmr(paidBaisa);
   const enriched = { raw: { success: true, data: [p] }, payment: p, fields: fieldsOf(p) };
   const settled = await markPaid(
-    deps, id, o,
-    paidPatch(o, { invoice: p.checkout_invoice ? String(p.checkout_invoice) : o.invoiceNo, enriched, gross, now: deps.now(), gateway: { marked_by_hand: { by: actor, at: new Date(deps.now()).toISOString(), payment: p } } }),
-    "settleable", "admin", { via: "hand", actor, paymentId: pid },
+    deps, id, "settleable",
+    // built from the row under its lock; the amount it is held to, again
+    (fresh) => (paidBaisa !== Number(fresh.amountBaisa || 0) && body.acceptAmount !== true
+      ? null
+      : paidPatch(fresh, { invoice: p.checkout_invoice ? String(p.checkout_invoice) : fresh.invoiceNo, enriched, gross, now: deps.now(), gateway: { marked_by_hand: { by: actor, at: new Date(deps.now()).toISOString(), payment: p } } })),
+    "admin", { via: "hand", actor, paymentId: pid },
   );
   if (!settled.changed || !settled.order) throw fail("stale", 409, { id });
   try {

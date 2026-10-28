@@ -3,6 +3,7 @@
  * tab (domain/analytics), the Overview, health, the panel's settings, the audit trail and
  * "run now" for a job.
  */
+import { errorText } from "../../core/log";
 import type { Hono } from "hono";
 import {
   AuditQuery, BusyQuery, ChangesQuery, ClearChangesBody, ErrorsQuery, JobParam, LiveQuery, PublishBody,
@@ -143,7 +144,7 @@ export function registerInsightRoutes(r: Hono<AppEnv>): void {
       result = await runJob(deps, p.data.name);
     } catch (e) {
       await audit(c, "jobs.run", { target: p.data.name, summary: { failed: true } });
-      throw fail("job_failed", 502, { detail: String((e as Error)?.message || e).slice(0, 300) });
+      throw fail("job_failed", 502, { detail: errorText(e) });
     }
     await audit(c, "jobs.run", { target: p.data.name, summary: {} });
     return c.json({ ok: true, name: p.data.name, result });

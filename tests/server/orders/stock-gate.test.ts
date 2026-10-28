@@ -1,42 +1,14 @@
 /**
- * The till's stock gate (the shelf itself is the Empower area's: domain/stock.ts is replaced
- * here by a one-box shelf for oud-large that counts what open orders hold).
+ * The till's stock gate — the REAL gate (domain/stock.ts enforceStock over the fake Omniful's
+ * shelf): oud-large capped at the shelf, one box left in the warehouse.
  */
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { createHarness, type Harness } from "../../helpers/harness";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { createHarness } from "../../helpers/harness";
 import { orders } from "../../../src/server/db/schema";
-import { bundledCatalogue } from "../../../src/server/domain/catalogue";
+import { ALL_SKUS, catalogue, withHelpers } from "../empower/_helpers";
 
-const seen: { db: unknown; except: unknown }[] = [];
-let broken = false;
-
-vi.mock("../../../src/server/domain/stock", async () => {
-  const { fail } = await import("../../../src/server/core/http");
-  const schema = await import("../../../src/server/db/schema");
-  const { inArray } = await import("drizzle-orm");
-  return {
-    async enforceStock(deps: any, cfg: any, _cc: string, lines: any[], except?: { id: string; dedupeId: string | null } | null) {
-      seen.push({ db: deps.db, except: except || null });
-      if (broken) throw new Error("the shelf could not be read");
-      if (!cfg.stockCap || !cfg.stockCap["oud-large"]) return;
-      const want = lines.filter((l) => l.itemId === "oud-large").reduce((t, l) => t + l.qty, 0);
-      if (!want) return;
-      const open = await deps.db.select().from(schema.orders).where(inArray(schema.orders.status, ["new", "prep", "pending"]));
-      const held = open
-        .filter((o: any) => !(except && o.id === except.id && o.dedupeId === except.dedupeId))
-        .reduce((t: number, o: any) => t + o.items.filter((i: any) => i.itemId === "oud-large").reduce((s: number, i: any) => s + i.qty, 0), 0);
-      const left = Math.max(0, 1 - held);
-      if (want > left) throw fail("stock_short", 409, { item: "oud-large", left });
-    },
-  };
-});
-
-let h: Harness;
-const capped = () => {
-  const c = bundledCatalogue();
-  c.stockCap = { "oud-large": true };
-  return c;
-};
+let h: ReturnType<typeof withHelpers>;
+const capped = () => catalogue({}, (c) => (c.stockCap = { "oud-large": true }));
 const basket = (extra: Record<string, unknown> = {}) => ({
   name: "Sara",
   phone: "+971 50 123 4567",
@@ -51,14 +23,14 @@ async function post(order: unknown) {
 }
 
 beforeAll(async () => {
-  h = await createHarness({ catalogue: capped() });
+  h = withHelpers(await createHarness({ catalogue: capped() }));
 });
 beforeEach(async () => {
-  broken = false;
-  seen.length = 0;
   await h.reset(capped());
+  await h.setOp("omniful_skus", ALL_SKUS);
+  h.omf.inventory = { LM3001: 1 };
+  h.world.fail(null);
 });
-afterAll(async () => h.reset(capped()));
 
 describe("the shelf's cap at the till", () => {
   // from test-v314.js A5/A42
@@ -73,28 +45,31 @@ describe("the shelf's cap at the till", () => {
     expect((await h.db.select().from(orders)).length).toBe(1);
   });
 
-  it("the proposed id counts as this order's own only with its dedupe id; no id, no exception", async () => {
-    await post(basket({ id: "LM-4000002", dedupeId: "d-2" }));
-    expect(seen[0]!.except).toEqual({ id: "LM-4000002", dedupeId: "d-2" });
-    await post(basket({ dedupeId: "d-3" }));
-    expect(seen[1]!.except).toBe(null);
+  // (review-fixes, finding 4) the proposed id counts as this order's own only with its dedupe id
+  it("a basket naming an open order's id WITHOUT a dedupe id is not excused that order's boxes", async () => {
+    expect((await post(basket({ id: "LM-4000002", dedupeId: "d-2" }))).s).toBe(200);
+    const r = await post(basket({ id: "LM-4000002" }));
+    expect(r.s + " " + r.j.error + " " + r.j.left).toBe("409 stock_short 0");
+    expect((await h.db.select().from(orders)).length).toBe(1);
   });
 
-  it("the gate reads inside the write's transaction (never the outer handle)", async () => {
-    await post(basket({ dedupeId: "d-4" }));
-    expect(seen[0]!.db).not.toBe(h.db);
+  it("no id, no exception: a second basket for the last box is refused", async () => {
+    expect((await post(basket({ dedupeId: "d-3" }))).s).toBe(200);
+    expect((await post(basket({ dedupeId: "d-4" }))).s).toBe(409);
   });
 
+  // the gate's read and the insert are one step under the stock lock (on the pg project the
+  // two posts really run at once)
   it("two shoppers at once cannot both take the last capped box", async () => {
     const [a, b] = await Promise.all([post(basket({ dedupeId: "race-a" })), post(basket({ dedupeId: "race-b" }))]);
     expect([a.s, b.s].sort()).toEqual([200, 409]);
     expect((await h.db.select().from(orders)).length).toBe(1);
   });
 
-  // from test-v211 (inventory): a failing stock check (not a refusal) lets the cash order through
-  it("a stock check that fails refuses nothing (and is logged)", async () => {
-    broken = true;
-    const r = await post(basket({ dedupeId: "d-5" }));
-    expect(r.s).toBe(200);
+  // from test-v211 (inventory): a stock check that cannot read the shelf lets the cash order through
+  it("a shelf that cannot be read refuses nothing", async () => {
+    h.world.fail((c) => (/omniful/.test(c.host) ? { status: 503, body: {} } : null));
+    expect((await post(basket({ dedupeId: "d-5" }))).s).toBe(200);
+    expect((await post(basket({ dedupeId: "d-6" }))).s).toBe(200);
   });
 });

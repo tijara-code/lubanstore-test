@@ -15,6 +15,7 @@
     "test": "vitest run",
     "test:unit": "vitest run --project unit --project server --project web",
     "test:e2e": "vitest run --project e2e",
+    "test:pg": "vitest run --project pg",
     "check": "npm run typecheck && npm run test && npm run build",
     "db:generate": "rm -rf db/migrations && drizzle-kit generate --name init",
     "db:migrate": "node --env-file-if-exists=.env --import tsx scripts/migrate.ts",

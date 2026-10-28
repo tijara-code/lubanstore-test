@@ -4,11 +4,16 @@
  * Netlify allows one schedule per function file, so each job has its own small file —
  * see netlify/functions/job-*.mts. This module is their shared runner.
  */
-import { getDeps } from "../bootstrap";
+import { bootFailure, getDeps } from "../bootstrap";
 import { runJob } from "./index";
 
 export async function run(name: string): Promise<Response> {
-  const { deps } = await getDeps(process.env);
+  let deps;
+  try {
+    deps = (await getDeps(process.env)).deps;
+  } catch (e) {
+    return bootFailure(e); // retried at the next run
+  }
   try {
     const result = await runJob(deps, name);
     return new Response(JSON.stringify({ ok: true, job: name, ...summary(result) }), { headers: { "content-type": "application/json" } });

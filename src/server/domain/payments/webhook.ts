@@ -23,6 +23,7 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { and, desc, eq, isNotNull, ne, notLike, lt } from "drizzle-orm";
 import { baisaToOmr, r3 } from "../../../shared/money";
 import type { Deps } from "../../core/deps";
+import { errorText } from "../../core/log";
 import { updateOp } from "../../core/ops";
 import { orders, webhookEvents, type OrderRow } from "../../db/schema";
 import type { GatewayRecord } from "../../../shared/orders/types";
@@ -160,22 +161,28 @@ export async function handleWebhook(deps: Deps, body: string, headers: { timesta
           return { status: 200, body: { ok: true } };
         }
         const fee = d.fee != null && Number.isFinite(Number(d.fee)) ? baisaToOmr(d.fee) : null;
-        const patch: Partial<OrderRow> = {
-          paymentId: str(d.payment_id),
-          maskedCard: str(d.masked_card),
-          cardType: str(d.card_type),
-          // a refund is final: a late delivery of the original charge must not clear it
-          refunded: !!d.refunded || !!order.refunded || order.paymentStatus === "refunded",
-          gateway: { ...((order.gateway || {}) as GatewayRecord), webhook_payment: evt },
-          updatedAt: new Date(deps.now()),
-        };
-        // a mismatch note on an order still unpaid is the panel's only explanation
-        if (order.paymentStatus === "paid") patch.lastPaymentError = null;
-        if (fee != null) {
-          patch.gatewayFee = fee;
-          patch.netAmount = r3((Number(order.omr) || 0) - fee);
-        }
-        await deps.db.update(orders).set(patch).where(eq(orders.id, order.id));
+        // read again under the row's lock and patched from that row: a refund (or a settle)
+        // committed since the read above is kept, never written back from a stale copy
+        await deps.db.transaction(async (tx) => {
+          const fresh = (await tx.select().from(orders).where(eq(orders.id, order.id)).limit(1).for("update"))[0];
+          if (!fresh) return;
+          const patch: Partial<OrderRow> = {
+            paymentId: str(d.payment_id),
+            maskedCard: str(d.masked_card),
+            cardType: str(d.card_type),
+            gateway: { ...((fresh.gateway || {}) as GatewayRecord), webhook_payment: evt },
+            updatedAt: new Date(deps.now()),
+          };
+          // a refund is final: a late delivery of the original charge never clears it (only sets it)
+          if (d.refunded) patch.refunded = true;
+          // a mismatch note on an order still unpaid is the panel's only explanation
+          if (fresh.paymentStatus === "paid") patch.lastPaymentError = null;
+          if (fee != null) {
+            patch.gatewayFee = fee;
+            patch.netAmount = r3((Number(fresh.omr) || 0) - fee);
+          }
+          await tx.update(orders).set(patch).where(eq(orders.id, fresh.id));
+        });
         await record(deps, { ...entry, orderId: order.id }, "enriched");
         return { status: 200, body: { ok: true, id: order.id } };
       }
@@ -202,7 +209,8 @@ export async function handleWebhook(deps: Deps, body: string, headers: { timesta
         return { status: 200, body: { ok: true } };
     }
   } catch (e) {
-    const msg = String((e as Error)?.message || e);
+    // the database's own words only — never the failed query's parameters (customer details)
+    const msg = errorText(e);
     await record(deps, entry, "error: " + msg);
     await deps.log.error("thawani-webhook", "a delivery could not be handled: " + msg, { orderId });
     // 500 asks Thawani to retry — better than losing the event
@@ -247,24 +255,34 @@ async function completed(deps: Deps, entry: Entry, evt: Record<string, unknown>,
     return { status: 200, body: { ok: true, note: "amount mismatch, left pending" } };
   }
 
-  // card + fee, best effort — a failure here must not lose the sale
+  // card + fee, best effort — a failure here must not lose the sale (asked before the row is locked)
   const enriched = await deps.services.thawani.paymentsForInvoice(invoice || order.invoiceNo);
   const gross = baisaToOmr(paid || want) || Number(order.omr) || 0;
   const rec: GatewayRecord = { webhook_completed_at: new Date(deps.now()).toISOString(), webhook_checkout: evt };
   if (enriched) rec.payment = enriched.raw;
+  // the patch is built from the row as it stands under the lock: a cash switch from the
+  // reminder link that committed since the read above is converted back to card (A9), not
+  // left as cash with a fee the gateway never took
   const settled = await markPaid(
-    deps, order.id, order,
-    paidPatch(order, { invoice: invoice || order.invoiceNo || null, enriched, gross, gateway: rec, now: deps.now() }),
-    "settleable", "webhook", { via: "webhook" },
+    deps, order.id, "settleable",
+    (fresh) => (amountAgrees(fresh.amountBaisa, paid)
+      ? paidPatch(fresh, { invoice: invoice || fresh.invoiceNo || null, enriched, gross, gateway: rec, now: deps.now() })
+      : null),
+    "webhook", { via: "webhook" },
   );
   if (!settled.changed || !settled.order) {
     // matched nothing: settled by the return a moment ago, or an order the write may not
     // settle (binned, refunded) — money taken and not recorded, said on the order (audit A8)
-    const now = await findOrder(deps, { id: order.id }).catch(() => null);
+    const now = settled.fresh;
     if (now && now.paymentStatus === "paid") {
       await report(deps, now);
       await record(deps, at, "duplicate");
       return { status: 200, body: { ok: true, id: order.id, note: "settled by the return a moment earlier" } };
+    }
+    if (now && !now.trashed && !now.refunded && now.paymentStatus !== "refunded" && !amountAgrees(now.amountBaisa, paid)) {
+      await record(deps, at, "mismatch");
+      await noteOnOrder(deps, order.id, "amount_mismatch: paid " + paid + " expected " + Number(now.amountBaisa || 0));
+      return { status: 200, body: { ok: true, note: "amount mismatch, left pending" } };
     }
     const why = now && now.trashed ? "binned" : now && (now.refunded || now.paymentStatus === "refunded") ? "refunded" : "closed";
     await noteOnOrder(deps, order.id, "paid_unsettled: invoice " + (invoice || "?") + " paid " + paid + " baisa on a " + why + " order - check and refund or restore");
@@ -283,7 +301,7 @@ async function report(deps: Deps, order: OrderRow): Promise<void> {
   try {
     await reportPurchase(deps, order);
   } catch (e) {
-    await deps.log.error("thawani-webhook", "the Purchase report failed for " + order.id + ": " + String((e as Error)?.message || e), { orderId: order.id });
+    await deps.log.error("thawani-webhook", "the Purchase report failed for " + order.id + ": " + errorText(e), { orderId: order.id });
   }
 }
 

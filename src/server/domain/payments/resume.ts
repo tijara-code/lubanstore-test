@@ -16,14 +16,16 @@
  * amount is the one recorded when the order was placed, the cash amount is re-priced from the
  * live catalogue. A paid order is answered with a page, never a second charge.
  */
-import { and, eq, inArray, or, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, like, or, type SQL } from "drizzle-orm";
 import { decimalsOf, r3, toBaisa, baisaToOmr } from "../../../shared/money";
 import { priceOrder, isRefusal, type Quote } from "../../../shared/pricing/price";
 import type { ClientSignals, OrderLine } from "../../../shared/orders/types";
 import type { Deps } from "../../core/deps";
 import { esc, HttpError, pageHtml } from "../../core/http";
 import { allow } from "../../core/ratelimit";
-import { orders, type NewOrderRow, type OrderRow } from "../../db/schema";
+import type { DbOrTx } from "../../db/client";
+import { orderEvents, orders, type NewOrderRow, type OrderRow } from "../../db/schema";
+import { errorText } from "../../core/log";
 import { loadCatalogue } from "../catalogue";
 import { anyCap, inStockTx } from "../orders";
 import { reportPurchase } from "../purchase";
@@ -111,6 +113,36 @@ export function reopenable(o: OrderRow): boolean {
     (o.paymentStatus === "unpaid" || o.paymentStatus === "cancelled" || (o.paymentStatus === "cod" && o.status === "void"));
 }
 
+/** Who may void an order on the PAYMENT path: the 72-hour expiry, the shopper cancelling at the gateway (verify). */
+export const PAYMENT_VOIDERS: ReadonlySet<string> = new Set(["job:orders-expire", "shopper"]);
+
+/**
+ * A void order comes back from the customer's link only when the PAYMENT path voided it — a
+ * card attempt lapsed by the expiry job, or cancelled at the gateway — never one the shop (or
+ * the courier's news) cancelled: the key the link needs is in every invoice link, and a
+ * refused, fraudulent or out-of-stock order must not walk back into the queue. Decided by the
+ * last move to void on record (order_events) and who made it; a void with nothing on record
+ * (an imported row) counts as the payment's only if it was a card attempt.
+ */
+export async function voidedByPayment(db: DbOrTx, o: OrderRow): Promise<boolean> {
+  if (o.status !== "void") return true;
+  const last = await db
+    .select({ by: orderEvents.by })
+    .from(orderEvents)
+    .where(and(eq(orderEvents.orderId, o.id), or(eq(orderEvents.to, "void"), like(orderEvents.to, "void/%"))))
+    .orderBy(desc(orderEvents.at), desc(orderEvents.id))
+    .limit(1);
+  if (last[0]) return PAYMENT_VOIDERS.has(last[0].by);
+  return Number(o.amountBaisa) > 0 || !!o.sessionId;
+}
+
+/** The row again, under its lock, inside the write's transaction — reopenable and voided by the payment path, or null. */
+async function lockReopenable(db: DbOrTx, id: string): Promise<OrderRow | null> {
+  const fresh = (await db.select().from(orders).where(eq(orders.id, id)).limit(1).for("update"))[0];
+  if (!fresh || fresh.trashed || !reopenable(fresh)) return null;
+  return (await voidedByPayment(db, fresh)) ? fresh : null;
+}
+
 /** The read's own conditions, again in the write: a payment landing in between wins. */
 function stillOpen(id: string): SQL {
   return and(
@@ -168,6 +200,11 @@ export async function resume(deps: Deps, req: ResumeRequest): Promise<ResumeResu
     return page("تم التأكيد", '<div class="ok">✅</div><h1>طلبك مؤكد</h1><p>طلبك <b>' + esc(o.id) + "</b> مؤكد بالدفع عند الاستلام.</p><p>سنتواصل معك عند الشحن.</p>");
   }
   if (!reopenable(o)) return noAction(o.id);
+  try {
+    if (!(await voidedByPayment(deps.db, o))) return noAction(o.id);
+  } catch {
+    return notFound();
+  }
 
   return req.cod ? toCash(deps, req, o) : toCard(deps, req, o);
 }
@@ -219,20 +256,27 @@ async function toCash(deps: Deps, req: ResumeRequest, o: OrderRow): Promise<Resu
     }
   }
   let changed: OrderRow | null | typeof short = null;
+  let was: OrderRow = o;
   try {
     changed = await inStockTx(deps, anyCap(cfg), async (tx) => {
+      // the row again under its lock: a payment (the webhook for the old card page) that
+      // committed since the read wins; one that comes after waits for this write and sees it
+      const fresh = await lockReopenable(tx.db, o.id);
+      if (!fresh) return null;
+      was = fresh;
       try {
-        await enforceStock(tx, cfg, quote.country.code, quote.items, { id: o.id, dedupeId: o.dedupeId }, tx.db, shelf);
+        // a known order's own boxes are its own (the id is the database's, not a post's)
+        await enforceStock(tx, cfg, quote.country.code, quote.items, { id: fresh.id, dedupeId: fresh.dedupeId, known: true }, tx.db, shelf);
       } catch (e) {
         if (e instanceof HttpError && e.code === "stock_short") return short;
         // a shelf that cannot be read refuses nothing
       }
-      const rows = await tx.db.update(orders).set(patch).where(stillOpen(o.id)).returning();
-      if (rows[0]) await recordEvent(tx.db, { orderId: o.id, kind: "payment", from: standing(o), to: standing(rows[0]), by: "shopper", at, detail: { via: "resume", cod: true, total: quote.total } });
+      const rows = await tx.db.update(orders).set({ ...patch, adminNote: note(fresh.adminNote, "Confirmed as cash on delivery from the reminder link") }).where(stillOpen(o.id)).returning();
+      if (rows[0]) await recordEvent(tx.db, { orderId: o.id, kind: "payment", from: standing(fresh), to: standing(rows[0]), by: "shopper", at, detail: { via: "resume", cod: true, total: quote.total } });
       return rows[0] || null;
     });
   } catch (e) {
-    await deps.log.error("resume", "could not confirm " + o.id + " as cash: " + String((e as Error)?.message || e), { orderId: o.id });
+    await deps.log.error("resume", "could not confirm " + o.id + " as cash: " + errorText(e), { orderId: o.id });
     return page("تعذر التأكيد", "<h1>تعذر تأكيد الطلب</h1><p>حاول مرة أخرى، أو راسلنا على واتساب.</p>" + contact(), 502);
   }
   if (changed === short) return couldNot("الكمية المتوفرة من أحد المنتجات أقل مما في طلبك. راسلنا على واتساب ونكمله معك.", 409);
@@ -241,7 +285,7 @@ async function toCash(deps: Deps, req: ResumeRequest, o: OrderRow): Promise<Resu
 
   // THE SALE: a card order never paid was never a Purchase; confirmed here as cash it is one.
   // One that was already cash (and cancelled) was reported when it was placed.
-  if (o.pay === "card" && (o.paymentStatus === "unpaid" || o.paymentStatus === "cancelled")) {
+  if (was.pay === "card" && (was.paymentStatus === "unpaid" || was.paymentStatus === "cancelled")) {
     try {
       await reportPurchase(deps, changed, { ip: req.ip || undefined, ua: req.ua || undefined });
     } catch {
@@ -298,13 +342,16 @@ async function toCard(deps: Deps, req: ResumeRequest, o: OrderRow): Promise<Resu
   let changed: OrderRow | null | undefined;
   try {
     changed = await deps.db.transaction(async (tx) => {
-      const rows = await tx.update(orders).set(reopen).where(stillOpen(o.id)).returning();
-      if (rows[0]) await recordEvent(tx, { orderId: o.id, kind: "payment", from: standing(o), to: standing(rows[0]), by: "shopper", at, detail: { via: "resume", session: opened.sessionId } });
+      // the row again under its lock: paid, or cancelled by the shop, while the session opened → nothing
+      const fresh = await lockReopenable(tx, o.id);
+      if (!fresh) return null;
+      const rows = await tx.update(orders).set({ ...reopen, adminNote: note(fresh.adminNote, "Payment reopened from the reminder link") }).where(stillOpen(o.id)).returning();
+      if (rows[0]) await recordEvent(tx, { orderId: o.id, kind: "payment", from: standing(fresh), to: standing(rows[0]), by: "shopper", at, detail: { via: "resume", session: opened.sessionId } });
       return rows[0] || null;
     });
   } catch (e) {
     // the session is live; a failed note must not block it
-    await deps.log.error("resume", "the reopened session was not recorded on " + o.id + ": " + String((e as Error)?.message || e), { orderId: o.id });
+    await deps.log.error("resume", "the reopened session was not recorded on " + o.id + ": " + errorText(e), { orderId: o.id });
     changed = undefined;
   }
   // answered, and nothing matched: paid (or settled) while the session was opening — the unused

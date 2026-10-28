@@ -9,6 +9,7 @@
  * give us, or a bug, is 503 pricing_unavailable — never the deploy's file priced in its
  * place when the database is there but did not answer.
  */
+import { errorText } from "../core/log";
 import type { Catalogue } from "../../shared/catalogue/types";
 import { isRefusal, priceOrder, type Quote } from "../../shared/pricing/price";
 import type { Deps } from "../core/deps";
@@ -27,7 +28,7 @@ export async function priceBasket(deps: Deps, intake: Intake, pay: "cod" | "card
       const r = e as { code: string; item?: string | null };
       throw fail(r.code, 400, { item: r.item || null });
     }
-    await deps.log.error("till-pricing", "pricing failed: " + String((e as Error)?.message || e));
+    await deps.log.error("till-pricing", "pricing failed: " + errorText(e));
     throw fail(e instanceof CatalogueError && e.code === "no_catalogue" ? "no_catalogue" : "pricing_unavailable", 503);
   }
 }
@@ -48,7 +49,7 @@ export async function readGate(deps: Deps, cfg: Catalogue, quote: Quote): Promis
   try {
     return await readShelfForGate(deps, cfg, quote.country.code, quote.items);
   } catch (e) {
-    await deps.log.error("till-stock", "the shelf could not be read: " + String((e as Error)?.message || e));
+    await deps.log.error("till-stock", "the shelf could not be read: " + errorText(e));
     return null;
   }
 }
@@ -60,7 +61,9 @@ export async function gateStock(deps: Deps, cfg: Catalogue, quote: Quote, intake
       cfg,
       quote.country.code,
       quote.items,
-      intake.proposedId ? { id: intake.proposedId, dedupeId: intake.dedupeId || null } : null,
+      // a posted id is this order's own only with this submission's dedupe id (v314/A5): both
+      // must be there and equal the row's (stock.ts isOwn) — an id alone excuses nothing
+      intake.proposedId && intake.dedupeId ? { id: intake.proposedId, dedupeId: intake.dedupeId } : null,
       deps.db,
       pre,
     );
@@ -68,6 +71,6 @@ export async function gateStock(deps: Deps, cfg: Catalogue, quote: Quote, intake
     if (e instanceof HttpError && e.code === "stock_short") throw e;
     const s = e as { code?: string; item?: unknown; left?: unknown };
     if (s && s.code === "stock_short") throw fail("stock_short", 409, { item: s.item, left: s.left });
-    await deps.log.error("till-stock", "the stock check failed: " + String((e as Error)?.message || e));
+    await deps.log.error("till-stock", "the stock check failed: " + errorText(e));
   }
 }

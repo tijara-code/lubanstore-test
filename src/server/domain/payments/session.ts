@@ -5,6 +5,7 @@
  * sum EXACTLY to the amount recorded on the order, back to the checkout in the shopper's
  * language either way.
  */
+import { errorText } from "../../core/log";
 import { toBaisa } from "../../../shared/money";
 import type { Deps } from "../../core/deps";
 import { fail } from "../../core/http";
@@ -105,7 +106,7 @@ export async function openSession(
       metadata: { order_id: o.id, ...(o.metadata || {}) },
     });
   } catch (e) {
-    await deps.log.error("pay-session", "Thawani refused the session for " + o.id + ": " + String((e as Error)?.message || e), {
+    await deps.log.error("pay-session", "Thawani refused the session for " + o.id + ": " + errorText(e), {
       orderId: o.id,
       detail: { code: e instanceof ThawaniError ? e.code : null, status: e instanceof ThawaniError ? e.status : null },
     });

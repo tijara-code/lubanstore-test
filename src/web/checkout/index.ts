@@ -709,7 +709,9 @@ function told(id: unknown, what: string, next: string): void {
 
 /* "We could not check" and "it was not paid" are different answers: the unknown case
    retries a few times, then says so with the order number and keeps the pending order. */
-const UNSURE: Record<string, 1> = { db_read_failed: 1, db_write_failed: 1, gateway_error: 1, db_not_configured: 1, gateway_not_configured: 1 };
+/* the server could not say: retried, then "could not check — do not pay again". rate_limited and server_error are
+   the rebuilt server's words for a busy or failing check (the original had no limit on verify). */
+const UNSURE: Record<string, 1> = { db_read_failed: 1, db_write_failed: 1, gateway_error: 1, db_not_configured: 1, gateway_not_configured: 1, rate_limited: 1, server_error: 1, upstream: 1 };
 
 function handleReturn(): boolean {
   const q = new URLSearchParams(location.search || "");

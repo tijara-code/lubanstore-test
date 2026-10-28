@@ -258,7 +258,7 @@ export async function requoteItems(
   }
   if (!manual) {
     try {
-      await enforceStock(deps, cfg, quote.country.code, quote.items, { id: order.id, dedupeId: order.dedupeId });
+      await enforceStock(deps, cfg, quote.country.code, quote.items, { id: order.id, dedupeId: order.dedupeId, known: true });
     } catch (e) {
       if (e instanceof HttpError && e.code === "stock_short") throw e;
       const s = e as { code?: string; item?: unknown; left?: unknown };

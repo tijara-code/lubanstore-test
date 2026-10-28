@@ -91,14 +91,17 @@ describe("the return", () => {
     expect([o.status, o.paymentStatus]).toEqual(["new", "paid"]);
   });
 
-  it("an amount that disagrees: 409 amount_mismatch, the order left pending", async () => {
-    const { id } = await opened();
+  it("an amount that disagrees: 409 amount_mismatch, the order left pending; the figures only to the payer (A22)", async () => {
+    const { id, sid } = await opened();
     const s = h.th().sessionFor(id)!;
     s.total_amount = 100;
     s.payment_status = "paid";
-    const v = await h.verify({ ref: id });
+    const v = await h.verify({ ref: id, sid });
     expect(v.status).toBe(409);
     expect(v.j).toEqual({ ok: false, error: "amount_mismatch", expected_baisa: 28000, paid_baisa: 100, id });
+    // (review-fixes) anyone else with the order number is told no amounts
+    const other = await h.verify({ ref: id });
+    expect([other.status, other.j]).toEqual([409, { ok: false, error: "amount_mismatch", id }]);
     expect((await h.row(id)).paymentStatus).toBe("unpaid");
   });
 
